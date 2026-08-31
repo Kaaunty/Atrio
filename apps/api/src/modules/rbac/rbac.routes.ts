@@ -12,7 +12,10 @@ router.delete('/admin/roles/:id', RbacController.deleteRole);
 
 router.get('/admin/permissions', RbacController.listPermissions);
 router.get('/admin/users', RbacController.listUsers);
+router.post('/admin/users/sync-employees', RbacController.syncEmployees);
+router.patch('/admin/users/:id/employee', RbacController.updateUserEmployee);
 router.post('/admin/users/:id/roles', RbacController.assignUserRoles);
 router.post('/admin/rbac/seed', RbacController.seed);
+
 
 export { router as rbacRoutes };

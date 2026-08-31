@@ -15,6 +15,7 @@ import {
   CheckSquare,
   Square,
   CheckCircle2,
+  RefreshCw,
 } from 'lucide-react';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { Card } from '../../components/ui/Card';
@@ -63,8 +64,11 @@ export const AccessControlPage: React.FC = () => {
   // Modal de Atribuição de Usuário
   const [isUserRoleModalOpen, setIsUserRoleModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [userRoleIds, setUserRoleIds] = useState<string[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [syncing, setSyncing] = useState(false);
+
 
   // Modal de Criação de Usuário (exclusivo ADMIN)
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
@@ -235,11 +239,38 @@ export const AccessControlPage: React.FC = () => {
     }
   };
 
-  // --- Handlers para Atribuição de Usuários ---
-  const handleOpenUserRoleModal = (user: UserWithRoles) => {
+  // --- Handlers para Atribuição de Usuários & Sincronização ---
+  const handleSyncUsers = async () => {
+    try {
+      setSyncing(true);
+      setError(null);
+      const msg = await adminService.syncUserEmployees();
+      showNotification(msg);
+      await loadData();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Erro ao sincronizar usuários com colaboradores.');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleOpenUserRoleModal = async (user: UserWithRoles) => {
     setSelectedUser(user);
     setUserRoleIds(user.userRoles.map((ur) => ur.roleId));
+    setSelectedEmployeeId(user.employee?.id || '');
     setError(null);
+
+    if (employees.length === 0) {
+      try {
+        const empData = await employeeService.getEmployees({ pageSize: 200 });
+        setEmployees(empData.data || []);
+      } catch (err) {
+        console.error('Erro ao carregar lista de colaboradores:', err);
+      }
+    }
+
+
+
     setIsUserRoleModalOpen(true);
   };
 
@@ -259,15 +290,22 @@ export const AccessControlPage: React.FC = () => {
       setModalLoading(true);
       setError(null);
       await adminService.assignUserRoles(selectedUser.id, userRoleIds);
-      showNotification(`Perfis do usuário ${selectedUser.email} atualizados!`);
+
+      const currentEmpId = selectedUser.employee?.id || '';
+      if (selectedEmployeeId !== currentEmpId) {
+        await adminService.updateUserEmployee(selectedUser.id, selectedEmployeeId || null);
+      }
+
+      showNotification(`Dados do usuário ${selectedUser.email} atualizados!`);
       setIsUserRoleModalOpen(false);
       loadData();
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Erro ao atribuir perfis ao usuário.');
+      setError(err?.response?.data?.message || 'Erro ao atualizar dados do usuário.');
     } finally {
       setModalLoading(false);
     }
   };
+
 
   const handleOpenCreateUser = async () => {
     setError(null);
@@ -543,15 +581,28 @@ export const AccessControlPage: React.FC = () => {
             </div>
 
             {isSystemAdmin && (
-              <Button
-                variant="primary"
-                size="md"
-                onClick={handleOpenCreateUser}
-                icon={<UserPlus className="w-4 h-4" />}
-              >
-                Novo Usuário
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="md"
+                  disabled={syncing}
+                  onClick={handleSyncUsers}
+                  icon={<RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />}
+                >
+                  Sincronizar Colaboradores
+                </Button>
+
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={handleOpenCreateUser}
+                  icon={<UserPlus className="w-4 h-4" />}
+                >
+                  Novo Usuário
+                </Button>
+              </div>
             )}
+
 
             {/* Campo de Busca */}
             <div className="relative w-full sm:w-72">
@@ -912,14 +963,33 @@ export const AccessControlPage: React.FC = () => {
           )}
 
           {selectedUser && (
-            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-              <p className="text-xs text-slate-500 font-medium">Usuário Selecionado:</p>
-              <h4 className="text-sm font-bold text-atrio-navy mt-0.5">
-                {selectedUser.employee?.name || selectedUser.email}
-              </h4>
-              <p className="text-xs text-slate-500 mt-0.5">{selectedUser.email}</p>
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Usuário Selecionado:</p>
+                <h4 className="text-sm font-bold text-atrio-navy mt-0.5">
+                  {selectedUser.employee?.name || 'Usuário Sem Colaborador'}
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">{selectedUser.email}</p>
+              </div>
+
+              <Select
+                label="Vincular / Alterar Colaborador"
+                helperText="Selecione o cadastro funcional para associar a esta conta de usuário."
+                value={selectedEmployeeId}
+                onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                options={[
+                  { value: '', label: 'Sem vínculo (Usuário Sem Colaborador)' },
+                  ...employees
+                    .filter((emp) => emp.id === selectedUser?.employee?.id || !users.some((u) => u.employee?.id === emp.id))
+                    .map((emp) => ({
+                      value: emp.id,
+                      label: `${emp.name} — ${emp.email} (${emp.registrationNumber || 'Sem mat.'})`,
+                    })),
+                ]}
+              />
             </div>
           )}
+
 
           <div className="space-y-2 pt-2">
             <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">

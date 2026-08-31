@@ -1,0 +1,133 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-08-31T16:26:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_atrio_ponto",
+      "_type": "workspace",
+      "parentId": null,
+      "modified": 1788193560000,
+      "created": 1788193560000,
+      "name": "Atrio - Testes Integração Ponto (Control iD)",
+      "description": "Coleção de testes de Webhook e Sincronização de Ponto para Insomnia",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_atrio_base",
+      "_type": "environment",
+      "parentId": "wrk_atrio_ponto",
+      "modified": 1788193560000,
+      "created": 1788193560000,
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://api-atrio.kfdev.com.br"
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url"
+        ]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_webhook_unica",
+      "_type": "request",
+      "parentId": "wrk_atrio_ponto",
+      "modified": 1788193560000,
+      "created": 1788193560000,
+      "url": "{{ _.base_url }}/api/v1/integrations/control-id/webhook",
+      "name": "1. Webhook - Batida Única (Entrada)",
+      "description": "Simula o envio de 1 marcação de ponto (batida de entrada) em tempo real via Webhook do Control iD.",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"matricula\": \"MAT-001\",\n  \"timestamp\": \"2026-08-31T08:00:00.000Z\",\n  \"nsr\": 1001\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1788193560000
+    },
+    {
+      "_id": "req_webhook_completa",
+      "_type": "request",
+      "parentId": "wrk_atrio_ponto",
+      "modified": 1788193560000,
+      "created": 1788193560000,
+      "url": "{{ _.base_url }}/api/v1/integrations/control-id/webhook",
+      "name": "2. Webhook - Jornada Completa (4 Batidas)",
+      "description": "Simula o envio em lote das 4 batidas do dia (Entrada, Saída Almoço, Volta Almoço, Saída Final).",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"punches\": [\n    {\n      \"matricula\": \"MAT-001\",\n      \"timestamp\": \"2026-08-31T08:00:00.000Z\",\n      \"nsr\": 1001\n    },\n    {\n      \"matricula\": \"MAT-001\",\n      \"timestamp\": \"2026-08-31T12:00:00.000Z\",\n      \"nsr\": 1002\n    },\n    {\n      \"matricula\": \"MAT-001\",\n      \"timestamp\": \"2026-08-31T13:00:00.000Z\",\n      \"nsr\": 1003\n    },\n    {\n      \"matricula\": \"MAT-001\",\n      \"timestamp\": \"2026-08-31T17:00:00.000Z\",\n      \"nsr\": 1004\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1788193550000
+    },
+    {
+      "_id": "req_webhook_nao_cadastrado",
+      "_type": "request",
+      "parentId": "wrk_atrio_ponto",
+      "modified": 1788193560000,
+      "created": 1788193560000,
+      "url": "{{ _.base_url }}/api/v1/integrations/control-id/webhook",
+      "name": "3. Webhook - Batida Matrícula Não Cadastrada",
+      "description": "Simula a batida de um funcionário cuja matrícula não existe no Atrio para testar o tratamento de marcações não vinculadas (unmapped).",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"matricula\": \"999999\",\n  \"timestamp\": \"2026-08-31T08:05:00.000Z\",\n  \"nsr\": 1005\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1788193540000
+    },
+    {
+      "_id": "req_upload_afd",
+      "_type": "request",
+      "parentId": "wrk_atrio_ponto",
+      "modified": 1788193560000,
+      "created": 1788193560000,
+      "url": "{{ _.base_url }}/api/v1/integrations/control-id/upload-afd",
+      "name": "4. Upload de Conteúdo de Arquivo AFD (.txt)",
+      "description": "Envia um conteúdo de arquivo AFD (Fonte de Dados Portaria 1510/671) direto via JSON.",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"content\": \"0000000001100000000000000000000000000000000\\n0000000023310820260800000000000001001\\n0000000033310820261200000000000001002\\n999999999999999999999999999999999999999\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1788193530000
+    }
+  ]
+}

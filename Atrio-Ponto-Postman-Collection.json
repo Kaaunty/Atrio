@@ -1,0 +1,145 @@
+{
+	"info": {
+		"_postman_id": "a5d8b7c4-1234-4567-89ab-cdef01234567",
+		"name": "Atrio - Testes Integração Ponto (Control iD)",
+		"description": "Coleção de requisições Postman para testar Webhooks e APIs de Sincronização de Ponto Eletrônico no Atrio.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Webhook - Batida Única (Entrada)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"matricula\": \"MAT-001\",\n  \"timestamp\": \"2026-08-31T08:00:00.000Z\",\n  \"nsr\": 1001\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/integrations/control-id/webhook",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"integrations",
+						"control-id",
+						"webhook"
+					]
+				},
+				"description": "Simula o envio de 1 marcação de ponto (batida de entrada) em tempo real via Webhook do Control iD."
+			},
+			"response": []
+		},
+		{
+			"name": "2. Webhook - Jornada Completa do Dia (4 Batidas)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"punches\": [\n    {\n      \"matricula\": \"MAT-001\",\n      \"timestamp\": \"2026-08-31T08:00:00.000Z\",\n      \"nsr\": 1001\n    },\n    {\n      \"matricula\": \"MAT-001\",\n      \"timestamp\": \"2026-08-31T12:00:00.000Z\",\n      \"nsr\": 1002\n    },\n    {\n      \"matricula\": \"MAT-001\",\n      \"timestamp\": \"2026-08-31T13:00:00.000Z\",\n      \"nsr\": 1003\n    },\n    {\n      \"matricula\": \"MAT-001\",\n      \"timestamp\": \"2026-08-31T17:00:00.000Z\",\n      \"nsr\": 1004\n    }\n  ]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/integrations/control-id/webhook",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"integrations",
+						"control-id",
+						"webhook"
+					]
+				},
+				"description": "Simula o envio em lote das 4 batidas do dia (Entrada, Saída Almoço, Volta Almoço, Saída Final)."
+			},
+			"response": []
+		},
+		{
+			"name": "3. Webhook - Batida com Matrícula Não Cadastrada",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"matricula\": \"999999\",\n  \"timestamp\": \"2026-08-31T08:05:00.000Z\",\n  \"nsr\": 1005\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/integrations/control-id/webhook",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"integrations",
+						"control-id",
+						"webhook"
+					]
+				},
+				"description": "Simula a batida de um funcionário cuja matrícula não existe no Atrio para testar o tratamento de marcações não vinculadas (unmapped)."
+			},
+			"response": []
+		},
+		{
+			"name": "4. Upload de Conteúdo de Arquivo AFD (.txt)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"content\": \"0000000001100000000000000000000000000000000\\n0000000023310820260800000000000001001\\n0000000033310820261200000000000001002\\n999999999999999999999999999999999999999\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/integrations/control-id/upload-afd",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"integrations",
+						"control-id",
+						"upload-afd"
+					]
+				},
+				"description": "Envia um conteúdo de arquivo AFD (Fonte de Dados Portaria 1510/671) direto via JSON."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://api-atrio.kfdev.com.br",
+			"type": "string"
+		}
+	]
+}

@@ -148,6 +148,17 @@ export const adminService = {
     return res.data.data;
   },
 
+  async syncUserEmployees(): Promise<string> {
+    const res = await api.post<ApiResponse<null>>('/admin/users/sync-employees');
+    return res.data.message || 'Usuários sincronizados com sucesso';
+  },
+
+  async updateUserEmployee(userId: string, employeeId: string | null): Promise<UserWithRoles[]> {
+    const res = await api.patch<ApiResponse<UserWithRoles[]>>(`/admin/users/${userId}/employee`, { employeeId });
+    return res.data.data;
+  },
+
+
   // Auditoria
   async getAuditLogs(params?: {
     page?: number;

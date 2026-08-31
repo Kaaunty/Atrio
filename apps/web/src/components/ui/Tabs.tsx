@@ -14,6 +14,7 @@ export interface TabsProps {
   activeTab: string;
   onChange: (tabId: string) => void;
   className?: string;
+  variant?: 'default' | 'fullWidth' | 'center';
 }
 
 export const Tabs: React.FC<TabsProps> = ({
@@ -21,10 +22,23 @@ export const Tabs: React.FC<TabsProps> = ({
   activeTab,
   onChange,
   className,
+  variant = 'default',
 }) => {
   return (
     <div className={twMerge('border-b border-atrio-border', className)}>
-      <nav className="-mb-px flex space-x-2 sm:space-x-4 overflow-x-auto">
+      <nav
+        className={clsx(
+          '-mb-px flex overflow-x-auto no-scrollbar',
+          variant === 'center' && 'justify-center space-x-2 sm:space-x-4',
+          variant === 'fullWidth' && 'w-full grid',
+          variant === 'default' && 'space-x-2 sm:space-x-4'
+        )}
+        style={
+          variant === 'fullWidth'
+            ? { gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }
+            : undefined
+        }
+      >
         {tabs.map((tab) => {
           const isActive = tab.id === activeTab;
           return (
@@ -32,7 +46,8 @@ export const Tabs: React.FC<TabsProps> = ({
               key={tab.id}
               onClick={() => onChange(tab.id)}
               className={clsx(
-                'group inline-flex items-center gap-2 py-3 px-3.5 border-b-2 font-medium text-sm transition-all whitespace-nowrap',
+                'group inline-flex items-center justify-center gap-1.5 py-3 px-3.5 border-b-2 font-medium text-xs sm:text-sm transition-all whitespace-nowrap',
+                variant === 'fullWidth' && 'w-full text-center',
                 isActive
                   ? 'border-atrio-navy text-atrio-navy font-semibold'
                   : 'border-transparent text-slate-500 hover:text-atrio-navy hover:border-slate-300'

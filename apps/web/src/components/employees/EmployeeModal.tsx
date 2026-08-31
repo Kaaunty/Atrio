@@ -8,7 +8,9 @@ import {
   Calendar,
   DollarSign,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
+import { fetchAddressByCep, formatCep } from '../../services/viaCepService';
 import {
   Employee,
   ContractType,
@@ -45,6 +47,47 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
   const [activeTab, setActiveTab] = useState<'personal' | 'contract' | 'address'>('personal');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Busca de CEP (ViaCEP)
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepStatusText, setCepStatusText] = useState<string | null>(null);
+
+  const handleCepChange = async (rawValue: string) => {
+    const formatted = formatCep(rawValue);
+    setForm((prev) => ({ ...prev, zipCode: formatted }));
+
+    const cleaned = formatted.replace(/\D/g, '');
+    if (cleaned.length === 8) {
+      try {
+        setCepLoading(true);
+        setCepStatusText('Buscando CEP...');
+        const address = await fetchAddressByCep(cleaned);
+        if (address) {
+          setForm((prev) => ({
+            ...prev,
+            street: address.logradouro || prev.street,
+            neighborhood: address.bairro || prev.neighborhood,
+            city: address.localidade || prev.city,
+            state: address.uf || prev.state,
+            complement: address.complemento || prev.complement,
+          }));
+          setCepStatusText('✅ Endereço preenchido automaticamente!');
+          setTimeout(() => setCepStatusText(null), 4000);
+        } else {
+          setCepStatusText('⚠️ CEP não encontrado.');
+          setTimeout(() => setCepStatusText(null), 4000);
+        }
+      } catch (err) {
+        setCepStatusText('⚠️ Erro ao consultar CEP.');
+        setTimeout(() => setCepStatusText(null), 4000);
+      } finally {
+        setCepLoading(false);
+      }
+    } else {
+      setCepStatusText(null);
+    }
+  };
+
 
   // Auxiliares de seleção
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -342,7 +385,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isEditing ? `Editar Colaborador: ${employee?.name}` : 'Cadastrar Novo Colaborador'}
-      maxWidth="xl"
+      maxWidth="2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
@@ -356,6 +399,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
           tabs={modalTabs}
           activeTab={activeTab}
           onChange={(tab) => setActiveTab(tab as any)}
+          variant="fullWidth"
         />
 
         {/* ABA 1: DADOS PESSOAIS */}
@@ -582,12 +626,22 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 Endereço Residencial
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <Input
-                  label="CEP"
-                  placeholder="00000-000"
-                  value={form.zipCode}
-                  onChange={(e) => setForm({ ...form, zipCode: e.target.value })}
-                />
+                <div className="relative">
+                  <Input
+                    label="CEP"
+                    placeholder="00000-000"
+                    maxLength={9}
+                    value={form.zipCode}
+                    onChange={(e) => handleCepChange(e.target.value)}
+                    helperText={cepStatusText || 'Digite os 8 dígitos para buscar automaticamente'}
+                  />
+                  {cepLoading && (
+                    <div className="absolute right-3 top-8">
+                      <Loader2 className="w-4 h-4 text-atrio-teal animate-spin" />
+                    </div>
+                  )}
+                </div>
+
                 <div className="sm:col-span-2">
                   <Input
                     label="Logradouro / Rua / Avenida"

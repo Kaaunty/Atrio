@@ -392,4 +392,74 @@ export class RbacService {
 
     return users;
   }
+
+  /**
+   * Sincroniza usuários sem colaborador buscando correspondência por e-mail no cadastro funcional
+   */
+  static async syncUserEmployees() {
+    const demoMappings: Record<string, string> = {
+      'rh@atrio.com.br': 'camila.ferreira@atrio.com.br',
+      'gestor@atrio.com.br': 'felipe.souza@atrio.com.br',
+      'colaborador@atrio.com.br': 'bruno.martins@atrio.com.br',
+      'admin@atrio.com.br': 'rodrigo.albuquerque@atrio.com.br',
+    };
+
+    let syncedCount = 0;
+    const usersWithoutEmployee = await prisma.user.findMany({
+      where: { employeeId: null },
+    });
+
+    for (const user of usersWithoutEmployee) {
+      const targetEmployeeEmail = demoMappings[user.email] || user.email;
+      const employee = await prisma.employee.findUnique({
+        where: { email: targetEmployeeEmail },
+      });
+
+      if (employee) {
+        const alreadyLinked = await prisma.user.findUnique({
+          where: { employeeId: employee.id },
+        });
+
+        if (!alreadyLinked) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { employeeId: employee.id },
+          });
+          syncedCount++;
+        }
+      }
+    }
+
+    return { message: `${syncedCount} usuário(s) sincronizado(s) com colaborador com sucesso.` };
+  }
+
+  /**
+   * Atualiza ou remove o vínculo de colaborador de um usuário
+   */
+  static async updateUserEmployee(userId: string, employeeId: string | null) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new Error('Usuário não encontrado');
+    }
+
+    if (employeeId) {
+      const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
+      if (!employee) {
+        throw new Error('Colaborador não encontrado');
+      }
+
+      const existingOwner = await prisma.user.findUnique({ where: { employeeId } });
+      if (existingOwner && existingOwner.id !== userId) {
+        throw new Error('Este colaborador já está vinculado a outro usuário');
+      }
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { employeeId },
+    });
+
+    return this.listUsersWithRoles();
+  }
 }
+

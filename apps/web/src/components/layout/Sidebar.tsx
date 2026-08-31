@@ -73,6 +73,7 @@ export const Sidebar: React.FC = () => {
 
   const rawSections: NavSection[] = [
     {
+      title: 'MINHA ÁREA',
       items: [
         { label: 'Início / Visão Geral', to: '/', icon: <LayoutDashboard className="w-5 h-5" /> },
         { 
@@ -143,7 +144,7 @@ export const Sidebar: React.FC = () => {
       ],
     },
     {
-      title: 'GESTÃO & RH',
+      title: 'GESTÃO DE EQUIPE',
       items: [
         { 
           label: 'Colaboradores', 
@@ -175,6 +176,41 @@ export const Sidebar: React.FC = () => {
           icon: <Users className="w-5 h-5" />, 
           permission: { code: 'afastamentos.visualizar', minScope: 'TEAM' } 
         },
+      ],
+    },
+    {
+      title: 'ADMINISTRAÇÃO DE RH',
+      items: [
+        { 
+          label: 'Homologação Ponto RH', 
+          to: '/rh/ponto/ajustes', 
+          icon: <ShieldCheck className="w-5 h-5" />, 
+          customVisible: (ctx) => ctx.hasPermission('ponto.aprovar', 'COMPANY') || ctx.hasRole('ADMIN', 'RH')
+        },
+        { 
+          label: 'Gestão de Férias RH', 
+          to: '/rh/ferias', 
+          icon: <Calendar className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN', 'RH']
+        },
+        { 
+          label: 'Atestados Médicos RH', 
+          to: '/rh/atestados', 
+          icon: <Stethoscope className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN', 'RH']
+        },
+        { 
+          label: 'Central de Documentos RH', 
+          to: '/rh/documentos/gestao', 
+          icon: <FileText className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN', 'RH']
+        },
+        { 
+          label: 'Gestão de Benefícios RH', 
+          to: '/rh/beneficios', 
+          icon: <HeartHandshake className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN', 'RH'] 
+        },
         { 
           label: 'Onboarding & Offboarding', 
           to: '/rh/processos', 
@@ -187,30 +223,11 @@ export const Sidebar: React.FC = () => {
           icon: <GraduationCap className="w-5 h-5" />, 
           allowedRoles: ['ADMIN', 'RH'] 
         },
-        { 
-          label: 'Homologação Ponto RH', 
-          to: '/rh/ponto/ajustes', 
-          icon: <ShieldCheck className="w-5 h-5" />, 
-          customVisible: (ctx) => ctx.hasPermission('ponto.aprovar', 'COMPANY') || ctx.hasRole('ADMIN', 'RH')
-        },
-        { 
-          label: 'Atestados Médicos RH', 
-          to: '/rh/atestados', 
-          icon: <Stethoscope className="w-5 h-5" />, 
-          allowedRoles: ['ADMIN', 'RH']
-        },
-        { 
-          label: 'Gestão de Férias RH', 
-          to: '/rh/ferias', 
-          icon: <Calendar className="w-5 h-5" />, 
-          allowedRoles: ['ADMIN', 'RH']
-        },
-        { 
-          label: 'Central de Documentos RH', 
-          to: '/rh/documentos/gestao', 
-          icon: <FileText className="w-5 h-5" />, 
-          allowedRoles: ['ADMIN', 'RH']
-        },
+      ],
+    },
+    {
+      title: 'ESTRUTURA & RELATÓRIOS',
+      items: [
         { 
           label: 'Estrutura & Setores', 
           to: '/organizacao', 
@@ -222,12 +239,6 @@ export const Sidebar: React.FC = () => {
           to: '/organizacao/escalas', 
           icon: <Calendar className="w-5 h-5" />, 
           permission: { code: 'organizacao.gerenciar', minScope: 'COMPANY' } 
-        },
-        { 
-          label: 'Gestão de Benefícios RH', 
-          to: '/rh/beneficios', 
-          icon: <HeartHandshake className="w-5 h-5" />, 
-          allowedRoles: ['ADMIN', 'RH'] 
         },
         { 
           label: 'Treinamentos & PDI', 

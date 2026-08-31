@@ -130,4 +130,25 @@ export class RbacController {
       next(error);
     }
   }
+
+  static async syncEmployees(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await RbacService.syncUserEmployees();
+      return sendSuccess({ res, message: result.message });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateUserEmployee(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.params.id as string;
+      const { employeeId } = req.body;
+      await RbacService.updateUserEmployee(userId, employeeId || null);
+      return sendSuccess({ res, message: 'Vínculo de colaborador atualizado com sucesso' });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
+
