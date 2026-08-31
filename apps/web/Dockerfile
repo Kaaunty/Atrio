@@ -1,0 +1,24 @@
+﻿FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Instala dependencias
+COPY package.json package-lock.json ./
+COPY apps/web/package.json ./apps/web/
+RUN npm ci --workspace=apps/web --ignore-scripts
+
+# Copia o codigo e faz o build
+COPY apps/web ./apps/web
+WORKDIR /app/apps/web
+RUN npm run build
+
+# Imagem final com Nginx para servir o build
+FROM nginx:alpine AS runner
+
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+
+# Config do Nginx para SPA (React Router)
+RUN printf 'server {\n    listen 80;\n    root /usr/share/nginx/html;\n    index index.html;\n    location / {\n        try_files $uri $uri/ /index.html;\n    }\n}' > /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
