@@ -6,11 +6,12 @@ RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Copia manifestos de pacotes
 COPY package.json ./
+COPY package-lock.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 
 # Instala dependencias para producao
-RUN npm install --no-audit
+RUN npm ci --no-audit
 
 # Copia codigo do backend
 COPY apps/api ./apps/api

@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.git
+.gitignore
+graphify-out
+*.log
+tarefas
+DESIGN_SYSTEM.md
+PROPOSTA_SISTEMA_RH.md
+README.md

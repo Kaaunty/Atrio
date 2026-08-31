@@ -3,11 +3,12 @@ WORKDIR /app
 
 # Copia manifestos de pacote do monorepo
 COPY package.json ./
+COPY package-lock.json ./
 COPY apps/web/package.json ./apps/web/
 COPY apps/api/package.json ./apps/api/
 
-# Instala dependencias resolvendo os pacotes nativos para Linux
-RUN npm install --no-audit
+# Instala dependencias de forma deterministica, incluindo o binario nativo do Rollup
+RUN npm ci --no-audit
 
 # Copia codigo do frontend
 COPY apps/web ./apps/web
