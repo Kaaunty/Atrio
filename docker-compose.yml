@@ -1,7 +1,6 @@
 ﻿services:
   postgres:
     image: postgres:16-alpine
-    container_name: atrio-postgres
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -19,7 +18,6 @@
 
   redis:
     image: redis:7-alpine
-    container_name: atrio-redis
     restart: always
     ports:
       - "6379:6379"
@@ -35,7 +33,6 @@
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    container_name: atrio-api
     restart: always
     ports:
       - "3333:3333"
@@ -55,7 +52,6 @@
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    container_name: atrio-web
     restart: always
     ports:
       - "80:80"
