@@ -289,27 +289,35 @@ export class AuthService {
     if (!adminRole) return;
 
     const existingAdmin = await prisma.user.findFirst({
-      where: { email: 'admin@empresa.com.br' },
+      where: { email: 'admin@atrio.com.br' },
     });
 
-    if (!existingAdmin) {
-      const passwordHash = await this.hashPassword('admin123');
-      const admin = await prisma.user.create({
-        data: {
-          email: 'admin@empresa.com.br',
-          passwordHash,
-          active: true,
-        },
-      });
+    const admin = existingAdmin ?? await prisma.user.create({
+      data: {
+        email: 'admin@atrio.com.br',
+        passwordHash: await this.hashPassword(env.ADMIN_PASSWORD),
+        active: true,
+      },
+    });
 
-      await prisma.userRole.create({
-        data: {
+    await prisma.userRole.upsert({
+      where: {
+        userId_roleId: {
           userId: admin.id,
           roleId: adminRole.id,
         },
-      });
+      },
+      update: {},
+      create: {
+        userId: admin.id,
+        roleId: adminRole.id,
+      },
+    });
 
-      console.log('✅ Usuário administrador padrão criado: admin@empresa.com.br / admin123');
+    if (!existingAdmin) {
+      console.log('✅ Usuário administrador padrão criado: admin@atrio.com.br');
+    } else {
+      console.log('✅ Usuário administrador padrão confirmado: admin@atrio.com.br');
     }
   }
 }
