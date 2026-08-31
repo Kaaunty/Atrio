@@ -1,0 +1,313 @@
+import React from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Clock, 
+  Calendar, 
+  FileText, 
+  HeartHandshake, 
+  GraduationCap, 
+  Building2, 
+  ShieldCheck, 
+  ShieldAlert,
+  BarChart3,
+  Bell,
+  Settings,
+  LogOut,
+  Cpu,
+  CheckSquare,
+} from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { PermissionScope } from '../../services/authService';
+
+interface NavItem {
+  label: string;
+  to: string;
+  icon: React.ReactNode;
+  badge?: string;
+  permission?: {
+    code: string;
+    minScope?: PermissionScope;
+  };
+  allowedRoles?: string[];
+  customVisible?: (ctx: {
+    hasPermission: (code: string, minScope?: PermissionScope) => boolean;
+    hasRole: (...roles: string[]) => boolean;
+    roles: string[];
+  }) => boolean;
+}
+
+interface NavSection {
+  title?: string;
+  items: NavItem[];
+}
+
+export const Sidebar: React.FC = () => {
+  const { user, employee, roles, logout, hasPermission, hasRole } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const rawSections: NavSection[] = [
+    {
+      items: [
+        { label: 'Início / Visão Geral', to: '/', icon: <LayoutDashboard className="w-5 h-5" /> },
+        { 
+          label: 'Meu Ponto', 
+          to: '/ponto/meu-ponto', 
+          icon: <Clock className="w-5 h-5" />, 
+          permission: { code: 'ponto.visualizar', minScope: 'SELF' } 
+        },
+        { 
+          label: 'Minhas Férias', 
+          to: '/ferias/minhas-ferias', 
+          icon: <Calendar className="w-5 h-5" />, 
+          permission: { code: 'ferias.visualizar', minScope: 'SELF' } 
+        },
+        { 
+          label: 'Solicitações', 
+          to: '/solicitacoes', 
+          icon: <FileText className="w-5 h-5" />, 
+          permission: { code: 'solicitacoes.abrir', minScope: 'SELF' } 
+        },
+        { 
+          label: 'Meus Documentos', 
+          to: '/documentos', 
+          icon: <FileText className="w-5 h-5" />, 
+          permission: { code: 'documentos.visualizar', minScope: 'SELF' } 
+        },
+        { 
+          label: 'Notificações', 
+          to: '/notificacoes', 
+          icon: <Bell className="w-5 h-5" /> 
+        },
+      ],
+    },
+    {
+      title: 'GESTÃO & RH',
+      items: [
+        { 
+          label: 'Colaboradores', 
+          to: '/colaboradores', 
+          icon: <Users className="w-5 h-5" />, 
+          permission: { code: 'colaboradores.visualizar', minScope: 'TEAM' } 
+        },
+        { 
+          label: 'Ponto da Equipe', 
+          to: '/gestao/equipe/ponto', 
+          icon: <Clock className="w-5 h-5" />, 
+          permission: { code: 'ponto.visualizar', minScope: 'TEAM' } 
+        },
+        { 
+          label: 'Aprovações de Ponto', 
+          to: '/gestao/aprovacoes/ponto', 
+          icon: <CheckSquare className="w-5 h-5" />, 
+          permission: { code: 'ponto.aprovar', minScope: 'TEAM' } 
+        },
+        { 
+          label: 'Férias da Equipe', 
+          to: '/gestao/ferias/calendario', 
+          icon: <Calendar className="w-5 h-5" />, 
+          permission: { code: 'ferias.aprovar', minScope: 'TEAM' } 
+        },
+        { 
+          label: 'Homologação Ponto RH', 
+          to: '/rh/ponto/ajustes', 
+          icon: <ShieldCheck className="w-5 h-5" />, 
+          customVisible: (ctx) => ctx.hasPermission('ponto.aprovar', 'COMPANY') || ctx.hasRole('ADMIN', 'RH')
+        },
+        { 
+          label: 'Gestão de Férias RH', 
+          to: '/rh/ferias', 
+          icon: <Calendar className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN', 'RH']
+        },
+        { 
+          label: 'Estrutura & Setores', 
+          to: '/organizacao', 
+          icon: <Building2 className="w-5 h-5" />, 
+          permission: { code: 'organizacao.gerenciar', minScope: 'COMPANY' } 
+        },
+        { 
+          label: 'Escalas & Jornadas', 
+          to: '/organizacao/escalas', 
+          icon: <Calendar className="w-5 h-5" />, 
+          permission: { code: 'organizacao.gerenciar', minScope: 'COMPANY' } 
+        },
+        { 
+          label: 'Benefícios', 
+          to: '/beneficios', 
+          icon: <HeartHandshake className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN', 'RH'] 
+        },
+        { 
+          label: 'Treinamentos & PDI', 
+          to: '/desenvolvimento', 
+          icon: <GraduationCap className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN', 'RH', 'GESTOR'] 
+        },
+        { 
+          label: 'Relatórios & Métricas', 
+          to: '/relatorios', 
+          icon: <BarChart3 className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN', 'RH', 'GESTOR'] 
+        },
+      ],
+    },
+    {
+      title: 'SISTEMA & SEGURANÇA',
+      items: [
+        { 
+          label: 'Integrações', 
+          to: '/admin/integracoes', 
+          icon: <Cpu className="w-5 h-5" />, 
+          permission: { code: 'integracoes.visualizar', minScope: 'COMPANY' } 
+        },
+        { 
+          label: 'Controle de Acesso', 
+          to: '/admin/permissoes', 
+          icon: <ShieldCheck className="w-5 h-5" />, 
+          permission: { code: 'admin.rbac.gerenciar', minScope: 'ALL' } 
+        },
+        { 
+          label: 'Trilha de Auditoria', 
+          to: '/admin/auditoria', 
+          icon: <ShieldAlert className="w-5 h-5" />, 
+          permission: { code: 'admin.auditoria.visualizar', minScope: 'COMPANY' } 
+        },
+        { 
+          label: 'Configurações', 
+          to: '/admin/configuracoes', 
+          icon: <Settings className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN'] 
+        },
+      ],
+    },
+  ];
+
+  const isItemVisible = (item: NavItem): boolean => {
+    // 1. Função customizada de visibilidade
+    if (item.customVisible) {
+      return item.customVisible({ hasPermission, hasRole, roles });
+    }
+
+    // 2. Papéis permitidos (se definidos)
+    if (item.allowedRoles && item.allowedRoles.length > 0) {
+      if (!hasRole(...item.allowedRoles)) {
+        return false;
+      }
+    }
+
+    // 3. Permissão granular e escopo mínimo (se definidos)
+    if (item.permission) {
+      if (!hasPermission(item.permission.code, item.permission.minScope)) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Filtra as seções mantendo apenas itens permitidos e omitindo seções que ficarem vazias
+  const visibleSections = rawSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(isItemVisible),
+    }))
+    .filter((section) => section.items.length > 0);
+
+  const displayName = employee?.name || user?.email?.split('@')[0] || 'Usuário Átrio';
+  const primaryRole = roles[0] || 'COLABORADOR';
+  const initials = displayName
+    .split(' ')
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
+
+  return (
+    <aside className="w-64 bg-atrio-navy-dark h-screen sticky top-0 flex flex-col shrink-0 border-r border-slate-800 text-slate-300 select-none z-30">
+      {/* Topo da Sidebar: Logo Oficial do Átrio (Sempre Fixo no Topo) */}
+      <div className="h-16 px-6 flex items-center gap-3.5 border-b border-slate-800/80 bg-[#04162e] shrink-0">
+        <div className="w-8 h-8 flex items-center justify-center shrink-0">
+          <img src="/logo-white.png" alt="Átrio Logo" className="w-full h-full object-contain scale-110" />
+        </div>
+        <span className="font-bold text-white text-lg tracking-tight">Átrio</span>
+      </div>
+
+      {/* Navegação Intermediária com Scroll Independente e Filtragem por Perfil */}
+      <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto min-h-0 custom-scrollbar">
+        {visibleSections.map((section, sIdx) => (
+          <div key={sIdx} className="space-y-1">
+            {section.title && (
+              <h2 className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                {section.title}
+              </h2>
+            )}
+            {section.items.map((item, iIdx) => (
+              <NavLink
+                key={iIdx}
+                to={item.to}
+                className={({ isActive }) =>
+                  `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    isActive
+                      ? 'bg-white/10 text-white font-semibold shadow-inner'
+                      : 'text-[#CBD5E1] hover:text-white hover:bg-white/5'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {/* Indicador lateral Teal ativo */}
+                    {isActive && (
+                      <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-atrio-teal rounded-r" />
+                    )}
+                    <span
+                      className={`shrink-0 transition-colors ${
+                        isActive ? 'text-atrio-teal' : 'text-slate-400 group-hover:text-slate-200'
+                      }`}
+                    >
+                      {item.icon}
+                    </span>
+                    <span className="truncate">{item.label}</span>
+                    {item.badge && (
+                      <span className="ml-auto px-1.5 py-0.5 text-[10px] rounded-full bg-atrio-teal text-atrio-navy-dark font-bold">
+                        {item.badge}
+                      </span>
+                    )}
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
+        ))}
+      </nav>
+
+      {/* Rodapé da Sidebar: Usuário Logado & Logout (Sempre Fixo no Fim) */}
+      <div className="p-3.5 border-t border-slate-800/80 bg-[#04162e] flex items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-atrio-teal-dark text-white flex items-center justify-center font-bold text-xs border border-atrio-teal/30 shrink-0">
+            {initials}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-white truncate">{displayName}</p>
+            <p className="text-[10px] text-atrio-teal font-mono truncate uppercase">{primaryRole}</p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-white/5 rounded-lg transition-colors shrink-0"
+          title="Encerrar Sessão"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
+      </div>
+    </aside>
+  );
+};

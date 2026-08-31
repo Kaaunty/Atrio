@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand */
+  --atrio-navy: #082E5C;
+  --atrio-navy-dark: #061F3E;
+
+  --atrio-teal: #0EAAA3;
+  --atrio-teal-dark: #087F7B;
+  --atrio-teal-light: #DDF5F2;
+
+  /* Interface */
+  --background: #F6F8FA;
+  --surface: #FFFFFF;
+  --border: #E2E8F0;
+
+  /* Typography */
+  --text-primary: #172033;
+  --text-secondary: #64748B;
+
+  /* Semantic */
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --info: #2563EB;
+  --neutral: #64748B;
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Scrollbar discreta para a Sidebar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}

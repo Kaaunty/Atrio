@@ -1,0 +1,850 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -----------------------------------------------------------------------------
+// BASE SYSTEM AUDITING & USERS (RBAC - ETAPA 03)
+// -----------------------------------------------------------------------------
+
+enum PermissionScope {
+  SELF
+  TEAM
+  DEPARTMENT
+  COMPANY
+  ALL
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  employeeId   String?   @unique @map("employee_id")
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  employee            Employee?         @relation("UserEmployee", fields: [employeeId], references: [id], onDelete: SetNull)
+  userRoles           UserRole[]
+  auditLogs           AuditLog[]
+  historiesRegistered EmployeeHistory[] @relation("HistoryAuthor")
+  rhAdjustments       TimeClockAdjustment[] @relation("RhAdjustments")
+  requestHistories    RequestHistory[]
+  requestAttachments  RequestAttachment[]
+  vacationRhActions   VacationRequest[]     @relation("RhVacationRequests")
+
+  @@map("users")
+}
+
+model Role {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  description     String
+  isSystemDefault Boolean          @default(false) @map("is_system_default")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+  workflowSteps   RequestWorkflowStep[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  name        String
+  module      String
+  description String
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String          @map("role_id")
+  permissionId String          @map("permission_id")
+  scope        PermissionScope @default(SELF)
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId String @map("user_id")
+  roleId String @map("role_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  userId        String?  @map("user_id")
+  employeeId    String?  @map("employee_id")
+  action        String
+  entity        String
+  recordId      String   @map("record_id")
+  previousValue Json?    @map("previous_value")
+  newValue      Json?    @map("new_value")
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  employee Employee? @relation("AuditLogEmployee", fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([employeeId])
+  @@index([entity, recordId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// -----------------------------------------------------------------------------
+// ESTRUTURA ORGANIZACIONAL
+// -----------------------------------------------------------------------------
+
+model Company {
+  id        String    @id @default(uuid())
+  legalName String    @map("legal_name")
+  tradeName String    @map("trade_name")
+  cnpj      String    @unique
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  units       Unit[]
+  departments Department[]
+  employees   Employee[]
+
+  @@map("companies")
+}
+
+model Unit {
+  id        String    @id @default(uuid())
+  companyId String    @map("company_id")
+  name      String
+  city      String?
+  state     String?
+  address   String?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employees        Employee[]
+  timeClockDevices TimeClockDevice[]
+
+  @@index([companyId])
+  @@map("units")
+}
+
+model Department {
+  id         String    @id @default(uuid())
+  companyId  String    @map("company_id")
+  name       String
+  code       String?
+  costCenter String?   @map("cost_center")
+  parentId   String?   @map("parent_id")
+  managerId  String?   @map("manager_id")
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  company   Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent    Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Department[] @relation("DepartmentHierarchy")
+  positions Position[]
+  employees Employee[]
+
+  @@index([companyId])
+  @@index([parentId])
+  @@map("departments")
+}
+
+model Position {
+  id               String    @id @default(uuid())
+  departmentId     String?   @map("department_id")
+  title            String
+  level            String
+  description      String?
+  responsibilities String?
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  employees  Employee[]
+
+  @@index([departmentId])
+  @@map("positions")
+}
+
+// -----------------------------------------------------------------------------
+// COLABORADORES E TIMELINE HISTÓRICA (ETAPA 02)
+// -----------------------------------------------------------------------------
+
+enum ContractType {
+  CLT
+  PJ
+  ESTAGIO
+  APRENDIZ
+  TEMPORARIO
+}
+
+enum EmployeeStatus {
+  ATIVO
+  FERIAS
+  AFASTADO
+  DESLIGADO
+}
+
+enum TimelineEventType {
+  ADMISSAO
+  MUDANCA_CARGO
+  MUDANCA_SETOR
+  MUDANCA_GESTOR
+  ALTERACAO_SALARIAL
+  FERIAS
+  AFASTAMENTO
+  DESLIGAMENTO
+  OUTRO
+}
+
+model Employee {
+  id                 String         @id @default(uuid())
+  code               String?        // Código interno / crachá
+  registrationNumber String         @map("registration_number") // Matrícula
+  name               String
+  cpf                String         @unique
+  email              String         @unique
+  phone              String?
+  birthDate          DateTime?      @map("birth_date")
+  address            Json?          // { street, number, neighborhood, city, state, zipCode, complement }
+  emergencyContact   Json?          @map("emergency_contact") // { name, relationship, phone }
+  avatarUrl          String?        @map("avatar_url")
+  salary             Decimal?       @db.Decimal(12, 2)
+
+  // Vínculos Organizacionais
+  companyId    String  @map("company_id")
+  unitId       String? @map("unit_id")
+  departmentId String? @map("department_id")
+  positionId   String? @map("position_id")
+  managerId    String? @map("manager_id")
+
+  // Contrato & Jornada
+  admissionDate   DateTime       @map("admission_date")
+  contractType    ContractType   @default(CLT) @map("contract_type")
+  workScheduleId  String?        @map("work_schedule_id")
+  status          EmployeeStatus @default(ATIVO)
+  terminationDate DateTime?      @map("termination_date")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relacionamentos
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  unit             Unit?             @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  department       Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  position         Position?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  manager          Employee?         @relation("EmployeeManagement", fields: [managerId], references: [id], onDelete: SetNull)
+  subordinates     Employee[]        @relation("EmployeeManagement")
+  workSchedule     WorkSchedule?     @relation(fields: [workScheduleId], references: [id], onDelete: SetNull)
+  user             User?             @relation("UserEmployee")
+  auditLogs        AuditLog[]        @relation("AuditLogEmployee")
+  history          EmployeeHistory[]
+  timeClockEntries TimeClockEntry[]
+  dailySummaries       TimeDailySummary[]
+  timeBalances         TimeBalance[]
+  adjustmentsRequested TimeClockAdjustment[] @relation("EmployeeAdjustments")
+  adjustmentsEvaluated TimeClockAdjustment[] @relation("ManagerAdjustments")
+  requestsCreated      Request[]             @relation("EmployeeRequests")
+  assignedRequests     Request[]             @relation("AssignedRequests")
+  vacationPeriods          VacationPeriod[]
+  vacationRequests         VacationRequest[]     @relation("EmployeeVacationRequests")
+  vacationManagerReviews   VacationRequest[]     @relation("ManagerVacationRequests")
+
+  @@unique([companyId, registrationNumber])
+  @@index([companyId])
+  @@index([departmentId])
+  @@index([positionId])
+  @@index([managerId])
+  @@index([workScheduleId])
+  @@index([status])
+  @@index([cpf])
+  @@index([email])
+  @@map("employees")
+}
+
+model EmployeeHistory {
+  id           String            @id @default(uuid())
+  employeeId   String            @map("employee_id")
+  eventType    TimelineEventType @map("event_type")
+  description  String
+  eventDate    DateTime          @map("event_date")
+  previousData Json?             @map("previous_data")
+  newData      Json?             @map("new_data")
+  registeredBy String?           @map("registered_by")
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  author   User?    @relation("HistoryAuthor", fields: [registeredBy], references: [id], onDelete: SetNull)
+
+  @@index([employeeId])
+  @@index([eventDate])
+  @@index([createdAt])
+  @@map("employee_histories")
+}
+
+// -----------------------------------------------------------------------------
+// INTEGRAÇÕES & PONTO ELETRÔNICO (ETAPA 04 - MULTI-PROVEDORES)
+// -----------------------------------------------------------------------------
+
+enum IntegrationCategory {
+  TIME_CLOCK
+  ACCESS_CONTROL
+  PAYROLL
+  ERP
+  BENEFITS
+  OTHER
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+  CONFIGURING
+  ERROR
+}
+
+enum TimeClockSource {
+  CONTROL_ID_API
+  CONTROL_ID_AFD
+  DIMEP
+  SECULLUM
+  AHGORA
+  MANUAL_IMPORT
+  WEB_PORTAL
+  OTHER
+}
+
+enum SyncStatus {
+  SUCCESS
+  PARTIAL_SUCCESS
+  FAILED
+}
+
+enum SyncTrigger {
+  CRON_SCHEDULE
+  MANUAL_TRIGGER
+  WEBHOOK
+  AFD_UPLOAD
+}
+
+model IntegrationConfig {
+  id          String              @id @default(uuid())
+  key         String              @unique // ex: "control_id", "dimep", "secullum"
+  name        String              // ex: "Control iD (iDClass / iDFit / iDAccess)"
+  category    IntegrationCategory @default(TIME_CLOCK)
+  description String?
+  enabled     Boolean             @default(false)
+  status      IntegrationStatus   @default(INACTIVE)
+  settings    Json?               // { baseUrl, apiToken, syncIntervalMinutes, autoSync, ... }
+  lastSyncAt  DateTime?           @map("last_sync_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  devices  TimeClockDevice[]
+  syncLogs TimeClockSyncLog[]
+
+  @@index([key])
+  @@index([category])
+  @@index([enabled])
+  @@map("integration_configs")
+}
+
+model TimeClockDevice {
+  id              String    @id @default(uuid())
+  integrationId   String?   @map("integration_id")
+  name            String
+  ipAddress       String?   @map("ip_address")
+  port            Int?      @default(80)
+  serialNumber    String    @unique @map("serial_number")
+  model           String    // Ex: "iDClass", "iDAccess", "iDFit", "AFD Genérico"
+  unitId          String?   @map("unit_id")
+  active          Boolean   @default(true)
+  apiEndpoint     String?   @map("api_endpoint")
+  authCredentials Json?     @map("auth_credentials") // { username, password, token, secret }
+  lastSyncAt      DateTime? @map("last_sync_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  integration IntegrationConfig? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
+  unit        Unit?              @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  entries     TimeClockEntry[]
+  syncLogs    TimeClockSyncLog[]
+
+  @@index([unitId])
+  @@index([integrationId])
+  @@index([serialNumber])
+  @@index([active])
+  @@map("time_clock_devices")
+}
+
+model TimeClockEntry {
+  id                 String          @id @default(uuid())
+  employeeId         String?         @map("employee_id")
+  registrationNumber String          @map("registration_number")
+  timestamp          DateTime        // Data e hora da marcação
+  deviceId           String?         @map("device_id")
+  source             TimeClockSource @default(CONTROL_ID_API)
+  nsr                BigInt?         // Número Sequencial de Registro (AFD)
+  rawPayload         Json?           @map("raw_payload")
+  hash               String          @unique // sha256 único de idempotência
+  createdAt          DateTime        @default(now()) @map("created_at")
+
+  employee Employee?        @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  device   TimeClockDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  adjustments TimeClockAdjustment[]
+
+  @@index([employeeId])
+  @@index([registrationNumber])
+  @@index([timestamp])
+  @@index([deviceId])
+  @@index([hash])
+  @@map("time_clock_entries")
+}
+
+model TimeClockSyncLog {
+  id              String      @id @default(uuid())
+  integrationId   String?     @map("integration_id")
+  deviceId        String?     @map("device_id")
+  startedAt       DateTime    @default(now()) @map("started_at")
+  finishedAt      DateTime?   @map("finished_at")
+  totalRecords    Int         @default(0) @map("total_records")
+  importedRecords Int         @default(0) @map("imported_records")
+  ignoredRecords  Int         @default(0) @map("ignored_records")
+  unmappedRecords Int         @default(0) @map("unmapped_records")
+  errorCount      Int         @default(0) @map("error_count")
+  status          SyncStatus  @default(SUCCESS)
+  errorDetails    Json?       @map("error_details")
+  triggeredBy     SyncTrigger @default(MANUAL_TRIGGER) @map("triggered_by")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  integration IntegrationConfig? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
+  device      TimeClockDevice?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([integrationId])
+  @@index([deviceId])
+  @@index([status])
+  @@index([startedAt])
+  @@map("time_clock_sync_logs")
+}
+
+// -----------------------------------------------------------------------------
+// JORNADAS, APURAÇÃO DE PONTO E BANCO DE HORAS (ETAPA 05)
+// -----------------------------------------------------------------------------
+
+model WorkSchedule {
+  id                    String    @id @default(uuid())
+  name                  String    // Ex: "Administrativo 44h - 08:00 às 18:00 (Seg-Sex)"
+  description           String?
+  weeklyHours           Int       @default(44) @map("weekly_hours")
+  toleranceMinutes      Int       @default(10) @map("tolerance_minutes") // Tolerância legal CLT diária
+  lunchIntervalMinutes  Int       @default(60) @map("lunch_interval_minutes")
+  flexibleInterval      Boolean   @default(true) @map("flexible_interval")
+  scheduleRules         Json      @map("schedule_rules") // Regras por dia da semana (0 a 6)
+  active                Boolean   @default(true)
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  deletedAt             DateTime? @map("deleted_at")
+
+  employees Employee[]
+
+  @@index([active])
+  @@map("work_schedules")
+}
+
+enum TimeDailySummaryStatus {
+  OK
+  DIVERGENCIA
+  FOLGA
+  FERIADO
+  FERIAS
+  AFASTAMENTO
+  FALTA
+}
+
+model TimeDailySummary {
+  id                  String                 @id @default(uuid())
+  employeeId          String                 @map("employee_id")
+  date                DateTime               @db.Date // Data civil do dia trabalhado
+  expectedWorkMinutes Int                    @default(0) @map("expected_work_minutes")
+  actualWorkMinutes   Int                    @default(0) @map("actual_work_minutes")
+  balanceMinutes      Int                    @default(0) @map("balance_minutes")
+  extraHoursMinutes   Int                    @default(0) @map("extra_hours_minutes")
+  delayMinutes        Int                    @default(0) @map("delay_minutes")
+  absenceMinutes      Int                    @default(0) @map("absence_minutes")
+  entries             Json                   // Array das marcações: [{ id, time, source, is_adjusted, hash }]
+  status              TimeDailySummaryStatus @default(OK)
+  divergenceReasons   Json?                  @map("divergence_reasons") // Array de motivos
+  recalculatedAt      DateTime               @default(now()) @map("recalculated_at")
+  createdAt           DateTime               @default(now()) @map("created_at")
+  updatedAt           DateTime               @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([employeeId])
+  @@index([date])
+  @@index([status])
+  @@map("time_daily_summaries")
+}
+
+model TimeBalance {
+  id                       String   @id @default(uuid())
+  employeeId               String   @map("employee_id")
+  yearMonth                String   @map("year_month") // Formato "YYYY-MM"
+  startingBalanceMinutes   Int      @default(0) @map("starting_balance_minutes")
+  totalCreditsMinutes      Int      @default(0) @map("total_credits_minutes")
+  totalDebitsMinutes       Int      @default(0) @map("total_debits_minutes")
+  manualAdjustmentsMinutes Int      @default(0) @map("manual_adjustments_minutes")
+  closingBalanceMinutes    Int      @default(0) @map("closing_balance_minutes")
+  isClosed                 Boolean  @default(false) @map("is_closed")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, yearMonth])
+  @@index([employeeId])
+  @@index([yearMonth])
+  @@map("time_balances")
+}
+
+// -----------------------------------------------------------------------------
+// SOLICITAÇÕES E HOMOLOGAÇÃO DE AJUSTE DE PONTO (ETAPA 06)
+// -----------------------------------------------------------------------------
+
+enum AdjustmentType {
+  INCLUSAO
+  ALTERACAO
+  EXCLUSAO_DUPLICADA
+  JUSTIFICATIVA_FALTA
+}
+
+enum AdjustmentStatus {
+  PENDENTE_GESTOR
+  PENDENTE_RH
+  APROVADO
+  REJEITADO
+  CANCELADO
+}
+
+model TimeClockAdjustment {
+  id                String           @id @default(uuid())
+  employeeId        String           @map("employee_id")
+  date              DateTime         @db.Date
+  adjustmentType    AdjustmentType   @map("adjustment_type")
+  targetTime        String           @map("target_time") // Formato "HH:mm"
+  originalEntryId   String?          @map("original_entry_id")
+  originalTimestamp DateTime?        @map("original_timestamp")
+  reason            String           // Ex: "Esquecimento de crachá", "Serviço externo"
+  notes             String?          @db.Text
+  attachmentUrl     String?          @map("attachment_url")
+  status            AdjustmentStatus @default(PENDENTE_GESTOR)
+
+  // Trilha de Avaliação do Gestor
+  managerId         String?          @map("manager_id")
+  managerActionAt   DateTime?        @map("manager_action_at")
+  managerNotes      String?          @map("manager_notes") @db.Text
+
+  // Trilha de Homologação do RH
+  rhUserId          String?          @map("rh_user_id")
+  rhActionAt        DateTime?        @map("rh_action_at")
+  rhNotes           String?          @map("rh_notes") @db.Text
+
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  employee          Employee         @relation("EmployeeAdjustments", fields: [employeeId], references: [id], onDelete: Cascade)
+  manager           Employee?        @relation("ManagerAdjustments", fields: [managerId], references: [id], onDelete: SetNull)
+  rhUser            User?            @relation("RhAdjustments", fields: [rhUserId], references: [id], onDelete: SetNull)
+  originalEntry     TimeClockEntry?  @relation(fields: [originalEntryId], references: [id], onDelete: SetNull)
+
+  @@index([employeeId])
+  @@index([date])
+  @@index([status])
+  @@index([managerId])
+  @@index([rhUserId])
+  @@map("time_clock_adjustments")
+}
+
+// -----------------------------------------------------------------------------
+// CENTRAL DE SOLICITAÇÕES E ENGINE DE WORKFLOW (ETAPA 07)
+// -----------------------------------------------------------------------------
+
+enum ApproverType {
+  DIRECT_MANAGER
+  DEPARTMENT_HEAD
+  SPECIFIC_ROLE
+  SPECIFIC_USER
+}
+
+enum RequestPriority {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum RequestStatus {
+  RASCUNHO
+  ABERTO
+  EM_ANDAMENTO
+  AGUARDANDO_GESTOR
+  AGUARDANDO_RH
+  APROVADO
+  REJEITADO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum RequestHistoryAction {
+  CRIADA
+  AVANCADA
+  APROVADA
+  REJEITADA
+  DEVOLVIDA
+  COMENTADA
+  CANCELADA
+  CONCLUIDA
+}
+
+model RequestType {
+  id               String            @id @default(uuid())
+  code             String            @unique
+  name             String
+  description      String?
+  category         String            @default("GERAL") // "CADASTRO", "BENEFICIOS", "GERAL", "DECLARACOES", "PONTO"
+  icon             String?           @default("FileText")
+  formSchema       Json?             @map("form_schema")
+  allowAttachments Boolean           @default(true) @map("allow_attachments")
+  active           Boolean           @default(true)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  workflows        RequestWorkflow[]
+  requests         Request[]
+
+  @@map("request_types")
+}
+
+model RequestWorkflow {
+  id            String                @id @default(uuid())
+  requestTypeId String                @map("request_type_id")
+  name          String
+  active        Boolean               @default(true)
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+
+  requestType   RequestType           @relation(fields: [requestTypeId], references: [id], onDelete: Cascade)
+  steps         RequestWorkflowStep[]
+  requests      Request[]
+
+  @@map("request_workflows")
+}
+
+model RequestWorkflowStep {
+  id             String          @id @default(uuid())
+  workflowId     String          @map("workflow_id")
+  stepOrder      Int             @map("step_order") // 1, 2, 3...
+  name           String          // Ex: "Aprovação do Gestor Imediato", "Homologação do RH"
+  approverType   ApproverType    @map("approver_type")
+  requiredRoleId String?         @map("required_role_id")
+  timeoutDays    Int?            @map("timeout_days")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  workflow       RequestWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  requiredRole   Role?           @relation(fields: [requiredRoleId], references: [id], onDelete: SetNull)
+
+  @@unique([workflowId, stepOrder])
+  @@map("request_workflow_steps")
+}
+
+model Request {
+  id                String          @id @default(uuid())
+  requestNumber     String          @unique @map("request_number") // Ex: "SOL-2026-00001"
+  requestTypeId     String          @map("request_type_id")
+  workflowId        String?         @map("workflow_id")
+  requesterId       String          @map("requester_id")
+  currentStepOrder  Int             @default(1) @map("current_step_order")
+  currentAssigneeId String?         @map("current_assignee_id")
+  priority          RequestPriority @default(MEDIA)
+  status            RequestStatus   @default(ABERTO)
+  title             String
+  description       String?         @db.Text
+  formData          Json?           @map("form_data")
+  closedAt          DateTime?       @map("closed_at")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  requester         Employee        @relation("EmployeeRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  currentAssignee   Employee?       @relation("AssignedRequests", fields: [currentAssigneeId], references: [id], onDelete: SetNull)
+  requestType       RequestType     @relation(fields: [requestTypeId], references: [id], onDelete: Restrict)
+  workflow          RequestWorkflow? @relation(fields: [workflowId], references: [id], onDelete: SetNull)
+  history           RequestHistory[]
+  attachments       RequestAttachment[]
+
+  @@index([requestNumber])
+  @@index([requesterId])
+  @@index([requestTypeId])
+  @@index([status])
+  @@index([currentAssigneeId])
+  @@map("requests")
+}
+
+model RequestHistory {
+  id         String               @id @default(uuid())
+  requestId  String               @map("request_id")
+  actorId    String?              @map("actor_id")
+  action     RequestHistoryAction
+  fromStatus String?              @map("from_status")
+  toStatus   String?              @map("to_status")
+  stepName   String?              @map("step_name")
+  comment    String?              @db.Text
+  createdAt  DateTime             @default(now()) @map("created_at")
+
+  request    Request              @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actor      User?                @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([requestId])
+  @@map("request_histories")
+}
+
+model RequestAttachment {
+  id         String   @id @default(uuid())
+  requestId  String   @map("request_id")
+  fileName   String   @map("file_name")
+  fileUrl    String   @map("file_url")
+  fileSize   Int?     @map("file_size")
+  mimeType   String?  @map("mime_type")
+  uploadedBy String?  @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  request    Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  uploader   User?    @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
+
+  @@index([requestId])
+  @@map("request_attachments")
+}
+
+// -----------------------------------------------------------------------------
+// GESTÃO DE FÉRIAS E CALENDÁRIO DA EQUIPE (ETAPA 08)
+// -----------------------------------------------------------------------------
+
+enum VacationPeriodStatus {
+  EM_AQUISICAO
+  ADQUIRIDO
+  CONCLUIDO
+  VENCIDO
+}
+
+enum VacationRequestStatus {
+  PENDENTE_GESTOR
+  PENDENTE_RH
+  APROVADO
+  REJEITADO
+  CANCELADO
+}
+
+model VacationPeriod {
+  id               String               @id @default(uuid())
+  employeeId       String               @map("employee_id")
+  vestingStartDate DateTime             @map("vesting_start_date") @db.Date
+  vestingEndDate   DateTime             @map("vesting_end_date") @db.Date
+  deadlineDate     DateTime             @map("deadline_date") @db.Date // Limite do período concessivo
+  daysEntitled     Int                  @default(30) @map("days_entitled")
+  daysTaken        Int                  @default(0) @map("days_taken")
+  daysScheduled    Int                  @default(0) @map("days_scheduled")
+  daysRemaining    Int                  @default(30) @map("days_remaining")
+  status           VacationPeriodStatus @default(EM_AQUISICAO)
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+
+  employee         Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  requests         VacationRequest[]
+
+  @@unique([employeeId, vestingStartDate])
+  @@index([employeeId])
+  @@index([status])
+  @@index([deadlineDate])
+  @@map("vacation_periods")
+}
+
+model VacationRequest {
+  id                String                @id @default(uuid())
+  employeeId        String                @map("employee_id")
+  vacationPeriodId  String                @map("vacation_period_id")
+  startDate         DateTime              @map("start_date") @db.Date
+  endDate           DateTime              @map("end_date") @db.Date
+  daysCount         Int                   @map("days_count")
+  sellDaysCount     Int                   @default(0) @map("sell_days_count") // Abono pecuniário (máx 10)
+  advanceThirteenth Boolean               @default(false) @map("advance_thirteenth")
+  notes             String?               @db.Text
+  status            VacationRequestStatus @default(PENDENTE_GESTOR)
+
+  // Trilha de Avaliação do Gestor
+  managerId         String?               @map("manager_id")
+  managerActionAt   DateTime?             @map("manager_action_at")
+  managerNotes      String?               @map("manager_notes") @db.Text
+
+  // Trilha de Homologação do RH
+  rhUserId          String?               @map("rh_user_id")
+  rhActionAt        DateTime?             @map("rh_action_at")
+  rhNotes           String?               @map("rh_notes") @db.Text
+
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+
+  employee          Employee              @relation("EmployeeVacationRequests", fields: [employeeId], references: [id], onDelete: Cascade)
+  vacationPeriod    VacationPeriod        @relation(fields: [vacationPeriodId], references: [id], onDelete: Cascade)
+  manager           Employee?             @relation("ManagerVacationRequests", fields: [managerId], references: [id], onDelete: SetNull)
+  rhUser            User?                 @relation("RhVacationRequests", fields: [rhUserId], references: [id], onDelete: SetNull)
+
+  @@index([employeeId])
+  @@index([vacationPeriodId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([managerId])
+  @@index([rhUserId])
+  @@map("vacation_requests")
+}
+
+
+
+
