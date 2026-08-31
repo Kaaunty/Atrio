@@ -9,6 +9,15 @@ import { integrationsRoutes } from './modules/integrations/integrations.routes.j
 import { timeClockRoutes } from './modules/time-clock/time-clock.routes.js';
 import { requestsRoutes } from './modules/requests/requests.routes.js';
 import { vacationsRoutes } from './modules/vacations/vacations.routes.js';
+import { medicalCertificatesRoutes } from './modules/medical-certificates/medical-certificates.routes.js';
+import { documentsRoutes } from './modules/documents/documents.routes.js';
+import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js';
+import { notificationsRoutes } from './modules/notifications/notifications.routes.js';
+import { reportsRoutes } from './modules/reports/reports.routes.js';
+import { benefitsRoutes } from './modules/benefits/benefits.routes.js';
+import { announcementsRoutes } from './modules/announcements/announcements.routes.js';
+import { lifecycleRoutes } from './modules/lifecycle/lifecycle.routes.js';
+import { developmentRoutes } from './modules/development/development.routes.js';
 
 const router = Router();
 
@@ -23,6 +32,15 @@ router.use('/', integrationsRoutes);
 router.use('/', timeClockRoutes);
 router.use('/', requestsRoutes);
 router.use('/', vacationsRoutes);
+router.use('/', medicalCertificatesRoutes);
+router.use('/', documentsRoutes);
+router.use('/', dashboardRoutes);
+router.use('/', benefitsRoutes);
+router.use('/', announcementsRoutes);
+router.use('/', lifecycleRoutes);
+router.use('/', developmentRoutes);
+router.use('/notifications', notificationsRoutes);
+router.use('/reports', reportsRoutes);
 
 export { router };
 

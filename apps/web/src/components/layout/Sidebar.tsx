@@ -17,6 +17,10 @@ import {
   LogOut,
   Cpu,
   CheckSquare,
+  Stethoscope,
+  Megaphone,
+  UserPlus,
+  Compass,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PermissionScope } from '../../services/authService';
@@ -63,10 +67,46 @@ export const Sidebar: React.FC = () => {
           permission: { code: 'ponto.visualizar', minScope: 'SELF' } 
         },
         { 
+          label: 'Enviar Atestado', 
+          to: '/ponto/enviar-atestado', 
+          icon: <Stethoscope className="w-5 h-5" />, 
+          permission: { code: 'atestados.enviar', minScope: 'SELF' } 
+        },
+        { 
           label: 'Minhas Férias', 
           to: '/ferias/minhas-ferias', 
           icon: <Calendar className="w-5 h-5" />, 
           permission: { code: 'ferias.visualizar', minScope: 'SELF' } 
+        },
+        { 
+          label: 'Meus Benefícios', 
+          to: '/beneficios/meus-beneficios', 
+          icon: <HeartHandshake className="w-5 h-5" /> 
+        },
+        { 
+          label: 'Comunicados', 
+          to: '/comunicados', 
+          icon: <Megaphone className="w-5 h-5" /> 
+        },
+        { 
+          label: 'Tarefas de Integração', 
+          to: '/processos/minhas-tarefas', 
+          icon: <UserPlus className="w-5 h-5" /> 
+        },
+        { 
+          label: 'Meus Treinamentos', 
+          to: '/desenvolvimento/treinamentos', 
+          icon: <GraduationCap className="w-5 h-5" /> 
+        },
+        { 
+          label: 'Feedbacks & 1:1', 
+          to: '/desenvolvimento/feedbacks', 
+          icon: <Megaphone className="w-5 h-5" /> 
+        },
+        { 
+          label: 'Meu PDI', 
+          to: '/desenvolvimento/pdi', 
+          icon: <Compass className="w-5 h-5" /> 
         },
         { 
           label: 'Solicitações', 
@@ -115,15 +155,45 @@ export const Sidebar: React.FC = () => {
           permission: { code: 'ferias.aprovar', minScope: 'TEAM' } 
         },
         { 
+          label: 'Ausências da Equipe', 
+          to: '/gestao/equipe/ausencias', 
+          icon: <Users className="w-5 h-5" />, 
+          permission: { code: 'afastamentos.visualizar', minScope: 'TEAM' } 
+        },
+        { 
+          label: 'Onboarding & Offboarding', 
+          to: '/rh/processos', 
+          icon: <UserPlus className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN', 'RH', 'GESTOR'] 
+        },
+        { 
+          label: 'Gestão de Treinamentos RH', 
+          to: '/rh/treinamentos', 
+          icon: <GraduationCap className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN', 'RH'] 
+        },
+        { 
           label: 'Homologação Ponto RH', 
           to: '/rh/ponto/ajustes', 
           icon: <ShieldCheck className="w-5 h-5" />, 
           customVisible: (ctx) => ctx.hasPermission('ponto.aprovar', 'COMPANY') || ctx.hasRole('ADMIN', 'RH')
         },
         { 
+          label: 'Atestados Médicos RH', 
+          to: '/rh/atestados', 
+          icon: <Stethoscope className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN', 'RH']
+        },
+        { 
           label: 'Gestão de Férias RH', 
           to: '/rh/ferias', 
           icon: <Calendar className="w-5 h-5" />, 
+          allowedRoles: ['ADMIN', 'RH']
+        },
+        { 
+          label: 'Central de Documentos RH', 
+          to: '/rh/documentos/gestao', 
+          icon: <FileText className="w-5 h-5" />, 
           allowedRoles: ['ADMIN', 'RH']
         },
         { 
@@ -139,8 +209,8 @@ export const Sidebar: React.FC = () => {
           permission: { code: 'organizacao.gerenciar', minScope: 'COMPANY' } 
         },
         { 
-          label: 'Benefícios', 
-          to: '/beneficios', 
+          label: 'Gestão de Benefícios RH', 
+          to: '/rh/beneficios', 
           icon: <HeartHandshake className="w-5 h-5" />, 
           allowedRoles: ['ADMIN', 'RH'] 
         },
@@ -151,8 +221,8 @@ export const Sidebar: React.FC = () => {
           allowedRoles: ['ADMIN', 'RH', 'GESTOR'] 
         },
         { 
-          label: 'Relatórios & Métricas', 
-          to: '/relatorios', 
+          label: 'Relatórios Corporativos', 
+          to: '/rh/relatorios', 
           icon: <BarChart3 className="w-5 h-5" />, 
           allowedRoles: ['ADMIN', 'RH', 'GESTOR'] 
         },

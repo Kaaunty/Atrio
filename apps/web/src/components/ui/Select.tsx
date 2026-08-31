@@ -12,10 +12,11 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   error?: string;
   helperText?: string;
   options?: SelectOption[];
+  optionClassName?: string;
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, helperText, options, children, className, id, ...props }, ref) => {
+  ({ label, error, helperText, options, optionClassName, children, className, id, ...props }, ref) => {
     const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
 
     return (
@@ -30,7 +31,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           className={twMerge(
             clsx(
-              'block w-full rounded-lg border bg-white px-3 py-2 text-sm text-atrio-text-primary transition-colors',
+              'block w-full rounded-lg border bg-white px-3 py-2 text-sm text-atrio-text-primary transition-colors cursor-pointer',
               'focus:outline-none focus:ring-2 focus:ring-atrio-teal/30 focus:border-atrio-teal',
               'disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed',
               error ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200' : 'border-atrio-border',
@@ -41,7 +42,11 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         >
           {options
             ? options.map((opt) => (
-                <option key={opt.value} value={opt.value}>
+                <option
+                  key={opt.value}
+                  value={opt.value}
+                  className={twMerge('bg-white text-slate-800 font-medium py-1.5', optionClassName)}
+                >
                   {opt.label}
                 </option>
               ))

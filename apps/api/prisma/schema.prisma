@@ -38,6 +38,14 @@ model User {
   requestHistories    RequestHistory[]
   requestAttachments  RequestAttachment[]
   vacationRhActions   VacationRequest[]     @relation("RhVacationRequests")
+  rhCertificateReviews MedicalCertificate[] @relation("RhCertificateReviews")
+  uploadedDocuments   EmployeeDocument[]   @relation("UserUploadedDocuments")
+  notifications       Notification[]
+  authoredAnnouncements Announcement[]    @relation("AnnouncementAuthor")
+  initiatedProcesses  LifecycleProcess[]   @relation("ProcessInitiator")
+  assignedLifecycleTasks LifecycleTask[]   @relation("TaskAssignee")
+  completedLifecycleTasks LifecycleTask[]  @relation("TaskCompleter")
+  authoredFeedbacks   Feedback[]           @relation("FeedbackAuthor")
 
   @@map("users")
 }
@@ -176,6 +184,8 @@ model Department {
   children  Department[] @relation("DepartmentHierarchy")
   positions Position[]
   employees Employee[]
+  documents EmployeeDocument[]
+  checklistTemplates ChecklistTemplate[]
 
   @@index([companyId])
   @@index([parentId])
@@ -285,6 +295,17 @@ model Employee {
   vacationPeriods          VacationPeriod[]
   vacationRequests         VacationRequest[]     @relation("EmployeeVacationRequests")
   vacationManagerReviews   VacationRequest[]     @relation("ManagerVacationRequests")
+  medicalCertificates      MedicalCertificate[]
+  leavesOfAbsence          LeaveOfAbsence[]
+  documents                EmployeeDocument[]
+  documentReadReceipts     DocumentReadReceipt[]
+  employeeBenefits         EmployeeBenefit[]
+  announcementViews        AnnouncementView[]
+  lifecycleProcesses       LifecycleProcess[]
+  employeeTrainings        EmployeeTraining[]
+  receivedFeedbacks        Feedback[]            @relation("FeedbackReceiver")
+  developmentPlans         DevelopmentPlan[]     @relation("EmployeePlans")
+  mentoredPlans            DevelopmentPlan[]     @relation("MentorPlans")
 
   @@unique([companyId, registrationNumber])
   @@index([companyId])
@@ -844,6 +865,577 @@ model VacationRequest {
   @@index([rhUserId])
   @@map("vacation_requests")
 }
+
+// -----------------------------------------------------------------------------
+// GESTÃO DE ATESTADOS MÉDICOS E AFASTAMENTOS (ETAPA 09)
+// -----------------------------------------------------------------------------
+
+enum MedicalCertificateReasonCategory {
+  CONSULTA
+  EXAME
+  DOENCA_ATE_15D
+  DOENCA_SUPERIOR_15D
+  ACIDENTE_TRABALHO
+  MATERNIDADE
+  ACOMPANHAMENTO_FAMILIAR
+  DOACAO_SANGUE
+  OUTROS
+}
+
+enum MedicalCertificateStatus {
+  ENVIADO
+  EM_ANALISE_RH
+  APROVADO
+  REJEITADO
+  SOLICITADO_CORRECAO
+}
+
+enum LeaveType {
+  ATESTADO_MEDICO
+  LICENCA_MATERNIDADE
+  LICENCA_PATERNIDADE
+  AUXILIO_DOENCA_INSS
+  ACIDENTE_TRABALHO_INSS
+  LICENCA_NAO_REMUNERADA
+  OUTRO
+}
+
+model MedicalCertificate {
+  id             String                           @id @default(uuid())
+  employeeId     String                           @map("employee_id")
+  startDate      DateTime                         @map("start_date") @db.Date
+  daysCount      Int                              @map("days_count")
+  endDate        DateTime                         @map("end_date") @db.Date
+  issueDate      DateTime                         @map("issue_date") @db.Date
+  doctorName     String                           @map("doctor_name")
+  crmNumber      String                           @map("crm_number")
+  cidCode        String?                          @map("cid_code")
+  reasonCategory MedicalCertificateReasonCategory @default(DOENCA_ATE_15D) @map("reason_category")
+  notes          String?                          @db.Text
+  documentUrl    String                           @map("document_url")
+  status         MedicalCertificateStatus         @default(ENVIADO)
+
+  // Trilha de Homologação do RH
+  rhReviewerId   String?                          @map("rh_reviewer_id")
+  rhReviewNotes  String?                          @map("rh_review_notes") @db.Text
+  reviewedAt     DateTime?                        @map("reviewed_at")
+
+  createdAt      DateTime                         @default(now()) @map("created_at")
+  updatedAt      DateTime                         @updatedAt @map("updated_at")
+
+  employee       Employee                         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  rhReviewer     User?                            @relation("RhCertificateReviews", fields: [rhReviewerId], references: [id], onDelete: SetNull)
+  leaves         LeaveOfAbsence[]
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([rhReviewerId])
+  @@map("medical_certificates")
+}
+
+model LeaveOfAbsence {
+  id                   String              @id @default(uuid())
+  employeeId           String              @map("employee_id")
+  medicalCertificateId String?             @map("medical_certificate_id")
+  leaveType            LeaveType           @map("leave_type")
+  startDate            DateTime            @map("start_date") @db.Date
+  endDate              DateTime?           @map("end_date") @db.Date
+  returnDate           DateTime?           @map("return_date") @db.Date
+  inssReferral         Boolean             @default(false) @map("inss_referral")
+  active               Boolean             @default(true)
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+
+  employee             Employee            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  medicalCertificate   MedicalCertificate? @relation(fields: [medicalCertificateId], references: [id], onDelete: SetNull)
+
+  @@index([employeeId])
+  @@index([leaveType])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([active])
+  @@map("leaves_of_absence")
+}
+
+// -----------------------------------------------------------------------------
+// CENTRAL DE DOCUMENTOS DO COLABORADOR (ETAPA 10)
+// -----------------------------------------------------------------------------
+
+enum DocumentVisibility {
+  PRIVATE_EMPLOYEE_RH
+  DEPARTMENT
+  COMPANY_WIDE
+}
+
+model DocumentType {
+  id                           String             @id @default(uuid())
+  name                         String
+  code                         String             @unique
+  isInstitutional              Boolean            @default(false) @map("is_institutional")
+  requiresReadAcknowledgement Boolean            @default(false) @map("requires_read_acknowledgement")
+  createdAt                    DateTime           @default(now()) @map("created_at")
+  updatedAt                    DateTime           @updatedAt @map("updated_at")
+
+  documents                    EmployeeDocument[]
+
+  @@map("document_types")
+}
+
+model EmployeeDocument {
+  id             String             @id @default(uuid())
+  documentTypeId String             @map("document_type_id")
+  employeeId     String?            @map("employee_id")
+  title          String
+  description    String?            @db.Text
+  fileUrl        String             @map("file_url")
+  fileName       String             @map("file_name")
+  fileSize       Int                @map("file_size")
+  mimeType       String             @map("mime_type")
+  referenceMonth Int?               @map("reference_month")
+  referenceYear  Int?               @map("reference_year")
+  expirationDate DateTime?          @map("expiration_date") @db.Date
+  visibility     DocumentVisibility @default(PRIVATE_EMPLOYEE_RH)
+  departmentId   String?            @map("department_id")
+  uploadedBy     String?            @map("uploaded_by")
+
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  deletedAt      DateTime?          @map("deleted_at")
+
+  documentType   DocumentType       @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
+  employee       Employee?          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  department     Department?        @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  uploader       User?              @relation("UserUploadedDocuments", fields: [uploadedBy], references: [id], onDelete: SetNull)
+  readReceipts   DocumentReadReceipt[]
+
+  @@index([employeeId])
+  @@index([documentTypeId])
+  @@index([visibility])
+  @@index([departmentId])
+  @@index([referenceYear, referenceMonth])
+  @@map("employee_documents")
+}
+
+model DocumentReadReceipt {
+  id             String           @id @default(uuid())
+  documentId     String           @map("document_id")
+  employeeId     String           @map("employee_id")
+  acknowledgedAt DateTime         @default(now()) @map("acknowledged_at")
+  ipAddress      String?          @map("ip_address")
+  userAgent      String?          @map("user_agent")
+
+  document       EmployeeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  employee       Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, employeeId])
+  @@index([documentId])
+  @@index([employeeId])
+  @@map("document_read_receipts")
+}
+
+// -----------------------------------------------------------------------------
+// CENTRAL DE NOTIFICAÇÕES (ETAPA 12)
+// -----------------------------------------------------------------------------
+
+enum NotificationType {
+  INFO
+  WARNING
+  SUCCESS
+  ACTION_REQUIRED
+}
+
+enum NotificationCategory {
+  PONTO
+  FERIAS
+  SOLICITACAO
+  DOCUMENTO
+  COMUNICADO
+  SISTEMA
+}
+
+model Notification {
+  id           String               @id @default(uuid())
+  userId       String               @map("user_id")
+  title        String
+  message      String               @db.Text
+  type         NotificationType     @default(INFO)
+  category     NotificationCategory @default(SISTEMA)
+  actionUrl    String?              @map("action_url")
+  readAt       DateTime?            @map("read_at")
+  sentViaEmail Boolean              @default(false) @map("sent_via_email")
+  createdAt    DateTime             @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([readAt])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// -----------------------------------------------------------------------------
+// GESTÃO DE BENEFÍCIOS E COMUNICADOS INTERNOS (ETAPA 13)
+// -----------------------------------------------------------------------------
+
+enum BenefitCategory {
+  ALIMENTACAO
+  TRANSPORTE
+  SAUDE
+  ODONTOLOGICO
+  EDUCACAO
+  CONVENIO
+  OUTRO
+}
+
+enum EmployeeBenefitStatus {
+  ATIVO
+  SUSPENSO
+  CANCELADO
+}
+
+enum AnnouncementCategory {
+  INSTITUCIONAL
+  CAMPANHA_RH
+  EVENTO
+  BENEFICIOS
+  IMPORTANTE
+}
+
+enum AnnouncementTargetType {
+  ALL
+  SPECIFIC_DEPARTMENTS
+  SPECIFIC_UNITS
+  SPECIFIC_ROLES
+}
+
+model Benefit {
+  id             String          @id @default(uuid())
+  name           String
+  provider       String
+  category       BenefitCategory @default(ALIMENTACAO)
+  description    String?         @db.Text
+  deductionRule  String?         @map("deduction_rule")
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  employeeBenefits EmployeeBenefit[]
+
+  @@map("benefits")
+}
+
+model EmployeeBenefit {
+  id                     String                @id @default(uuid())
+  employeeId             String                @map("employee_id")
+  benefitId              String                @map("benefit_id")
+  startDate              DateTime              @map("start_date") @db.Date
+  endDate                DateTime?             @map("end_date") @db.Date
+  cardNumberLast4        String?               @map("card_number_last4")
+  monthlyValue           Decimal               @default(0) @map("monthly_value") @db.Decimal(10, 2)
+  employeeDeductionValue Decimal               @default(0) @map("employee_deduction_value") @db.Decimal(10, 2)
+  dependentsIncluded     Json?                 @map("dependents_included") // Array de dependentes
+  status                 EmployeeBenefitStatus @default(ATIVO)
+  createdAt              DateTime              @default(now()) @map("created_at")
+  updatedAt              DateTime              @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  benefit  Benefit  @relation(fields: [benefitId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([benefitId])
+  @@index([status])
+  @@map("employee_benefits")
+}
+
+model Announcement {
+  id                      String                 @id @default(uuid())
+  title                   String
+  summary                 String
+  content                 String                 @db.Text
+  category                AnnouncementCategory   @default(INSTITUCIONAL)
+  coverImageUrl           String?                @map("cover_image_url")
+  attachments             Json?                  // Array de arquivos
+  isPinned                Boolean                @default(false) @map("is_pinned")
+  requiresAcknowledgement Boolean                @default(false) @map("requires_acknowledgement")
+  targetType              AnnouncementTargetType @default(ALL) @map("target_type")
+  targetIds               Json?                  @map("target_ids") // Array de IDs de departamento, unidade, etc.
+  publishedAt             DateTime               @default(now()) @map("published_at")
+  expiresAt               DateTime?              @map("expires_at")
+  authorId                String                 @map("author_id")
+  createdAt               DateTime               @default(now()) @map("created_at")
+  updatedAt               DateTime               @updatedAt @map("updated_at")
+
+  author User               @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  views  AnnouncementView[]
+
+  @@index([authorId])
+  @@index([publishedAt])
+  @@index([isPinned])
+  @@map("announcements")
+}
+
+model AnnouncementView {
+  id             String    @id @default(uuid())
+  announcementId String    @map("announcement_id")
+  employeeId     String    @map("employee_id")
+  viewedAt       DateTime  @default(now()) @map("viewed_at")
+  acknowledgedAt DateTime? @map("acknowledged_at")
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, employeeId])
+  @@index([announcementId])
+  @@index([employeeId])
+  @@map("announcement_views")
+}
+
+// -----------------------------------------------------------------------------
+// PROCESSOS DE ONBOARDING E OFFBOARDING (ETAPA 14)
+// -----------------------------------------------------------------------------
+
+enum LifecycleProcessType {
+  ONBOARDING
+  OFFBOARDING
+}
+
+enum LifecycleProcessStatus {
+  NAO_INICIADO
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum LifecycleTaskCategory {
+  RH
+  TI
+  GESTOR
+  FACILITIES
+  COLABORADOR
+}
+
+enum LifecycleTaskStatus {
+  PENDENTE
+  EM_ANDAMENTO
+  CONCLUIDA
+  BLOQUEADA
+  CANCELADA
+}
+
+model ChecklistTemplate {
+  id           String               @id @default(uuid())
+  name         String
+  processType  LifecycleProcessType @map("process_type")
+  departmentId String?              @map("department_id")
+  defaultTasks Json                 @map("default_tasks") // Array de tarefas modelo: [{ title, description, category, dueDaysOffset }]
+  active       Boolean              @default(true)
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+
+  department Department?        @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  processes  LifecycleProcess[]
+
+  @@index([processType])
+  @@index([departmentId])
+  @@map("checklist_templates")
+}
+
+model LifecycleProcess {
+  id          String                 @id @default(uuid())
+  employeeId  String                 @map("employee_id")
+  processType LifecycleProcessType   @map("process_type")
+  templateId  String?                @map("template_id")
+  status      LifecycleProcessStatus @default(EM_ANDAMENTO)
+  targetDate  DateTime               @map("target_date") @db.Date // Data de Admissão ou Desligamento
+  completedAt DateTime?              @map("completed_at")
+  initiatedById String               @map("initiated_by_id")
+  createdAt   DateTime               @default(now()) @map("created_at")
+  updatedAt   DateTime               @updatedAt @map("updated_at")
+
+  employee    Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  template    ChecklistTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  initiatedBy User               @relation("ProcessInitiator", fields: [initiatedById], references: [id], onDelete: Restrict)
+  tasks       LifecycleTask[]
+
+  @@index([employeeId])
+  @@index([processType])
+  @@index([status])
+  @@map("lifecycle_processes")
+}
+
+model LifecycleTask {
+  id             String                @id @default(uuid())
+  processId      String                @map("process_id")
+  title          String
+  description    String?               @db.Text
+  category       LifecycleTaskCategory @default(RH)
+  assignedUserId String?               @map("assigned_user_id")
+  dueDate        DateTime              @map("due_date") @db.Date
+  status         LifecycleTaskStatus   @default(PENDENTE)
+  completedAt    DateTime?             @map("completed_at")
+  completedById  String?               @map("completed_by_id")
+  notes          String?               @db.Text
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+
+  process      LifecycleProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+  assignedUser User?            @relation("TaskAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  completedBy  User?            @relation("TaskCompleter", fields: [completedById], references: [id], onDelete: SetNull)
+
+  @@index([processId])
+  @@index([category])
+  @@index([assignedUserId])
+  @@index([status])
+  @@map("lifecycle_tasks")
+}
+
+// -----------------------------------------------------------------------------
+// TREINAMENTOS, FEEDBACKS E PDI (ETAPA 15)
+// -----------------------------------------------------------------------------
+
+enum TrainingCategory {
+  OBRIGATORIO_LEGAL
+  INSTITUCIONAL
+  TECNICO
+  LIDERANCA
+  OPCIONAL
+}
+
+enum EmployeeTrainingStatus {
+  PENDENTE
+  EM_ANDAMENTO
+  CONCLUIDO
+  VENCIDO
+}
+
+enum FeedbackType {
+  POSITIVO
+  DESENVOLVIMENTO
+  REUNIAO_1ON1
+  ALINHAMENTO
+}
+
+enum FeedbackVisibility {
+  PRIVATE_MANAGER_EMPLOYEE
+  MANAGER_ONLY
+  RH_ACCESSIBLE
+}
+
+enum DevelopmentPlanStatus {
+  RASCUNHO
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum DevelopmentGoalStatus {
+  NAO_INICIADO
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
+model Training {
+  id             String           @id @default(uuid())
+  title          String
+  description    String?          @db.Text
+  category       TrainingCategory @default(INSTITUCIONAL)
+  validityMonths Int?             @map("validity_months")
+  workloadHours  Int              @default(1) @map("workload_hours")
+  provider       String           @default("Interno")
+  active         Boolean          @default(true)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  employeeTrainings EmployeeTraining[]
+
+  @@map("trainings")
+}
+
+model EmployeeTraining {
+  id             String                 @id @default(uuid())
+  employeeId     String                 @map("employee_id")
+  trainingId     String                 @map("training_id")
+  status         EmployeeTrainingStatus @default(PENDENTE)
+  startedAt      DateTime?              @map("started_at") @db.Date
+  completedAt    DateTime?              @map("completed_at") @db.Date
+  expiresAt      DateTime?              @map("expires_at") @db.Date
+  certificateUrl String?                @map("certificate_url")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([trainingId])
+  @@index([status])
+  @@map("employee_trainings")
+}
+
+model Feedback {
+  id           String             @id @default(uuid())
+  employeeId   String             @map("employee_id")
+  authorId     String             @map("author_id")
+  feedbackType FeedbackType       @default(REUNIAO_1ON1) @map("feedback_type")
+  subject      String
+  content      String             @db.Text
+  actionItems  Json?              @map("action_items") // Array: [{ task, deadline, completed }]
+  visibility   FeedbackVisibility @default(PRIVATE_MANAGER_EMPLOYEE)
+  feedbackDate DateTime           @default(now()) @map("feedback_date") @db.Date
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  employee Employee @relation("FeedbackReceiver", fields: [employeeId], references: [id], onDelete: Cascade)
+  author   User     @relation("FeedbackAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId])
+  @@index([authorId])
+  @@index([feedbackDate])
+  @@map("feedbacks")
+}
+
+model DevelopmentPlan {
+  id         String                @id @default(uuid())
+  employeeId String                @map("employee_id")
+  mentorId   String?               @map("mentor_id")
+  title      String
+  periodYear Int                   @default(2026) @map("period_year")
+  status     DevelopmentPlanStatus @default(EM_ANDAMENTO)
+  createdAt  DateTime              @default(now()) @map("created_at")
+  updatedAt  DateTime              @updatedAt @map("updated_at")
+
+  employee Employee              @relation("EmployeePlans", fields: [employeeId], references: [id], onDelete: Cascade)
+  mentor   Employee?             @relation("MentorPlans", fields: [mentorId], references: [id], onDelete: SetNull)
+  goals    DevelopmentPlanGoal[]
+
+  @@index([employeeId])
+  @@index([mentorId])
+  @@map("development_plans")
+}
+
+model DevelopmentPlanGoal {
+  id                String                @id @default(uuid())
+  developmentPlanId String                @map("development_plan_id")
+  title             String
+  competency        String
+  targetDate        DateTime              @map("target_date") @db.Date
+  status            DevelopmentGoalStatus @default(EM_ANDAMENTO)
+  actionSteps       String?               @map("action_steps") @db.Text
+  evidenceNotes     String?               @map("evidence_notes") @db.Text
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+
+  developmentPlan DevelopmentPlan @relation(fields: [developmentPlanId], references: [id], onDelete: Cascade)
+
+  @@index([developmentPlanId])
+  @@index([status])
+  @@map("development_plan_goals")
+}
+
+
 
 
 

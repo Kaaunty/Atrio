@@ -1,6 +1,7 @@
 import React from 'react';
-import { Bell, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Badge } from '../ui/Badge';
+import { NotificationBell } from './NotificationBell';
 
 interface HeaderProps {
   title?: string;
@@ -40,14 +41,8 @@ export const Header: React.FC<HeaderProps> = ({
           {apiStatus === 'ok' ? 'API Conectada' : apiStatus === 'loading' ? 'Verificando...' : 'API Offline'}
         </Badge>
 
-        {/* Notificações */}
-        <button 
-          className="relative p-2 rounded-lg text-slate-400 hover:text-atrio-navy hover:bg-slate-100 transition-colors"
-          title="Notificações"
-        >
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-semantic-warning" />
-        </button>
+        {/* Notificações Assíncronas In-app */}
+        <NotificationBell />
       </div>
     </header>
   );

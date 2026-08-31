@@ -46,14 +46,14 @@ Este diretório gerencia o ciclo de vida e a execução incremental do **Sistema
 
 ### Fase 4: MVP — Férias, Atestados & Documentos
 - [x] [`08-gestao-ferias.md`](./implementadas/08-gestao-ferias.md) — Gestão de Períodos Aquisitivos, Solicitação e Calendário da Equipe
-- [ ] [`09-atestados-afastamentos.md`](./pendentes/09-atestados-afastamentos.md) — Envio de Atestados Médicos, Validação CID e Gestão de Afastamentos
-- [ ] [`10-central-documentos.md`](./pendentes/10-central-documentos.md) — Central de Documentos, Upload, Categorização e Confirmação de Leitura
+- [x] [`09-atestados-afastamentos.md`](./implementadas/09-atestados-afastamentos.md) — Envio de Atestados Médicos, Validação CID e Gestão de Afastamentos
+- [x] [`10-central-documentos.md`](./implementadas/10-central-documentos.md) — Central de Documentos, Upload, Categorização e Confirmação de Leitura
 
 ### Fase 5: Dashboards, Relatórios & Notificações
-- [ ] [`11-dashboards-operacionais.md`](./pendentes/11-dashboards-operacionais.md) — Dashboards do Colaborador, Gestor e RH
-- [ ] [`12-relatorios-notificacoes.md`](./pendentes/12-relatorios-notificacoes.md) — Central de Notificações Multicanal e Relatórios Exportáveis (XLSX/PDF)
+- [x] [`11-dashboards-operacionais.md`](./implementadas/11-dashboards-operacionais.md) — Dashboards do Colaborador, Gestor e RH
+- [x] [`12-relatorios-notificacoes.md`](./implementadas/12-relatorios-notificacoes.md) — Central de Notificações Multicanal e Relatórios Exportáveis (XLSX/PDF)
 
 ### Fase 6: Módulos Complementares
-- [ ] [`13-beneficios-comunicados.md`](./pendentes/13-beneficios-comunicados.md) — Gestão de Benefícios e Mural de Comunicados Internos
-- [ ] [`14-onboarding-offboarding.md`](./pendentes/14-onboarding-offboarding.md) — Checklists Automatizados de Admissão e Desligamento
-- [ ] [`15-treinamentos-feedback-pdi.md`](./pendentes/15-treinamentos-feedback-pdi.md) — Gestão de Treinamentos, Feedbacks (1:1) e PDI
+- [x] [`13-beneficios-comunicados.md`](./implementadas/13-beneficios-comunicados.md) — Gestão de Benefícios e Mural de Comunicados Internos
+- [x] [`14-onboarding-offboarding.md`](./implementadas/14-onboarding-offboarding.md) — Checklists Automatizados de Admissão e Desligamento
+- [x] [`15-treinamentos-feedback-pdi.md`](./implementadas/15-treinamentos-feedback-pdi.md) — Gestão de Treinamentos, Feedbacks (1:1) e PDI

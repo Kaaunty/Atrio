@@ -67,6 +67,11 @@ async function main() {
   // ──────────────────────────────────────────
   console.log('🗑️  Limpando banco de dados...');
 
+  await prisma.documentReadReceipt.deleteMany();
+  await prisma.employeeDocument.deleteMany();
+  await prisma.documentType.deleteMany();
+  await prisma.leaveOfAbsence.deleteMany();
+  await prisma.medicalCertificate.deleteMany();
   await prisma.vacationRequest.deleteMany();
   await prisma.vacationPeriod.deleteMany();
   await prisma.requestAttachment.deleteMany();
@@ -229,6 +234,14 @@ async function main() {
     { code: 'org.gerenciar',          name: 'Gerenciar Estrutura Org.',   module: 'organizacao',  description: 'Criar e editar empresas, unidades e setores.' },
     { code: 'rbac.gerenciar',         name: 'Gerenciar RBAC',             module: 'rbac',         description: 'Criar e editar roles e permissões.' },
     { code: 'auditoria.visualizar',   name: 'Visualizar Auditoria',       module: 'auditoria',    description: 'Consultar trilha de auditoria e logs.' },
+    { code: 'atestados.enviar',       name: 'Enviar Atestado Médico',     module: 'atestados',    description: 'Enviar foto/pdf de atestado médico.' },
+    { code: 'atestados.visualizar',   name: 'Visualizar Meus Atestados',  module: 'atestados',    description: 'Consultar histórico de atestados próprios.' },
+    { code: 'atestados.gerenciar',    name: 'Homologar Atestados (RH)',   module: 'atestados',    description: 'Validar, aprovar ou rejeitar atestados no RH.' },
+    { code: 'rh.atestados.visualizar_sensivel', name: 'Visualizar Anexo e CID', module: 'atestados', description: 'Acesso a documentos anexos e códigos CID (LGPD).' },
+    { code: 'afastamentos.visualizar', name: 'Visualizar Afastamentos',   module: 'afastamentos', description: 'Visualizar lista de afastamentos vigentes.' },
+    { code: 'documentos.visualizar',  name: 'Visualizar Meus Documentos', module: 'documentos',   description: 'Visualizar e baixar holerites e documentos.' },
+    { code: 'documentos.enviar',      name: 'Upload em Lote / Single (RH)', module: 'documentos', description: 'Enviar holerites e arquivos para colaboradores.' },
+    { code: 'documentos.gerenciar',   name: 'Gerenciar Documentos RH',    module: 'documentos',   description: 'Publicar políticas e gerar relatórios de leitura.' },
   ];
 
   const permissions = await Promise.all(permDefs.map((p) => prisma.permission.create({ data: p })));
@@ -241,15 +254,15 @@ async function main() {
     )
   );
   // RH — acesso gerencial (ALL)
-  for (const code of ['ponto.visualizar','ponto.aprovar','colaborador.visualizar','colaborador.gerenciar','ferias.gerenciar','ferias.aprovar','solicitacoes.aprovar','auditoria.visualizar']) {
+  for (const code of ['ponto.visualizar','ponto.aprovar','colaborador.visualizar','colaborador.gerenciar','ferias.gerenciar','ferias.aprovar','solicitacoes.aprovar','auditoria.visualizar','atestados.gerenciar','rh.atestados.visualizar_sensivel','afastamentos.visualizar','documentos.visualizar','documentos.enviar','documentos.gerenciar']) {
     await prisma.rolePermission.create({ data: { roleId: roleRH.id, permissionId: perm[code].id, scope: 'ALL' } });
   }
   // GESTOR — acesso à equipe (TEAM)
-  for (const code of ['ponto.visualizar','ponto.aprovar','colaborador.visualizar','ferias.aprovar','solicitacoes.aprovar']) {
+  for (const code of ['ponto.visualizar','ponto.aprovar','colaborador.visualizar','ferias.aprovar','solicitacoes.aprovar','afastamentos.visualizar','documentos.visualizar']) {
     await prisma.rolePermission.create({ data: { roleId: roleGestor.id, permissionId: perm[code].id, scope: 'TEAM' } });
   }
   // COLABORADOR — acesso próprio (SELF)
-  for (const code of ['ponto.visualizar','ponto.ajustar','ferias.solicitar','solicitacoes.criar']) {
+  for (const code of ['ponto.visualizar','ponto.ajustar','ferias.solicitar','solicitacoes.criar','atestados.enviar','atestados.visualizar','documentos.visualizar']) {
     await prisma.rolePermission.create({ data: { roleId: roleColab.id, permissionId: perm[code].id, scope: 'SELF' } });
   }
 
@@ -721,9 +734,170 @@ async function main() {
   });
 
   // ══════════════════════════════════════════
+  // 15. ATESTADOS MÉDICOS E AFASTAMENTOS
+  // ══════════════════════════════════════════
+  console.log('🩺 [15/15] Criando atestados médicos e afastamentos...');
+
+  const rhUserId = userMap['camila@atrio.com.br'].id;
+
+  // 1. Atestado Aprovado — Bruno Martins (04/08 a 06/08, 3 dias, CONSULTA/DOENCA_ATE_15D)
+  const certBruno = await prisma.medicalCertificate.create({
+    data: {
+      employeeId: empBruno.id,
+      startDate: new Date('2026-08-04'),
+      daysCount: 3,
+      endDate: new Date('2026-08-06'),
+      issueDate: new Date('2026-08-04'),
+      doctorName: 'Dr. Fernando Arantes',
+      crmNumber: 'CRM/SP 145892',
+      cidCode: 'J11',
+      reasonCategory: 'DOENCA_ATE_15D',
+      notes: 'Quadro gripal agudo e febre. Necessário repouso de 3 dias.',
+      documentUrl: 'https://storage.atrio.com/atestados/cert_bruno_aug2026.pdf',
+      status: 'APROVADO',
+      rhReviewerId: rhUserId,
+      rhReviewNotes: 'Homologado pelo RH. Dias abonados no espelho de ponto.',
+      reviewedAt: new Date('2026-08-04T10:00:00Z'),
+    },
+  });
+
+  await prisma.leaveOfAbsence.create({
+    data: {
+      employeeId: empBruno.id,
+      medicalCertificateId: certBruno.id,
+      leaveType: 'ATESTADO_MEDICO',
+      startDate: new Date('2026-08-04'),
+      endDate: new Date('2026-08-06'),
+      inssReferral: false,
+      active: true,
+    },
+  });
+
+  // Abonar os dias 04, 05, 06 de agosto para Bruno no TimeDailySummary
+  for (const d of ['2026-08-04', '2026-08-05', '2026-08-06']) {
+    await prisma.timeDailySummary.updateMany({
+      where: { employeeId: empBruno.id, date: new Date(d) },
+      data: { status: 'AFASTAMENTO', absenceMinutes: 0 },
+    });
+  }
+
+  // 2. Atestado Pendente de Análise — Juliana Costa (25/08 a 26/08, 2 dias)
+  await prisma.medicalCertificate.create({
+    data: {
+      employeeId: empJuliana.id,
+      startDate: new Date('2026-08-25'),
+      daysCount: 2,
+      endDate: new Date('2026-08-26'),
+      issueDate: new Date('2026-08-25'),
+      doctorName: 'Dra. Vanessa Meireles',
+      crmNumber: 'CRM/SP 204511',
+      cidCode: 'K29.7',
+      reasonCategory: 'CONSULTA',
+      notes: 'Gastrite aguda. Repouso de 48 horas.',
+      documentUrl: 'https://storage.atrio.com/atestados/cert_juliana_aug2026.jpg',
+      status: 'ENVIADO',
+    },
+  });
+
+  // 3. Atestado com Solicitação de Correção — Rafael Gomes (18/08 a 18/08, 1 dia)
+  await prisma.medicalCertificate.create({
+    data: {
+      employeeId: empRafael.id,
+      startDate: new Date('2026-08-18'),
+      daysCount: 1,
+      endDate: new Date('2026-08-18'),
+      issueDate: new Date('2026-08-18'),
+      doctorName: 'Dr. Lucas Nogueira',
+      crmNumber: 'CRM/PR 89201',
+      cidCode: 'Z01.2',
+      reasonCategory: 'EXAME',
+      notes: 'Exames laboratoriais e radiologia.',
+      documentUrl: 'https://storage.atrio.com/atestados/cert_rafael_aug2026.png',
+      status: 'SOLICITADO_CORRECAO',
+      rhReviewerId: rhUserId,
+      rhReviewNotes: 'A imagem enviada está desfocada. Por favor, reenvie uma foto legível mostrando o carimbo e a assinatura do médico.',
+      reviewedAt: new Date('2026-08-19T14:20:00Z'),
+    },
+  });
+
+  // ══════════════════════════════════════════
+  // 16. CENTRAL DE DOCUMENTOS DO COLABORADOR
+  // ══════════════════════════════════════════
+  console.log('📑 [16/16] Criando tipos de documento e arquivos...');
+
+  const [dtHolerite, dtInforme, dtContrato, dtPolitica, dtCertificado] = await Promise.all([
+    prisma.documentType.create({ data: { name: 'Holerite / Contracheque', code: 'HOLERITE', isInstitutional: false, requiresReadAcknowledgement: false } }),
+    prisma.documentType.create({ data: { name: 'Informe de Rendimentos (IR)', code: 'INFORME_IR', isInstitutional: false, requiresReadAcknowledgement: false } }),
+    prisma.documentType.create({ data: { name: 'Contrato & Aditivos', code: 'CONTRATO', isInstitutional: false, requiresReadAcknowledgement: false } }),
+    prisma.documentType.create({ data: { name: 'Política Interna da Empresa', code: 'POLITICA_INTERNA', isInstitutional: true, requiresReadAcknowledgement: true } }),
+    prisma.documentType.create({ data: { name: 'Certificados & Cursos', code: 'CERTIFICADO', isInstitutional: false, requiresReadAcknowledgement: false } }),
+  ]);
+
+  // Documentos Privados — Holerite Agosto/2026 para Bruno
+  await prisma.employeeDocument.create({
+    data: {
+      documentTypeId: dtHolerite.id,
+      employeeId: empBruno.id,
+      title: 'Holerite — Agosto/2026',
+      description: 'Contracheque mensal referente ao mês trabalhado de Agosto de 2026.',
+      fileUrl: 'https://storage.atrio.com/docs/holerite_bruno_202608.pdf',
+      fileName: 'holerite_bruno_202608.pdf',
+      fileSize: 145000,
+      mimeType: 'application/pdf',
+      referenceMonth: 8,
+      referenceYear: 2026,
+      visibility: 'PRIVATE_EMPLOYEE_RH',
+      uploadedBy: rhUserId,
+    },
+  });
+
+  // Documento Privado — Informe de Rendimentos para Rodrigo
+  await prisma.employeeDocument.create({
+    data: {
+      documentTypeId: dtInforme.id,
+      employeeId: empRodrigo.id,
+      title: 'Informe de Rendimentos IRPF — Ano-Base 2025',
+      description: 'Comprovante para declaração anual de imposto de renda.',
+      fileUrl: 'https://storage.atrio.com/docs/informe_rodrigo_2025.pdf',
+      fileName: 'informe_rodrigo_2025.pdf',
+      fileSize: 220000,
+      mimeType: 'application/pdf',
+      referenceYear: 2025,
+      visibility: 'PRIVATE_EMPLOYEE_RH',
+      uploadedBy: rhUserId,
+    },
+  });
+
+  // Documento Institucional — Política de Segurança da Informação (Empresa Toda)
+  const docPolitica = await prisma.employeeDocument.create({
+    data: {
+      documentTypeId: dtPolitica.id,
+      employeeId: null,
+      title: 'Política Institucional de Segurança da Informação & LGPD (v2026)',
+      description: 'Diretrizes obrigatórias sobre uso de senhas, confidencialidade e proteção de dados corporativos.',
+      fileUrl: 'https://storage.atrio.com/docs/politica_seguranca_atrio_2026.pdf',
+      fileName: 'politica_seguranca_atrio_2026.pdf',
+      fileSize: 580000,
+      mimeType: 'application/pdf',
+      visibility: 'COMPANY_WIDE',
+      uploadedBy: rhUserId,
+    },
+  });
+
+  // Aceite prévio de leitura para Bruno Martins
+  await prisma.documentReadReceipt.create({
+    data: {
+      documentId: docPolitica.id,
+      employeeId: empBruno.id,
+      acknowledgedAt: new Date('2026-08-10T14:30:00Z'),
+      ipAddress: '192.168.1.15',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/128.0',
+    },
+  });
+
+  // ══════════════════════════════════════════
   // BÔNUS: TIMELINE DE COLABORADORES
   // ══════════════════════════════════════════
-  const rhUserId = userMap['camila@atrio.com.br'].id;
   await prisma.employeeHistory.createMany({
     data: [
       { employeeId: empRodrigo.id, eventType: 'ADMISSAO',           description: 'Admissão como Diretor Geral da Átrio.',                              eventDate: new Date('2020-01-02'), registeredBy: rhUserId, newData: { cargo: 'Diretor Geral', salario: 20000 } },
@@ -754,6 +928,11 @@ async function main() {
     prisma.request.count(),
     prisma.vacationPeriod.count(),
     prisma.vacationRequest.count(),
+    prisma.medicalCertificate.count(),
+    prisma.leaveOfAbsence.count(),
+    prisma.documentType.count(),
+    prisma.employeeDocument.count(),
+    prisma.documentReadReceipt.count(),
     prisma.employeeHistory.count(),
   ]);
 
@@ -777,7 +956,12 @@ async function main() {
   console.log(`   📨 Solicitações:          ${counts[13]}`);
   console.log(`   🏖️  Períodos de Férias:    ${counts[14]}`);
   console.log(`   📅 Solicitações Férias:   ${counts[15]}`);
-  console.log(`   📅 Eventos de Timeline:   ${counts[16]}`);
+  console.log(`   🩺 Atestados Médicos:     ${counts[16]}`);
+  console.log(`   🏥 Afastamentos:          ${counts[17]}`);
+  console.log(`   🏷️  Tipos de Documento:    ${counts[18]}`);
+  console.log(`   📑 Documentos Publicados: ${counts[19]}`);
+  console.log(`   ✍️  Leituras / Aceites:   ${counts[20]}`);
+  console.log(`   📅 Eventos de Timeline:   ${counts[21]}`);
   console.log('\n🔑 Credenciais (senha: Atrio@2026):');
   console.log('   admin@atrio.com.br    → ADMIN          (Rodrigo Almeida)');
   console.log('   camila@atrio.com.br   → RH + GESTOR    (Camila Ferreira)');

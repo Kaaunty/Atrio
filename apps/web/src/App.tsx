@@ -21,6 +21,24 @@ import { RequestDetailPage } from './pages/requests/RequestDetailPage';
 import { MyVacationsPage } from './pages/vacations/MyVacationsPage';
 import { TeamVacationsCalendarPage } from './pages/vacations/TeamVacationsCalendarPage';
 import { RhVacationsPage } from './pages/vacations/RhVacationsPage';
+import { SubmitCertificatePage } from './pages/time-clock/SubmitCertificatePage';
+import { RhMedicalCertificatesPage } from './pages/medical-certificates/RhMedicalCertificatesPage';
+import { TeamAbsencesPage } from './pages/management/TeamAbsencesPage';
+import { MyDocumentsPage } from './pages/documents/MyDocumentsPage';
+import { RhDocumentsPage } from './pages/documents/RhDocumentsPage';
+import { RhReportsPage } from './pages/reports/RhReportsPage';
+import { MyBenefitsPage } from './pages/benefits/MyBenefitsPage';
+import { RhBenefitsPage } from './pages/benefits/RhBenefitsPage';
+import { AnnouncementsPage } from './pages/announcements/AnnouncementsPage';
+import { AnnouncementDetailPage } from './pages/announcements/AnnouncementDetailPage';
+import { RhNewAnnouncementPage } from './pages/announcements/RhNewAnnouncementPage';
+import { RhLifecycleProcessesPage } from './pages/lifecycle/RhLifecycleProcessesPage';
+import { LifecycleProcessDetailPage } from './pages/lifecycle/LifecycleProcessDetailPage';
+import { MyPendingTasksPage } from './pages/lifecycle/MyPendingTasksPage';
+import { MyTrainingsPage } from './pages/development/MyTrainingsPage';
+import { RhTrainingsPage } from './pages/development/RhTrainingsPage';
+import { FeedbacksPage } from './pages/development/FeedbacksPage';
+import { DevelopmentPlanPage } from './pages/development/DevelopmentPlanPage';
 
 export const App: React.FC = () => {
   return (
@@ -36,6 +54,14 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <HomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/documentos"
+            element={
+              <ProtectedRoute requiredPermission="documentos.visualizar" minScope="SELF">
+                <MyDocumentsPage />
               </ProtectedRoute>
             }
           />
@@ -64,6 +90,14 @@ export const App: React.FC = () => {
             }
           />
           <Route
+            path="/ponto/enviar-atestado"
+            element={
+              <ProtectedRoute requiredPermission="atestados.enviar" minScope="SELF">
+                <SubmitCertificatePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/ferias/minhas-ferias"
             element={
               <ProtectedRoute requiredPermission="ferias.visualizar" minScope="SELF">
@@ -78,6 +112,14 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute requiredPermission="ponto.visualizar" minScope="TEAM">
                 <TeamTimeClockPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/gestao/equipe/ausencias"
+            element={
+              <ProtectedRoute requiredPermission="afastamentos.visualizar" minScope="TEAM">
+                <TeamAbsencesPage />
               </ProtectedRoute>
             }
           />
@@ -108,10 +150,130 @@ export const App: React.FC = () => {
             }
           />
           <Route
+            path="/rh/atestados"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'RH']}>
+                <RhMedicalCertificatesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/rh/ferias"
             element={
               <ProtectedRoute allowedRoles={['ADMIN', 'RH']}>
                 <RhVacationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/documentos/gestao"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'RH']}>
+                <RhDocumentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/relatorios"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'RH', 'GESTOR']}>
+                <RhReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/beneficios/meus-beneficios"
+            element={
+              <ProtectedRoute>
+                <MyBenefitsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/beneficios"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'RH']}>
+                <RhBenefitsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comunicados"
+            element={
+              <ProtectedRoute>
+                <AnnouncementsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/comunicados/:id"
+            element={
+              <ProtectedRoute>
+                <AnnouncementDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/comunicados/novo"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'RH']}>
+                <RhNewAnnouncementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/processos"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'RH', 'GESTOR']}>
+                <RhLifecycleProcessesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/processos/:id"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'RH', 'GESTOR']}>
+                <LifecycleProcessDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/processos/minhas-tarefas"
+            element={
+              <ProtectedRoute>
+                <MyPendingTasksPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/desenvolvimento/treinamentos"
+            element={
+              <ProtectedRoute>
+                <MyTrainingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rh/treinamentos"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN', 'RH']}>
+                <RhTrainingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/desenvolvimento/feedbacks"
+            element={
+              <ProtectedRoute>
+                <FeedbacksPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/desenvolvimento/pdi"
+            element={
+              <ProtectedRoute>
+                <DevelopmentPlanPage />
               </ProtectedRoute>
             }
           />
