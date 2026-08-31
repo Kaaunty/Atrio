@@ -1,36 +1,26 @@
-﻿FROM node:20-alpine AS builder
+﻿FROM node:20-slim
 WORKDIR /app
 
-# Copia estrutura de pacotes do monorepo
-COPY package.json package-lock.json ./
+# Dependencias do sistema para OpenSSL
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# Copia manifestos de pacotes
+COPY package.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 
-# Instala todas as dependencias
-RUN npm ci
+# Instala dependencias para producao
+RUN npm install --no-audit
 
-# Copia o codigo do backend
+# Copia codigo do backend
 COPY apps/api ./apps/api
 
-# Gera o Prisma Client e compila TypeScript
+# Gera o Prisma Client
 WORKDIR /app/apps/api
 RUN npx prisma generate
-RUN NODE_ENV=development npm run build
 
-# Imagem final de producao
-FROM node:20-alpine AS runner
-WORKDIR /app
+EXPOSE 3333
 
 ENV NODE_ENV=production
 
-COPY package.json package-lock.json ./
-COPY apps/api/package.json ./apps/api/
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-
-WORKDIR /app/apps/api
-EXPOSE 3333
-
-CMD ["node", "dist/server.js"]
+CMD ["npx", "tsx", "src/server.ts"]

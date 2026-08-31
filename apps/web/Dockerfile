@@ -1,20 +1,20 @@
-﻿FROM node:20-alpine AS builder
+﻿FROM node:20-slim AS builder
 WORKDIR /app
 
-# Copia estrutura de pacotes do monorepo
-COPY package.json package-lock.json ./
+# Copia manifestos de pacote do monorepo
+COPY package.json ./
 COPY apps/web/package.json ./apps/web/
 COPY apps/api/package.json ./apps/api/
 
-# Instala todas as dependencias
-RUN npm ci
+# Instala dependencias resolvendo os pacotes nativos para Linux
+RUN npm install --no-audit
 
-# Copia o codigo do frontend
+# Copia codigo do frontend
 COPY apps/web ./apps/web
 
-# Executa o build dentro de apps/web
+# Compila o frontend usando o Vite do workspace
 WORKDIR /app/apps/web
-RUN NODE_ENV=development npm run build
+RUN npx vite build
 
 # Servidor web leve com Nginx
 FROM nginx:alpine AS runner
