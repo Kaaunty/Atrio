@@ -1,20 +1,25 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { AppLayout } from '../components/layout/AppLayout';
-import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
 import { EmployeeDashboardView } from './dashboard/EmployeeDashboardView';
 import { ManagerDashboardView } from './dashboard/ManagerDashboardView';
 import { RhDashboardView } from './dashboard/RhDashboardView';
-import { 
-  Users, 
+import {
+  Users,
   UserCheck,
   Building2,
   ShieldCheck,
+  Clock,
+  Calendar,
+  FileText,
+  Stethoscope,
+  Sparkles,
 } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
-  const { roles, hasRole, hasPermission } = useAuth();
+  const { user, employee, roles, hasRole, hasPermission } = useAuth();
+  const navigate = useNavigate();
 
   // Determina a aba padrão baseada no perfil mais elevado
   const initialTab = hasRole('ADMIN', 'RH')
@@ -25,18 +30,108 @@ export const HomePage: React.FC = () => {
 
   const [activeDashboardView, setActiveDashboardView] = useState<'COLABORADOR' | 'GESTOR' | 'RH'>(initialTab);
 
+  // Saudação dinâmica baseada no horário
+  const currentHour = new Date().getHours();
+  const greeting =
+    currentHour < 12 ? 'Bom dia' : currentHour < 18 ? 'Boa tarde' : 'Boa noite';
+
+  const displayName = employee?.name || user?.email?.split('@')[0] || 'Colaborador';
+
   return (
-    <AppLayout title="Início / Visão Geral">
-      <div className="space-y-8">
+    <AppLayout title="Início / Visão Geral" subtitle="Central de autosserviço, gestão corporativa e indicadores estratégicos">
+      <div className="space-y-6">
+        {/* Banner Superior — Boas-Vindas & Acesso Rápido */}
+        <div className="bg-gradient-to-r from-atrio-navy via-atrio-navy-dark to-slate-900 p-6 rounded-2xl text-white shadow-md relative overflow-hidden border border-slate-800">
+          <div className="absolute right-0 top-0 w-96 h-full bg-atrio-teal/10 blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-atrio-teal text-xs font-semibold backdrop-blur-md border border-white/10">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Portal Átrio RH</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                {greeting}, {displayName}!
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
+                Acompanhe o seu ponto, solicite férias, consulte holerites ou gerencie as aprovações da sua equipe em um só lugar.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white/10 p-2 rounded-xl border border-white/10 backdrop-blur-sm self-start lg:self-auto shrink-0">
+              <ShieldCheck className="w-5 h-5 text-atrio-teal shrink-0" />
+              <div className="text-xs">
+                <p className="text-slate-400 font-medium">Perfil Ativo</p>
+                <p className="font-bold text-white">{roles.join(' · ') || 'COLABORADOR'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Barra de Atalhos Rápidos */}
+          <div className="mt-6 pt-5 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <button
+              onClick={() => navigate('/ponto/meu-ponto')}
+              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-left flex items-center gap-3 group border border-white/5"
+            >
+              <div className="p-2 rounded-lg bg-atrio-teal/20 text-atrio-teal group-hover:bg-atrio-teal group-hover:text-atrio-navy transition-all">
+                <Clock className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white truncate">Meu Ponto</p>
+                <p className="text-[10px] text-slate-300 truncate">Espelho &amp; Batidas</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => navigate('/ponto/enviar-atestado')}
+              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-left flex items-center gap-3 group border border-white/5"
+            >
+              <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-atrio-navy transition-all">
+                <Stethoscope className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white truncate">Atestado Médico</p>
+                <p className="text-[10px] text-slate-300 truncate">Enviar Comprovante</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => navigate('/ferias/minhas-ferias')}
+              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-left flex items-center gap-3 group border border-white/5"
+            >
+              <div className="p-2 rounded-lg bg-purple-500/20 text-purple-300 group-hover:bg-purple-500 group-hover:text-atrio-navy transition-all">
+                <Calendar className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white truncate">Minhas Férias</p>
+                <p className="text-[10px] text-slate-300 truncate">Saldo &amp; Agendamento</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => navigate('/documentos')}
+              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-left flex items-center gap-3 group border border-white/5"
+            >
+              <div className="p-2 rounded-lg bg-blue-500/20 text-blue-300 group-hover:bg-blue-500 group-hover:text-atrio-navy transition-all">
+                <FileText className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white truncate">Documentos</p>
+                <p className="text-[10px] text-slate-300 truncate">Holerites &amp; Recibos</p>
+              </div>
+            </button>
+          </div>
+        </div>
+
         {/* Seletor de Visão do Dashboard por Perfil */}
-        <div className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-atrio-border shadow-sm">
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white p-2 rounded-xl border border-atrio-border shadow-xs gap-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full sm:w-auto">
             <button
               onClick={() => setActiveDashboardView('COLABORADOR')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
                 activeDashboardView === 'COLABORADOR'
-                  ? 'bg-atrio-navy text-white shadow-sm'
-                  : 'text-atrio-text-secondary hover:bg-atrio-border-light'
+                  ? 'bg-atrio-navy text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
               <Users className="w-4 h-4" />
@@ -48,11 +143,11 @@ export const HomePage: React.FC = () => {
                 onClick={() => setActiveDashboardView('GESTOR')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
                   activeDashboardView === 'GESTOR'
-                    ? 'bg-atrio-navy text-white shadow-sm'
-                    : 'text-atrio-text-secondary hover:bg-atrio-border-light'
+                    ? 'bg-atrio-navy text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                <UserCheck className="w-4 h-4" />
+                <UserCheck className="w-4 h-4 text-purple-600" />
                 <span>Visão Gestor de Equipe</span>
               </button>
             )}
@@ -62,131 +157,25 @@ export const HomePage: React.FC = () => {
                 onClick={() => setActiveDashboardView('RH')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
                   activeDashboardView === 'RH'
-                    ? 'bg-atrio-navy text-white shadow-sm'
-                    : 'text-atrio-text-secondary hover:bg-atrio-border-light'
+                    ? 'bg-atrio-navy text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                <Building2 className="w-4 h-4" />
+                <Building2 className="w-4 h-4 text-atrio-teal" />
                 <span>Visão RH &amp; Diretoria</span>
               </button>
             )}
           </div>
 
-          <div className="hidden md:flex items-center gap-2 text-xs font-semibold text-atrio-teal-dark bg-atrio-teal-light px-3 py-1.5 rounded-lg">
-            <ShieldCheck className="w-4 h-4" />
-            <span>Perfil: {roles.join(', ') || 'COLABORADOR'}</span>
-          </div>
+          <span className="text-[11px] text-slate-400 font-medium px-2">
+            Exibindo indicadores em tempo real
+          </span>
         </div>
 
         {/* Renderização Dinâmica do Dashboard Ativo */}
         {activeDashboardView === 'COLABORADOR' && <EmployeeDashboardView />}
         {activeDashboardView === 'GESTOR' && <ManagerDashboardView />}
         {activeDashboardView === 'RH' && <RhDashboardView />}
-
-        {/* Módulos do Sistema — Progresso Real */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-base font-bold text-atrio-navy">Módulos em Desenvolvimento (Tarefas)</h3>
-              <p className="text-xs text-atrio-text-secondary">
-                Estruturados em <code className="font-mono text-atrio-teal-dark font-medium">tarefas/</code> —{' '}
-                <span className="text-semantic-success font-semibold">16 implementadas (100%)</span>{' '}·{' '}
-                <span className="text-atrio-text-secondary font-semibold">0 pendentes</span>
-              </p>
-            </div>
-            {/* Barra de progresso geral */}
-            <div className="hidden sm:flex flex-col items-end gap-1">
-              <span className="text-xs font-bold text-atrio-text-primary">16 / 16 (100%)</span>
-              <div className="w-32 h-1.5 bg-atrio-border rounded-full overflow-hidden">
-                <div className="h-full bg-semantic-success rounded-full" style={{ width: '100%' }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Fase 1 & 2 — Fundação, Estrutura Base e Ponto */}
-          <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-atrio-text-secondary px-1">
-              Fases 1–2 · MVP — Fundação, Estrutura &amp; Ponto Eletrônico
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[
-                { id: "00", title: "Setup & Arquitetura Base", desc: "Stack React + Vite + Node/TypeScript, banco de dados e arquitetura do projeto.", done: true },
-                { id: "01", title: "Estrutura Organizacional", desc: "Empresas, Unidades, Setores hierárquicos, Cargos e Organograma.", done: true },
-                { id: "02", title: "Cadastro de Colaboradores", desc: "Contratos, vínculos de gestão e Timeline imutável de histórico.", done: true },
-                { id: "03", title: "RBAC & Trilha de Auditoria", desc: "Perfis granulares, escopos contextuais e logs de conformidade LGPD.", done: true },
-                { id: "04", title: "Integração Control iD", desc: "Sincronização automática e idempotente com relógios de ponto.", done: true },
-                { id: "05", title: "Meu Ponto & Banco de Horas", desc: "Espelho mensal de batidas, cálculo de saldo diário e banco acumulado.", done: true },
-                { id: "06", title: "Ajuste de Ponto & Divergências", desc: "Detecção de divergências e solicitação/aprovação de ajustes.", done: true },
-              ].map((item) => (
-                <Card key={item.id} className="space-y-2 border-l-2 border-l-semantic-success opacity-80">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-atrio-teal-dark bg-atrio-teal-light px-2 py-0.5 rounded">
-                      ETAPA {item.id}
-                    </span>
-                    <Badge variant="success" size="sm" dot>Implementada</Badge>
-                  </div>
-                  <h4 className="font-bold text-sm text-atrio-text-primary">{item.title}</h4>
-                  <p className="text-xs text-atrio-text-secondary leading-relaxed">{item.desc}</p>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          {/* Fase 3 & 4 — Workflows, Férias e Documentos */}
-          <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-atrio-text-secondary px-1">
-              Fases 3–4 · MVP — Workflows, Férias, Atestados &amp; Documentos
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[
-                { id: "07", title: "Engine de Workflow & Solicitações", desc: "Engine configurável de workflows (Colaborador → Gestor → RH).", done: true },
-                { id: "08", title: "Gestão de Férias", desc: "Períodos aquisitivos, solicitação de férias e calendário da equipe.", done: true },
-                { id: "09", title: "Atestados & Afastamentos", desc: "Envio seguro com LGPD, abono de ponto e validação no RH.", done: true },
-                { id: "10", title: "Central de Documentos", desc: "Holerites, informes, upload em lote e confirmação de leitura.", done: true },
-              ].map((item) => (
-                <Card key={item.id} className="space-y-2 border-l-2 border-l-semantic-success opacity-80">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-atrio-teal-dark bg-atrio-teal-light px-2 py-0.5 rounded">
-                      ETAPA {item.id}
-                    </span>
-                    <Badge variant="success" size="sm" dot>Implementada</Badge>
-                  </div>
-                  <h4 className="font-bold text-sm text-atrio-text-primary">{item.title}</h4>
-                  <p className="text-xs text-atrio-text-secondary leading-relaxed">{item.desc}</p>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          {/* Fase 5 & 6 — Dashboards, Relatórios e Módulos Complementares */}
-          <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-atrio-text-secondary px-1">
-              Fases 5–6 · Dashboards, Relatórios &amp; Módulos Complementares
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[
-                { id: "11", title: "Dashboards Operacionais", desc: "Dashboards do Colaborador, Gestor e RH com busca universal e atalhos.", done: true },
-                { id: "12", title: "Relatórios & Notificações", desc: "Central de notificações multicanal e relatórios exportáveis (XLSX/PDF).", done: true },
-                { id: "13", title: "Benefícios & Comunicados", desc: "Gestão de benefícios e mural de comunicados internos.", done: true },
-                { id: "14", title: "Onboarding & Offboarding", desc: "Checklists automatizados de admissão e desligamento.", done: true },
-                { id: "15", title: "Treinamentos, Feedback & PDI", desc: "Gestão de treinamentos, feedbacks (1:1) e plano de desenvolvimento.", done: true },
-              ].map((item) => (
-                <Card key={item.id} hoverable={!item.done} className={`space-y-2 border-l-2 ${item.done ? 'border-l-semantic-success opacity-80' : 'border-l-atrio-border'}`}>
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-atrio-teal-dark bg-atrio-teal-light px-2 py-0.5 rounded">
-                      ETAPA {item.id}
-                    </span>
-                    <Badge variant={item.done ? 'success' : 'neutral'} size="sm" dot={item.done}>
-                      {item.done ? 'Implementada' : 'Pendente'}
-                    </Badge>
-                  </div>
-                  <h4 className="font-bold text-sm text-atrio-text-primary">{item.title}</h4>
-                  <p className="text-xs text-atrio-text-secondary leading-relaxed">{item.desc}</p>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
       </div>
     </AppLayout>
   );
