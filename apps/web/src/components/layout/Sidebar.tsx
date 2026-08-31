@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -50,6 +50,21 @@ interface NavSection {
 export const Sidebar: React.FC = () => {
   const { user, employee, roles, logout, hasPermission, hasRole } = useAuth();
   const navigate = useNavigate();
+  const navRef = useRef<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const savedScrollTop = sessionStorage.getItem('atrio_sidebar_scroll_top');
+    if (savedScrollTop) {
+      nav.scrollTop = Number(savedScrollTop);
+    }
+
+    return () => {
+      sessionStorage.setItem('atrio_sidebar_scroll_top', String(nav.scrollTop));
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -310,7 +325,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Navegação Intermediária com Scroll Independente e Filtragem por Perfil */}
-      <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto min-h-0 custom-scrollbar">
+      <nav ref={navRef} className="flex-1 px-3 py-4 space-y-5 overflow-y-auto min-h-0 custom-scrollbar">
         {visibleSections.map((section, sIdx) => (
           <div key={sIdx} className="space-y-1">
             {section.title && (
