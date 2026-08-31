@@ -81,6 +81,19 @@ export interface AuditLogItem {
 }
 
 export const adminService = {
+  async createUser(data: {
+    email: string;
+    password: string;
+    employeeId?: string | null;
+    roleNames?: string[];
+  }): Promise<{ id: string; email: string; employeeId: string | null }> {
+    const res = await api.post<ApiResponse<{ id: string; email: string; employeeId: string | null }>>(
+      '/auth/register',
+      data
+    );
+    return res.data.data;
+  },
+
   // Perfis (Roles)
   async getRoles(): Promise<Role[]> {
     const res = await api.get<ApiResponse<Role[]>>('/admin/roles');

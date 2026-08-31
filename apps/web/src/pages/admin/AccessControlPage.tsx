@@ -11,6 +11,7 @@ import {
   Key,
   Search,
   UserCheck,
+  UserPlus,
   CheckSquare,
   Square,
   CheckCircle2,
@@ -31,8 +32,12 @@ import {
   UserWithRoles,
 } from '../../services/adminService';
 import { PermissionScope } from '../../services/authService';
+import { useAuth } from '../../contexts/AuthContext';
+import { employeeService, Employee } from '../../services/employeeService';
 
 export const AccessControlPage: React.FC = () => {
+  const { hasRole } = useAuth();
+  const isSystemAdmin = hasRole('ADMIN');
   const [activeTab, setActiveTab] = useState<'roles' | 'users'>('roles');
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -60,6 +65,17 @@ export const AccessControlPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
   const [userRoleIds, setUserRoleIds] = useState<string[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
+
+  // Modal de Criação de Usuário (exclusivo ADMIN)
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [createUserForm, setCreateUserForm] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    employeeId: '',
+    roleName: '',
+  });
 
   const [modalLoading, setModalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -248,6 +264,55 @@ export const AccessControlPage: React.FC = () => {
       loadData();
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Erro ao atribuir perfis ao usuário.');
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleOpenCreateUser = async () => {
+    setError(null);
+    setCreateUserForm({ email: '', password: '', confirmPassword: '', employeeId: '', roleName: '' });
+    setIsCreateUserModalOpen(true);
+
+    try {
+      const response = await employeeService.getEmployees({ pageSize: 100, status: 'ATIVO' });
+      setEmployees(response.data || []);
+    } catch (err) {
+      console.error('Erro ao carregar colaboradores para o novo usuário:', err);
+      setError('Não foi possível carregar a lista de colaboradores.');
+    }
+  };
+
+  const handleSubmitCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (createUserForm.password.length < 6) {
+      setError('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    if (createUserForm.password !== createUserForm.confirmPassword) {
+      setError('A confirmação de senha não confere.');
+      return;
+    }
+    if (!createUserForm.roleName) {
+      setError('Selecione um perfil de acesso.');
+      return;
+    }
+
+    try {
+      setModalLoading(true);
+      setError(null);
+      await adminService.createUser({
+        email: createUserForm.email,
+        password: createUserForm.password,
+        employeeId: createUserForm.employeeId || null,
+        roleNames: [createUserForm.roleName],
+      });
+      showNotification(`Usuário ${createUserForm.email} criado com sucesso!`);
+      setIsCreateUserModalOpen(false);
+      loadData();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Erro ao criar usuário.');
     } finally {
       setModalLoading(false);
     }
@@ -477,6 +542,17 @@ export const AccessControlPage: React.FC = () => {
               </p>
             </div>
 
+            {isSystemAdmin && (
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleOpenCreateUser}
+                icon={<UserPlus className="w-4 h-4" />}
+              >
+                Novo Usuário
+              </Button>
+            )}
+
             {/* Campo de Busca */}
             <div className="relative w-full sm:w-72">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -565,6 +641,93 @@ export const AccessControlPage: React.FC = () => {
           </div>
         </Card>
       )}
+
+      {/* Modal de Criação de Usuário */}
+      <Modal
+        isOpen={isCreateUserModalOpen}
+        onClose={() => setIsCreateUserModalOpen(false)}
+        title="Novo Usuário"
+        subtitle="Criação de contas restrita ao administrador do sistema"
+        maxWidth="md"
+      >
+        <form onSubmit={handleSubmitCreateUser} className="space-y-4">
+          {error && (
+            <div className="p-3.5 rounded-lg bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <Input
+            label="E-mail de acesso"
+            type="email"
+            value={createUserForm.email}
+            onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })}
+            placeholder="usuario@empresa.com.br"
+            required
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Senha"
+              type="password"
+              minLength={6}
+              value={createUserForm.password}
+              onChange={(e) => setCreateUserForm({ ...createUserForm, password: e.target.value })}
+              required
+            />
+            <Input
+              label="Confirmar senha"
+              type="password"
+              minLength={6}
+              value={createUserForm.confirmPassword}
+              onChange={(e) => setCreateUserForm({ ...createUserForm, confirmPassword: e.target.value })}
+              required
+            />
+          </div>
+
+          <Select
+            label="Perfil de acesso"
+            value={createUserForm.roleName}
+            onChange={(e) => setCreateUserForm({ ...createUserForm, roleName: e.target.value })}
+            required
+            options={[
+              { value: '', label: 'Selecione um perfil...' },
+              ...roles.map((role) => ({ value: role.name, label: role.name })),
+            ]}
+          />
+
+          <Select
+            label="Vincular ao colaborador"
+            helperText="Opcional. O vínculo associa a conta ao cadastro funcional."
+            value={createUserForm.employeeId}
+            onChange={(e) => setCreateUserForm({ ...createUserForm, employeeId: e.target.value })}
+            options={[
+              { value: '', label: 'Sem vínculo neste momento' },
+              ...employees
+                .filter((employee) => !users.some((user) => user.employee?.id === employee.id))
+                .map((employee) => ({
+                  value: employee.id,
+                  label: `${employee.name} — ${employee.email}`,
+                })),
+            ]}
+          />
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-atrio-border">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsCreateUserModalOpen(false)}
+              disabled={modalLoading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" variant="primary" disabled={modalLoading}>
+              {modalLoading ? 'Criando...' : 'Criar Usuário'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Modal de Criação / Edição de Perfil & Matriz de Escopos */}
       <Modal
