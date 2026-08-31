@@ -1,34 +1,36 @@
-﻿FROM node:20-alpine AS base
+﻿FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Força instalação de devDependencies durante a compilação
-ENV NODE_ENV=development
-
-# Copia dependencias do workspace
+# Copia estrutura de pacotes do monorepo
 COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/
-RUN npm ci --include=dev
+COPY apps/web/package.json ./apps/web/
 
-# Copia o codigo fonte
+# Instala todas as dependencias
+RUN npm ci
+
+# Copia o codigo do backend
 COPY apps/api ./apps/api
 
-# Gera o Prisma Client e Build TypeScript
+# Gera o Prisma Client e compila TypeScript
 WORKDIR /app/apps/api
 RUN npx prisma generate
-RUN npm run build
+RUN NODE_ENV=development npm run build
 
-# Imagem de producao enxuta
+# Imagem final de producao
 FROM node:20-alpine AS runner
-WORKDIR /app/apps/api
+WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY --from=base /app/apps/api/dist ./dist
-COPY --from=base /app/node_modules /app/node_modules
-COPY --from=base /app/apps/api/node_modules ./node_modules
-COPY --from=base /app/apps/api/prisma ./prisma
-COPY --from=base /app/apps/api/package.json ./package.json
+COPY package.json package-lock.json ./
+COPY apps/api/package.json ./apps/api/
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 
+WORKDIR /app/apps/api
 EXPOSE 3333
 
 CMD ["node", "dist/server.js"]

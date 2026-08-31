@@ -1,21 +1,22 @@
 ﻿FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Força instalação de devDependencies durante a compilação
-ENV NODE_ENV=development
-
-# Copia dependencias do workspace
+# Copia estrutura de pacotes do monorepo
 COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/
-RUN npm ci --include=dev
+COPY apps/api/package.json ./apps/api/
 
-# Copia o codigo fonte
+# Instala todas as dependencias
+RUN npm ci
+
+# Copia o codigo do frontend
 COPY apps/web ./apps/web
 
-# Executa o build via npm run build
-RUN npm run build --workspace=apps/web
+# Executa o build dentro de apps/web
+WORKDIR /app/apps/web
+RUN NODE_ENV=development npm run build
 
-# Imagem de producao com Nginx
+# Servidor web leve com Nginx
 FROM nginx:alpine AS runner
 
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
