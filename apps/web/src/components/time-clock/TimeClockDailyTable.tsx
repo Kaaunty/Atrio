@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { AlertCircle, Edit3 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -205,28 +205,36 @@ export const TimeClockDailyTable: React.FC<TimeClockDailyTableProps> = ({
                 </td>
 
                 {/* Previsto */}
-                <td className="py-3 px-3 text-right whitespace-nowrap font-mono text-slate-500">
-                  {day.expectedWorkFormatted}
+                <td className="py-3 px-3 text-right whitespace-nowrap font-mono text-slate-600 font-medium">
+                  {!day.expectedWorkFormatted || day.expectedWorkFormatted.includes('NaN')
+                    ? '00h 00m'
+                    : day.expectedWorkFormatted}
                 </td>
 
                 {/* Realizado */}
-                <td className="py-3 px-3 text-right whitespace-nowrap font-mono font-semibold text-slate-800">
-                  {day.actualWorkFormatted}
+                <td className="py-3 px-3 text-right whitespace-nowrap font-mono font-semibold text-slate-900">
+                  {!day.actualWorkFormatted || day.actualWorkFormatted.includes('NaN')
+                    ? '00h 00m'
+                    : day.actualWorkFormatted}
                 </td>
 
                 {/* Saldo Diário */}
-                <td className="py-3 px-3 text-right whitespace-nowrap font-mono font-bold">
-                  <span
-                    className={
-                      isPositive
-                        ? 'text-emerald-700'
-                        : isNegative
-                        ? 'text-rose-700'
-                        : 'text-slate-400'
-                    }
-                  >
-                    {day.balanceFormatted}
-                  </span>
+                <td className="py-3 px-3 text-right whitespace-nowrap font-mono">
+                  {isPositive ? (
+                    <span className="px-2 py-0.5 rounded text-xs bg-emerald-50 text-emerald-700 font-bold border border-emerald-200/80">
+                      {day.balanceFormatted}
+                    </span>
+                  ) : isNegative ? (
+                    <span className="px-2 py-0.5 rounded text-xs bg-rose-50 text-rose-700 font-bold border border-rose-200/80">
+                      {day.balanceFormatted}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 text-xs font-medium">
+                      {!day.balanceFormatted || day.balanceFormatted.includes('NaN')
+                        ? '00h 00m'
+                        : day.balanceFormatted}
+                    </span>
+                  )}
                 </td>
 
                 {/* Status */}

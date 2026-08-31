@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Clock, CheckCircle2, TrendingUp, TrendingDown, Building2, AlertTriangle } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -46,7 +46,9 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
         </div>
         <div className="mt-3">
           <div className="text-2xl font-bold text-atrio-text-primary tracking-tight font-mono">
-            {totalExpectedFormatted || '00h 00m'}
+            {!totalExpectedFormatted || totalExpectedFormatted.includes('NaN')
+              ? '00h 00m'
+              : totalExpectedFormatted}
           </div>
           <p className="text-[11px] text-atrio-text-secondary mt-1">Carga horária da escala</p>
         </div>
@@ -64,7 +66,9 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
         </div>
         <div className="mt-3">
           <div className="text-2xl font-bold text-atrio-text-primary tracking-tight font-mono">
-            {totalActualFormatted || '00h 00m'}
+            {!totalActualFormatted || totalActualFormatted.includes('NaN')
+              ? '00h 00m'
+              : totalActualFormatted}
           </div>
           <p className="text-[11px] text-atrio-text-secondary mt-1">Tempo líquido trabalhado</p>
         </div>
@@ -113,7 +117,9 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
                 : 'text-atrio-text-primary'
             }`}
           >
-            {totalBalanceFormatted || '00h 00m'}
+            {!totalBalanceFormatted || totalBalanceFormatted.includes('NaN')
+              ? '00h 00m'
+              : totalBalanceFormatted}
           </div>
           <p className="text-[11px] text-atrio-text-secondary mt-1">
             {isMonthPositive
@@ -150,7 +156,9 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
                 : 'text-atrio-text-primary'
             }`}
           >
-            {accumulatedClosingFormatted || '00h 00m'}
+            {!accumulatedClosingFormatted || accumulatedClosingFormatted.includes('NaN')
+              ? '00h 00m'
+              : accumulatedClosingFormatted}
           </div>
           <div className="flex items-center justify-between mt-1">
             <span className="text-[11px] text-atrio-text-secondary">Saldo Total Acumulado</span>

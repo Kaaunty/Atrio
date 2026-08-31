@@ -1,4 +1,4 @@
-﻿import { TimeDailySummaryStatus } from '@prisma/client';
+import { TimeDailySummaryStatus } from '@prisma/client';
 import { ScheduleRuleDay } from '../time-clock.dto.js';
 
 export interface ProcessedEntryItem {
@@ -47,16 +47,20 @@ export class TimeCalculationEngine {
    * Converte minutos em formato legível de horas e minutos (ex: "+01h 30m" ou "-00h 45m" ou "08h 00m")
    */
   static formatMinutesToHours(minutes: number, withSign: boolean = false): string {
-    const isNegative = minutes < 0;
-    const absMinutes = Math.abs(minutes);
+    if (minutes === undefined || minutes === null || Number.isNaN(Number(minutes))) {
+      return '00h 00m';
+    }
+    const num = Number(minutes);
+    const isNegative = num < 0;
+    const absMinutes = Math.abs(num);
     const hours = Math.floor(absMinutes / 60);
     const mins = absMinutes % 60;
     const padH = String(hours).padStart(2, '0');
     const padM = String(mins).padStart(2, '0');
 
     if (withSign) {
-      if (minutes > 0) return `+${padH}h ${padM}m`;
-      if (minutes < 0) return `-${padH}h ${padM}m`;
+      if (num > 0) return `+${padH}h ${padM}m`;
+      if (num < 0) return `-${padH}h ${padM}m`;
       return `00h 00m`;
     }
 
@@ -67,15 +71,19 @@ export class TimeCalculationEngine {
    * Converte minutos em formato "HH:MM" (ex: "+01:30" ou "-00:45" ou "08:00")
    */
   static formatMinutesToTime(minutes: number, withSign: boolean = false): string {
-    const absMinutes = Math.abs(minutes);
+    if (minutes === undefined || minutes === null || Number.isNaN(Number(minutes))) {
+      return '00:00';
+    }
+    const num = Number(minutes);
+    const absMinutes = Math.abs(num);
     const hours = Math.floor(absMinutes / 60);
     const mins = absMinutes % 60;
     const padH = String(hours).padStart(2, '0');
     const padM = String(mins).padStart(2, '0');
 
     if (withSign) {
-      if (minutes > 0) return `+${padH}:${padM}`;
-      if (minutes < 0) return `-${padH}:${padM}`;
+      if (num > 0) return `+${padH}:${padM}`;
+      if (num < 0) return `-${padH}:${padM}`;
       return `00:00`;
     }
 
@@ -141,10 +149,14 @@ export class TimeCalculationEngine {
 
     // 2. Determinação de previsão da jornada
     const isWorkDay = scheduleRule ? scheduleRule.isWorkDay : (input.dayOfWeek >= 1 && input.dayOfWeek <= 5);
+    const ruleExp = scheduleRule
+      ? (scheduleRule.expectedWorkMinutes ?? (scheduleRule as any).expectedMinutes)
+      : undefined;
+
     const expectedWorkMinutes = isHoliday
       ? 0
-      : scheduleRule
-      ? scheduleRule.expectedWorkMinutes
+      : ruleExp !== undefined && ruleExp !== null && !Number.isNaN(Number(ruleExp))
+      ? Number(ruleExp)
       : isWorkDay
       ? 480 // 8 horas padrão caso não haja escala configurada
       : 0;
