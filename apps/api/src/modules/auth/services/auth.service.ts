@@ -319,5 +319,35 @@ export class AuthService {
     } else {
       console.log('✅ Usuário administrador padrão confirmado: admin@atrio.com.br');
     }
+
+    const demoUsers = [
+      { email: 'rh@atrio.com.br', roleName: 'RH', employeeEmail: 'camila.ferreira@atrio.com.br' },
+      { email: 'gestor@atrio.com.br', roleName: 'GESTOR', employeeEmail: 'felipe.souza@atrio.com.br' },
+      { email: 'colaborador@atrio.com.br', roleName: 'COLABORADOR', employeeEmail: 'bruno.martins@atrio.com.br' },
+    ];
+
+    for (const demo of demoUsers) {
+      const role = await prisma.role.findUnique({ where: { name: demo.roleName } });
+      if (!role) continue;
+
+      const existingUser = await prisma.user.findUnique({ where: { email: demo.email } });
+      const employee = await prisma.employee.findUnique({ where: { email: demo.employeeEmail } });
+      const user = existingUser ?? await prisma.user.create({
+        data: {
+          email: demo.email,
+          passwordHash: await this.hashPassword(env.DEMO_PASSWORD),
+          employeeId: employee?.id ?? null,
+          active: true,
+        },
+      });
+
+      await prisma.userRole.upsert({
+        where: { userId_roleId: { userId: user.id, roleId: role.id } },
+        update: {},
+        create: { userId: user.id, roleId: role.id },
+      });
+
+      console.log(`✅ Usuário de demonstração confirmado: ${demo.email} (${demo.roleName})`);
+    }
   }
 }

@@ -143,7 +143,7 @@ export const LoginPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => handleQuickFill('admin@empresa.com.br', 'admin123')}
+                onClick={() => handleQuickFill('admin@atrio.com.br', 'Atrio@2026')}
                 className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/70 text-left transition-colors flex items-center gap-2 group"
               >
                 <div className="w-6 h-6 rounded bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[10px] shrink-0">
@@ -157,7 +157,7 @@ export const LoginPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => handleQuickFill('rh@empresa.com.br', 'rh123')}
+                onClick={() => handleQuickFill('rh@atrio.com.br', 'Demo@2026')}
                 className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/70 text-left transition-colors flex items-center gap-2 group"
               >
                 <div className="w-6 h-6 rounded bg-teal-100 text-atrio-navy flex items-center justify-center font-bold text-[10px] shrink-0">
@@ -171,7 +171,7 @@ export const LoginPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => handleQuickFill('gestor@empresa.com.br', 'gestor123')}
+                onClick={() => handleQuickFill('gestor@atrio.com.br', 'Demo@2026')}
                 className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/70 text-left transition-colors flex items-center gap-2 group"
               >
                 <div className="w-6 h-6 rounded bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[10px] shrink-0">
@@ -185,7 +185,7 @@ export const LoginPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => handleQuickFill('colaborador@empresa.com.br', 'colab123')}
+                onClick={() => handleQuickFill('colaborador@atrio.com.br', 'Demo@2026')}
                 className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/70 text-left transition-colors flex items-center gap-2 group"
               >
                 <div className="w-6 h-6 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[10px] shrink-0">
