@@ -292,13 +292,19 @@ export class AuthService {
       where: { email: 'admin@atrio.com.br' },
     });
 
-    const admin = existingAdmin ?? await prisma.user.create({
-      data: {
-        email: 'admin@atrio.com.br',
-        passwordHash: await this.hashPassword(env.ADMIN_PASSWORD),
-        active: true,
-      },
-    });
+    const adminPasswordHash = await this.hashPassword(env.ADMIN_PASSWORD);
+    const admin = existingAdmin
+      ? await prisma.user.update({
+          where: { id: existingAdmin.id },
+          data: { passwordHash: adminPasswordHash, active: true },
+        })
+      : await prisma.user.create({
+          data: {
+            email: 'admin@atrio.com.br',
+            passwordHash: adminPasswordHash,
+            active: true,
+          },
+        });
 
     await prisma.userRole.upsert({
       where: {
@@ -332,14 +338,28 @@ export class AuthService {
 
       const existingUser = await prisma.user.findUnique({ where: { email: demo.email } });
       const employee = await prisma.employee.findUnique({ where: { email: demo.employeeEmail } });
-      const user = existingUser ?? await prisma.user.create({
-        data: {
-          email: demo.email,
-          passwordHash: await this.hashPassword(env.DEMO_PASSWORD),
-          employeeId: employee?.id ?? null,
-          active: true,
-        },
-      });
+      const employeeOwner = employee
+        ? await prisma.user.findUnique({ where: { employeeId: employee.id }, select: { id: true } })
+        : null;
+      const availableEmployeeId = employee && !employeeOwner ? employee.id : null;
+      const passwordHash = await this.hashPassword(env.ADMIN_PASSWORD);
+      const user = existingUser
+        ? await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+              passwordHash,
+              active: true,
+              ...(!existingUser.employeeId && availableEmployeeId ? { employeeId: availableEmployeeId } : {}),
+            },
+          })
+        : await prisma.user.create({
+            data: {
+              email: demo.email,
+              passwordHash,
+              employeeId: availableEmployeeId,
+              active: true,
+            },
+          });
 
       await prisma.userRole.upsert({
         where: { userId_roleId: { userId: user.id, roleId: role.id } },

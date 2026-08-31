@@ -157,7 +157,7 @@ export const LoginPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => handleQuickFill('rh@atrio.com.br', 'Demo@2026')}
+                onClick={() => handleQuickFill('rh@atrio.com.br', 'Atrio@2026')}
                 className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/70 text-left transition-colors flex items-center gap-2 group"
               >
                 <div className="w-6 h-6 rounded bg-teal-100 text-atrio-navy flex items-center justify-center font-bold text-[10px] shrink-0">
@@ -171,7 +171,7 @@ export const LoginPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => handleQuickFill('gestor@atrio.com.br', 'Demo@2026')}
+                onClick={() => handleQuickFill('gestor@atrio.com.br', 'Atrio@2026')}
                 className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/70 text-left transition-colors flex items-center gap-2 group"
               >
                 <div className="w-6 h-6 rounded bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[10px] shrink-0">
@@ -185,7 +185,7 @@ export const LoginPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => handleQuickFill('colaborador@atrio.com.br', 'Demo@2026')}
+                onClick={() => handleQuickFill('colaborador@atrio.com.br', 'Atrio@2026')}
                 className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/70 text-left transition-colors flex items-center gap-2 group"
               >
                 <div className="w-6 h-6 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[10px] shrink-0">

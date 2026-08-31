@@ -9,7 +9,6 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().default('super-secret-jwt-key'),
   ADMIN_PASSWORD: z.string().default('Atrio@2026'),
-  DEMO_PASSWORD: z.string().default('Demo@2026'),
   TIMEZONE: z.string().default('America/Sao_Paulo'),
 });
 
