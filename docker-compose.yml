@@ -6,8 +6,6 @@
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgrespassword
       POSTGRES_DB: atrio_rh
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,8 +17,6 @@
   redis:
     image: redis:7-alpine
     restart: always
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -34,13 +30,11 @@
       context: .
       dockerfile: apps/api/Dockerfile
     restart: always
-    ports:
-      - "3333:3333"
     environment:
       PORT: 3333
       NODE_ENV: production
       DATABASE_URL: postgresql://postgres:postgrespassword@postgres:5432/atrio_rh?schema=public
-      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-in-production}
+      JWT_SECRET: super-secret-jwt-key-change-in-production
       TIMEZONE: America/Sao_Paulo
     depends_on:
       postgres:
@@ -53,11 +47,9 @@
       context: .
       dockerfile: apps/web/Dockerfile
     restart: always
-    ports:
-      - "80:80"
     depends_on:
       - api
 
 volumes:
-  postgres_data:
-  redis_data:
+  postgres_data: {}
+  redis_data: {}
