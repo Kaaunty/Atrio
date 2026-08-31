@@ -129,3 +129,8 @@ export const requireRole = (...allowedRoles: string[]) => {
     next();
   };
 };
+
+// Compatibilidade com os nomes usados pelos módulos mais novos.
+export type AuthRequest = Request & { user?: AuthenticatedUser };
+export const ensureAuthenticated = authenticate;
+export const checkRole = requireRole;

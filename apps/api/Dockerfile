@@ -24,4 +24,5 @@ EXPOSE 3333
 
 ENV NODE_ENV=production
 
-CMD ["npx", "tsx", "src/server.ts"]
+# Aplica o schema antes do seed e de abrir a porta da API
+CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx src/server.ts"]
