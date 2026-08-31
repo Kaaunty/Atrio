@@ -76,7 +76,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasPermission = (permissionCode: string, minScope?: PermissionScope): boolean => {
     if (roles.includes('ADMIN')) return true;
 
-    const userScope = permissions[permissionCode];
+    let userScope = permissions[permissionCode];
+
+    // Alias para compatibilidade de rotas
+    if (!userScope) {
+      if (permissionCode === 'admin.rbac.gerenciar') userScope = permissions['rbac.gerenciar'];
+      if (permissionCode === 'admin.auditoria.visualizar') userScope = permissions['auditoria.visualizar'];
+      if (permissionCode === 'rbac.gerenciar') userScope = permissions['admin.rbac.gerenciar'];
+      if (permissionCode === 'auditoria.visualizar') userScope = permissions['admin.auditoria.visualizar'];
+    }
+
     if (!userScope) return false;
 
     if (minScope) {

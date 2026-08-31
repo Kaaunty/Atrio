@@ -93,6 +93,44 @@ export const SYSTEM_PERMISSIONS: PermissionDefinition[] = [
     module: 'FERIAS',
     description: 'Permite deferir ou indeferir pedidos de férias da equipe.',
   },
+  {
+    code: 'ferias.gerenciar',
+    name: 'Homologar e Gerenciar Férias (RH)',
+    module: 'FERIAS',
+    description: 'Permite homologação final e cancelamentos de agendamentos de férias.',
+  },
+  {
+    code: 'afastamentos.visualizar',
+    name: 'Visualizar Afastamentos',
+    module: 'AFASTAMENTOS',
+    description: 'Permite visualizar a lista e status de afastamentos vigentes.',
+  },
+
+  // Módulo: Atestados Médicos & Saúde
+  {
+    code: 'atestados.enviar',
+    name: 'Enviar Atestado Médico',
+    module: 'ATESTADOS',
+    description: 'Permite enviar fotos/arquivos de atestados médicos para abono.',
+  },
+  {
+    code: 'atestados.visualizar',
+    name: 'Visualizar Histórico de Atestados',
+    module: 'ATESTADOS',
+    description: 'Permite consultar histórico de atestados cadastrados.',
+  },
+  {
+    code: 'atestados.gerenciar',
+    name: 'Homologar Atestados Médicos (RH)',
+    module: 'ATESTADOS',
+    description: 'Permite ao RH/Saúde validar, aprovar ou rejeitar atestados.',
+  },
+  {
+    code: 'rh.atestados.visualizar_sensivel',
+    name: 'Visualizar Anexos e CIDs Sensíveis',
+    module: 'ATESTADOS',
+    description: 'Acesso restrito a arquivos de atestados e códigos CID conforme LGPD.',
+  },
 
   // Módulo: Solicitações & Workflows
   {
@@ -108,18 +146,24 @@ export const SYSTEM_PERMISSIONS: PermissionDefinition[] = [
     description: 'Permite analisar e despachar etapas de aprovação de solicitações.',
   },
 
-  // Módulo: Documentos
+  // Módulo: Documentos & Holerites
   {
     code: 'documentos.visualizar',
-    name: 'Visualizar Documentos',
+    name: 'Visualizar Documentos e Holerites',
     module: 'DOCUMENTOS',
     description: 'Permite acessar documentos e holerites vinculados ao colaborador.',
+  },
+  {
+    code: 'documentos.enviar',
+    name: 'Enviar Documentos (Upload RH)',
+    module: 'DOCUMENTOS',
+    description: 'Permite upload individual ou em lote de holerites e documentos para colaboradores.',
   },
   {
     code: 'documentos.gerenciar',
     name: 'Gerenciar Central de Documentos',
     module: 'DOCUMENTOS',
-    description: 'Permite cadastrar, publicar e exigir confirmação de leitura em documentos.',
+    description: 'Permite cadastrar, publicar políticas e gerar relatórios de leitura.',
   },
 
   // Módulo: Integrações & Relógios de Ponto
@@ -186,6 +230,8 @@ export const DEFAULT_SYSTEM_ROLES: DefaultRoleConfig[] = [
       { code: 'ferias.visualizar', scope: 'TEAM' },
       { code: 'ferias.solicitar', scope: 'SELF' },
       { code: 'ferias.aprovar', scope: 'TEAM' },
+      { code: 'afastamentos.visualizar', scope: 'TEAM' },
+      { code: 'atestados.visualizar', scope: 'TEAM' },
       { code: 'solicitacoes.abrir', scope: 'SELF' },
       { code: 'solicitacoes.aprovar', scope: 'TEAM' },
       { code: 'documentos.visualizar', scope: 'SELF' },
@@ -201,6 +247,8 @@ export const DEFAULT_SYSTEM_ROLES: DefaultRoleConfig[] = [
       { code: 'ponto.ajustar', scope: 'SELF' },
       { code: 'ferias.visualizar', scope: 'SELF' },
       { code: 'ferias.solicitar', scope: 'SELF' },
+      { code: 'atestados.enviar', scope: 'SELF' },
+      { code: 'atestados.visualizar', scope: 'SELF' },
       { code: 'solicitacoes.abrir', scope: 'SELF' },
       { code: 'documentos.visualizar', scope: 'SELF' },
     ],

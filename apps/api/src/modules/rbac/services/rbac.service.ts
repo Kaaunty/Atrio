@@ -350,4 +350,46 @@ export class RbacService {
 
     return permissionsMap;
   }
+
+  /**
+   * Lista todos os usuários cadastrados com informações do colaborador e papéis atribuídos
+   */
+  static async listUsersWithRoles() {
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        createdAt: true,
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            registrationNumber: true,
+            department: {
+              select: { name: true },
+            },
+            position: {
+              select: { title: true },
+            },
+          },
+        },
+        userRoles: {
+          select: {
+            roleId: true,
+            role: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                isSystemDefault: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return users;
+  }
 }

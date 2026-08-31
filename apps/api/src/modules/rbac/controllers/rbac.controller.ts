@@ -95,6 +95,15 @@ export class RbacController {
     }
   }
 
+  static async listUsers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const users = await RbacService.listUsersWithRoles();
+      return sendSuccess({ res, data: users });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async assignUserRoles(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.params.id as string;

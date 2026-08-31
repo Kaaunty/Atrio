@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginPage } from './pages/auth/LoginPage';
@@ -336,6 +336,14 @@ export const App: React.FC = () => {
             }
           />
           <Route
+            path="/admin/rbac"
+            element={
+              <ProtectedRoute requiredPermission="admin.rbac.gerenciar" minScope="ALL">
+                <AccessControlPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/auditoria"
             element={
               <ProtectedRoute requiredPermission="admin.auditoria.visualizar" minScope="COMPANY">
@@ -343,6 +351,8 @@ export const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          {/* Fallback para rotas não encontradas */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -235,19 +235,19 @@ export const Sidebar: React.FC = () => {
           label: 'Integrações', 
           to: '/admin/integracoes', 
           icon: <Cpu className="w-5 h-5" />, 
-          permission: { code: 'integracoes.visualizar', minScope: 'COMPANY' } 
+          customVisible: (ctx) => ctx.hasRole('ADMIN') || ctx.hasPermission('integracoes.visualizar', 'COMPANY')
         },
         { 
-          label: 'Controle de Acesso', 
+          label: 'Controle de Acesso (RBAC)', 
           to: '/admin/permissoes', 
           icon: <ShieldCheck className="w-5 h-5" />, 
-          permission: { code: 'admin.rbac.gerenciar', minScope: 'ALL' } 
+          customVisible: (ctx) => ctx.hasRole('ADMIN') || ctx.hasPermission('admin.rbac.gerenciar', 'ALL') || ctx.hasPermission('rbac.gerenciar', 'ALL')
         },
         { 
-          label: 'Trilha de Auditoria', 
+          label: 'Trilha de Auditoria (LGPD)', 
           to: '/admin/auditoria', 
           icon: <ShieldAlert className="w-5 h-5" />, 
-          permission: { code: 'admin.auditoria.visualizar', minScope: 'COMPANY' } 
+          customVisible: (ctx) => ctx.hasRole('ADMIN', 'RH') || ctx.hasPermission('admin.auditoria.visualizar', 'COMPANY') || ctx.hasPermission('auditoria.visualizar', 'COMPANY')
         },
         { 
           label: 'Configurações', 

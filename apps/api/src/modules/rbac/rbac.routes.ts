@@ -11,6 +11,7 @@ router.put('/admin/roles/:id', RbacController.updateRole);
 router.delete('/admin/roles/:id', RbacController.deleteRole);
 
 router.get('/admin/permissions', RbacController.listPermissions);
+router.get('/admin/users', RbacController.listUsers);
 router.post('/admin/users/:id/roles', RbacController.assignUserRoles);
 router.post('/admin/rbac/seed', RbacController.seed);
 

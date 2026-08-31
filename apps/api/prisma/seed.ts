@@ -14,6 +14,7 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
+import { SYSTEM_PERMISSIONS, DEFAULT_SYSTEM_ROLES } from '../src/modules/rbac/rbac.constants.js';
 
 const prisma = new PrismaClient();
 
@@ -213,58 +214,54 @@ async function main() {
   // ══════════════════════════════════════════
   console.log('🔐 [6/14] Criando roles e permissões...');
 
-  const [roleAdmin, roleRH, roleGestor, roleColab] = await Promise.all([
-    prisma.role.create({ data: { name: 'ADMIN', description: 'Administrador com acesso total ao sistema.', isSystemDefault: true } }),
-    prisma.role.create({ data: { name: 'RH', description: 'Equipe de Recursos Humanos com acesso gerencial.', isSystemDefault: true } }),
-    prisma.role.create({ data: { name: 'GESTOR', description: 'Gestor de equipe com acesso aos subordinados.', isSystemDefault: true } }),
-    prisma.role.create({ data: { name: 'COLABORADOR', description: 'Colaborador padrão com acesso próprio.', isSystemDefault: true } }),
-  ]);
-
-  const permDefs = [
-    { code: 'ponto.visualizar',       name: 'Visualizar Ponto',           module: 'ponto',        description: 'Visualizar espelho de ponto e banco de horas.' },
-    { code: 'ponto.ajustar',          name: 'Solicitar Ajuste de Ponto',  module: 'ponto',        description: 'Solicitar ajuste/correção de marcações.' },
-    { code: 'ponto.aprovar',          name: 'Aprovar Ajuste de Ponto',    module: 'ponto',        description: 'Aprovar ou rejeitar solicitações de ajuste.' },
-    { code: 'colaborador.visualizar', name: 'Visualizar Colaboradores',   module: 'colaboradores',description: 'Listar e visualizar dados de colaboradores.' },
-    { code: 'colaborador.gerenciar',  name: 'Gerenciar Colaboradores',    module: 'colaboradores',description: 'Criar, editar e desligar colaboradores.' },
-    { code: 'ferias.solicitar',       name: 'Solicitar Férias',           module: 'ferias',       description: 'Criar solicitação de férias.' },
-    { code: 'ferias.aprovar',         name: 'Aprovar Férias (Gestor)',     module: 'ferias',       description: 'Aprovar solicitações de férias da equipe.' },
-    { code: 'ferias.gerenciar',       name: 'Gerenciar Férias (RH)',      module: 'ferias',       description: 'Homologar e gerenciar férias de todos.' },
-    { code: 'solicitacoes.criar',     name: 'Criar Solicitações',         module: 'solicitacoes', description: 'Abrir novas solicitações na central.' },
-    { code: 'solicitacoes.aprovar',   name: 'Aprovar Solicitações',       module: 'solicitacoes', description: 'Avaliar e aprovar/rejeitar solicitações.' },
-    { code: 'org.gerenciar',          name: 'Gerenciar Estrutura Org.',   module: 'organizacao',  description: 'Criar e editar empresas, unidades e setores.' },
-    { code: 'rbac.gerenciar',         name: 'Gerenciar RBAC',             module: 'rbac',         description: 'Criar e editar roles e permissões.' },
-    { code: 'auditoria.visualizar',   name: 'Visualizar Auditoria',       module: 'auditoria',    description: 'Consultar trilha de auditoria e logs.' },
-    { code: 'atestados.enviar',       name: 'Enviar Atestado Médico',     module: 'atestados',    description: 'Enviar foto/pdf de atestado médico.' },
-    { code: 'atestados.visualizar',   name: 'Visualizar Meus Atestados',  module: 'atestados',    description: 'Consultar histórico de atestados próprios.' },
-    { code: 'atestados.gerenciar',    name: 'Homologar Atestados (RH)',   module: 'atestados',    description: 'Validar, aprovar ou rejeitar atestados no RH.' },
-    { code: 'rh.atestados.visualizar_sensivel', name: 'Visualizar Anexo e CID', module: 'atestados', description: 'Acesso a documentos anexos e códigos CID (LGPD).' },
-    { code: 'afastamentos.visualizar', name: 'Visualizar Afastamentos',   module: 'afastamentos', description: 'Visualizar lista de afastamentos vigentes.' },
-    { code: 'documentos.visualizar',  name: 'Visualizar Meus Documentos', module: 'documentos',   description: 'Visualizar e baixar holerites e documentos.' },
-    { code: 'documentos.enviar',      name: 'Upload em Lote / Single (RH)', module: 'documentos', description: 'Enviar holerites e arquivos para colaboradores.' },
-    { code: 'documentos.gerenciar',   name: 'Gerenciar Documentos RH',    module: 'documentos',   description: 'Publicar políticas e gerar relatórios de leitura.' },
-  ];
-
-  const permissions = await Promise.all(permDefs.map((p) => prisma.permission.create({ data: p })));
-  const perm = Object.fromEntries(permissions.map((p) => [p.code, p]));
-
-  // ADMIN — todas as permissões (escopo ALL)
-  await Promise.all(
-    permissions.map((p) =>
-      prisma.rolePermission.create({ data: { roleId: roleAdmin.id, permissionId: p.id, scope: 'ALL' } })
+  // Cadastra todas as permissões do sistema
+  const createdPermissions = await Promise.all(
+    SYSTEM_PERMISSIONS.map((p) =>
+      prisma.permission.create({
+        data: {
+          code: p.code,
+          name: p.name,
+          module: p.module,
+          description: p.description,
+        },
+      })
     )
   );
-  // RH — acesso gerencial (ALL)
-  for (const code of ['ponto.visualizar','ponto.aprovar','colaborador.visualizar','colaborador.gerenciar','ferias.gerenciar','ferias.aprovar','solicitacoes.aprovar','auditoria.visualizar','atestados.gerenciar','rh.atestados.visualizar_sensivel','afastamentos.visualizar','documentos.visualizar','documentos.enviar','documentos.gerenciar']) {
-    await prisma.rolePermission.create({ data: { roleId: roleRH.id, permissionId: perm[code].id, scope: 'ALL' } });
+
+  const permMapByCode = Object.fromEntries(createdPermissions.map((p) => [p.code, p.id]));
+
+  // Cadastra roles padrão e vincula permissões com escopo
+  const createdRolesMap: Record<string, any> = {};
+
+  for (const roleDef of DEFAULT_SYSTEM_ROLES) {
+    const role = await prisma.role.create({
+      data: {
+        name: roleDef.name,
+        description: roleDef.description,
+        isSystemDefault: true,
+      },
+    });
+
+    createdRolesMap[roleDef.name] = role;
+
+    for (const p of roleDef.permissions) {
+      const permissionId = permMapByCode[p.code];
+      if (permissionId) {
+        await prisma.rolePermission.create({
+          data: {
+            roleId: role.id,
+            permissionId,
+            scope: p.scope,
+          },
+        });
+      }
+    }
   }
-  // GESTOR — acesso à equipe (TEAM)
-  for (const code of ['ponto.visualizar','ponto.aprovar','colaborador.visualizar','ferias.aprovar','solicitacoes.aprovar','afastamentos.visualizar','documentos.visualizar']) {
-    await prisma.rolePermission.create({ data: { roleId: roleGestor.id, permissionId: perm[code].id, scope: 'TEAM' } });
-  }
-  // COLABORADOR — acesso próprio (SELF)
-  for (const code of ['ponto.visualizar','ponto.ajustar','ferias.solicitar','solicitacoes.criar','atestados.enviar','atestados.visualizar','documentos.visualizar']) {
-    await prisma.rolePermission.create({ data: { roleId: roleColab.id, permissionId: perm[code].id, scope: 'SELF' } });
-  }
+
+  const roleAdmin = createdRolesMap['ADMIN'];
+  const roleRH = createdRolesMap['RH'];
+  const roleGestor = createdRolesMap['GESTOR'];
+  const roleColab = createdRolesMap['COLABORADOR'];
 
   // ══════════════════════════════════════════
   // 7. COLABORADORES

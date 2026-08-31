@@ -30,6 +30,28 @@ export interface Role {
   };
 }
 
+export interface UserWithRoles {
+  id: string;
+  email: string;
+  createdAt: string;
+  employee?: {
+    id: string;
+    name: string;
+    registrationNumber: string;
+    department?: { name: string } | null;
+    position?: { title: string } | null;
+  } | null;
+  userRoles: {
+    roleId: string;
+    role: {
+      id: string;
+      name: string;
+      description: string;
+      isSystemDefault: boolean;
+    };
+  }[];
+}
+
 export interface AuditLogItem {
   id: string;
   userId?: string | null;
@@ -99,6 +121,17 @@ export const adminService = {
   // Permissões
   async getPermissions(): Promise<Permission[]> {
     const res = await api.get<ApiResponse<Permission[]>>('/admin/permissions');
+    return res.data.data;
+  },
+
+  // Usuários & Papéis
+  async getUsersWithRoles(): Promise<UserWithRoles[]> {
+    const res = await api.get<ApiResponse<UserWithRoles[]>>('/admin/users');
+    return res.data.data;
+  },
+
+  async assignUserRoles(userId: string, roleIds: string[]): Promise<Record<string, PermissionScope>> {
+    const res = await api.post<ApiResponse<Record<string, PermissionScope>>>(`/admin/users/${userId}/roles`, { roleIds });
     return res.data.data;
   },
 
