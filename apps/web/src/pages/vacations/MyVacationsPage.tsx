@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Calendar, 
   Clock, 
@@ -115,9 +115,9 @@ export const MyVacationsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Cards de Métricas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card padding="md" className="flex items-center gap-4 border-l-4 border-l-emerald-500">
+        {/* Cards de Métricas - Carrossel no Mobile / Grade no Desktop */}
+        <div className="flex overflow-x-auto pb-3 pt-1 -mx-3.5 px-3.5 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 snap-x snap-mandatory no-scrollbar sm:pb-0 touch-pan-x">
+          <Card padding="md" className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start flex items-center gap-4 border-l-4 border-l-emerald-500">
             <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
               <Calendar className="w-6 h-6" />
             </div>
@@ -131,7 +131,7 @@ export const MyVacationsPage: React.FC = () => {
             </div>
           </Card>
 
-          <Card padding="md" className="flex items-center gap-4 border-l-4 border-l-amber-500">
+          <Card padding="md" className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start flex items-center gap-4 border-l-4 border-l-amber-500">
             <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
               <Clock className="w-6 h-6" />
             </div>
@@ -145,7 +145,7 @@ export const MyVacationsPage: React.FC = () => {
             </div>
           </Card>
 
-          <Card padding="md" className="flex items-center gap-4 border-l-4 border-l-indigo-500">
+          <Card padding="md" className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start flex items-center gap-4 border-l-4 border-l-indigo-500">
             <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-6 h-6" />
             </div>
@@ -159,7 +159,7 @@ export const MyVacationsPage: React.FC = () => {
             </div>
           </Card>
 
-          <Card padding="md" className="flex items-center gap-4 border-l-4 border-l-rose-500">
+          <Card padding="md" className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start flex items-center gap-4 border-l-4 border-l-rose-500">
             <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
               <AlertCircle className="w-6 h-6" />
             </div>

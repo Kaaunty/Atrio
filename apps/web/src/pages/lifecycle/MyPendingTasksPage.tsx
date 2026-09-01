@@ -122,16 +122,18 @@ export const MyPendingTasksPage: React.FC = () => {
         )}
 
         {/* Lista de Tarefas */}
-        <Card className="space-y-4 p-6">
-          <div className="flex items-center justify-between border-b border-atrio-border pb-3">
+        <Card className="space-y-4 p-4 sm:p-6">
+          <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2.5 sm:gap-4 border-b border-atrio-border pb-3">
             <div className="flex items-center gap-2">
-              <CheckSquare className="w-5 h-5 text-atrio-teal-dark" />
-              <h2 className="text-base font-bold text-atrio-navy">Pendências sob Sua Responsabilidade</h2>
+              <CheckSquare className="w-5 h-5 text-atrio-teal-dark shrink-0" />
+              <h2 className="text-base font-bold text-atrio-navy">Tarefas Pendentes</h2>
             </div>
 
-            <Badge variant="neutral" size="sm">
-              {tasks.length} pendentes
-            </Badge>
+            <div className="self-start xs:self-auto">
+              <Badge variant={tasks.length > 0 ? 'warning' : 'success'} size="sm">
+                {tasks.length} {tasks.length === 1 ? 'pendente' : 'pendentes'}
+              </Badge>
+            </div>
           </div>
 
           {loading ? (
@@ -143,7 +145,7 @@ export const MyPendingTasksPage: React.FC = () => {
             <div className="text-center py-12 space-y-2">
               <CheckCircle2 className="w-12 h-12 text-semantic-success mx-auto" />
               <h3 className="font-bold text-atrio-navy text-sm">Tudo em dia!</h3>
-              <p className="text-xs text-atrio-text-secondary">
+              <p className="text-xs text-atrio-text-secondary max-w-sm mx-auto leading-relaxed">
                 Você não possui tarefas pendentes de Onboarding ou Offboarding no momento.
               </p>
             </div>
@@ -152,35 +154,40 @@ export const MyPendingTasksPage: React.FC = () => {
               {tasks.map((task) => (
                 <div
                   key={task.id}
-                  className="p-4 rounded-xl border border-atrio-border hover:border-atrio-teal/40 bg-white transition-all space-y-2"
+                  className="p-4 rounded-xl border border-atrio-border hover:border-atrio-teal/40 bg-white transition-all space-y-3"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="font-mono text-[10px] font-bold uppercase text-atrio-teal-dark bg-atrio-teal-light px-2 py-0.5 rounded">
                           {task.category}
                         </span>
-                        <span className="text-xs text-atrio-text-secondary">
+                        <span className="text-xs text-atrio-text-secondary leading-tight">
                           Processo: <strong>{task.process.processType}</strong> ·{' '}
                           {task.process.employee.name} ({task.process.employee.registrationNumber})
                         </span>
                       </div>
-                      <h4 className="font-bold text-sm text-atrio-navy">{task.title}</h4>
+                      <h4 className="font-bold text-sm text-atrio-navy leading-snug">{task.title}</h4>
                       {task.description && (
-                        <p className="text-xs text-atrio-text-secondary leading-relaxed mt-0.5">
+                        <p className="text-xs text-atrio-text-secondary leading-relaxed">
                           {task.description}
                         </p>
                       )}
                     </div>
 
-                    <Button variant="secondary" size="sm" onClick={() => setSelectedTask(task)}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setSelectedTask(task)}
+                      className="w-full sm:w-auto shrink-0 justify-center"
+                    >
                       Marcar Concluída
                     </Button>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-atrio-border/60">
+                  <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 text-[11px] text-slate-400 pt-2 border-t border-atrio-border/60">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-semantic-warning" /> Vencimento:{' '}
+                      <Calendar className="w-3.5 h-3.5 text-semantic-warning shrink-0" /> Vencimento:{' '}
                       <strong className="text-atrio-navy font-semibold">
                         {new Date(task.dueDate).toLocaleDateString('pt-BR')}
                       </strong>
@@ -188,7 +195,7 @@ export const MyPendingTasksPage: React.FC = () => {
 
                     <button
                       onClick={() => navigate(`/rh/processos/${task.process.id}`)}
-                      className="text-atrio-teal font-semibold hover:underline flex items-center gap-0.5"
+                      className="text-atrio-teal font-semibold hover:underline flex items-center gap-0.5 self-start xs:self-auto"
                     >
                       Ver Checklist Completo <ChevronRight className="w-3.5 h-3.5" />
                     </button>

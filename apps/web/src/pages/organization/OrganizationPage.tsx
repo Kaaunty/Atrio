@@ -79,9 +79,9 @@ export const OrganizationPage: React.FC = () => {
       title="Estrutura Organizacional"
       subtitle="Gerencie empresas, unidades operacionais, departamentos e cargos com organograma integrado"
     >
-      {/* Cards de Métricas Topo */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 flex items-center gap-3.5 bg-white border-atrio-border">
+      {/* Cards de Métricas Topo - Carrossel no Mobile / Grade no Desktop */}
+      <div className="flex overflow-x-auto pb-3 pt-1 -mx-3.5 px-3.5 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 snap-x snap-mandatory no-scrollbar sm:pb-0 touch-pan-x">
+        <Card className="w-[68vw] xs:w-[220px] sm:w-auto shrink-0 snap-start p-4 flex items-center gap-3.5 bg-white border-atrio-border">
           <div className="w-10 h-10 rounded-lg bg-blue-50 text-atrio-navy flex items-center justify-center font-bold shrink-0 border border-blue-100">
             <Building2 className="w-5 h-5" />
           </div>
@@ -91,7 +91,7 @@ export const OrganizationPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-4 flex items-center gap-3.5 bg-white border-atrio-border">
+        <Card className="w-[68vw] xs:w-[220px] sm:w-auto shrink-0 snap-start p-4 flex items-center gap-3.5 bg-white border-atrio-border">
           <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0 border border-emerald-100">
             <MapPin className="w-5 h-5" />
           </div>
@@ -101,7 +101,7 @@ export const OrganizationPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-4 flex items-center gap-3.5 bg-white border-atrio-border">
+        <Card className="w-[68vw] xs:w-[220px] sm:w-auto shrink-0 snap-start p-4 flex items-center gap-3.5 bg-white border-atrio-border">
           <div className="w-10 h-10 rounded-lg bg-teal-50 text-atrio-teal-dark flex items-center justify-center font-bold shrink-0 border border-teal-100">
             <Layers className="w-5 h-5" />
           </div>
@@ -111,7 +111,7 @@ export const OrganizationPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-4 flex items-center gap-3.5 bg-white border-atrio-border">
+        <Card className="w-[68vw] xs:w-[220px] sm:w-auto shrink-0 snap-start p-4 flex items-center gap-3.5 bg-white border-atrio-border">
           <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center font-bold shrink-0 border border-purple-100">
             <Briefcase className="w-5 h-5" />
           </div>

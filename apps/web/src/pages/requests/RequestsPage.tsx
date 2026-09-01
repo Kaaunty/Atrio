@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FileText, 
@@ -133,12 +133,12 @@ export const RequestsPage: React.FC = () => {
         </div>
 
         {/* Abas Principais & Filtros */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-3.5 rounded-xl border border-atrio-border shadow-sm">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white p-3 sm:p-3.5 rounded-xl border border-atrio-border shadow-sm">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setActiveTab('MY_REQUESTS')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                 activeTab === 'MY_REQUESTS'
                   ? 'bg-atrio-navy text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
@@ -149,7 +149,7 @@ export const RequestsPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('INBOX')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                 activeTab === 'INBOX'
                   ? 'bg-atrio-navy text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
@@ -165,8 +165,8 @@ export const RequestsPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="relative min-w-64">
+          <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto">
+            <div className="relative flex-1 lg:w-64">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
@@ -214,19 +214,19 @@ export const RequestsPage: React.FC = () => {
                     {getPriorityBadge(req.priority)}
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
                     <span>
                       Tipo: <strong className="text-slate-700">{req.requestType?.name}</strong>
                     </span>
-                    <span>•</span>
                     {activeTab === 'INBOX' && req.requester && (
                       <>
+                        <span className="hidden sm:inline">•</span>
                         <span>
                           Solicitante: <strong className="text-slate-700">{req.requester.name}</strong> ({req.requester.department?.name || 'Geral'})
                         </span>
-                        <span>•</span>
                       </>
                     )}
+                    <span className="hidden sm:inline">•</span>
                     <span>Aberta em: {formatDate(req.createdAt)}</span>
                   </div>
                 </div>

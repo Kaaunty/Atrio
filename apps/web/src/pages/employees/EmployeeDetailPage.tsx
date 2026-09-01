@@ -194,10 +194,10 @@ export const EmployeeDetailPage: React.FC = () => {
       </div>
 
       {/* Cabeçalho do Perfil */}
-      <Card className="p-6 bg-white border-atrio-border">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="w-20 h-20 rounded-full bg-slate-100 border-2 border-atrio-teal/40 flex items-center justify-center font-bold text-atrio-navy text-2xl overflow-hidden shadow-xs shrink-0">
+      <Card className="p-4 sm:p-6 bg-white border-atrio-border">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
+          <div className="flex flex-col xs:flex-row items-start xs:items-center gap-4 sm:gap-5">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-100 border-2 border-atrio-teal/40 flex items-center justify-center font-bold text-atrio-navy text-xl sm:text-2xl overflow-hidden shadow-xs shrink-0">
               {employee.avatarUrl ? (
                 <img src={employee.avatarUrl} alt={employee.name} className="w-full h-full object-cover" />
               ) : (
@@ -210,16 +210,16 @@ export const EmployeeDetailPage: React.FC = () => {
               )}
             </div>
 
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h2 className="text-xl font-bold text-atrio-navy">{employee.name}</h2>
+            <div className="space-y-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg sm:text-xl font-bold text-atrio-navy leading-tight">{employee.name}</h2>
                 {getStatusBadge(employee.status)}
-                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                <span className="text-[11px] sm:text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
                   {employee.contractType}
                 </span>
               </div>
 
-              <p className="text-sm font-medium text-slate-700">
+              <p className="text-xs sm:text-sm font-medium text-slate-700 leading-snug">
                 {employee.position?.title || 'Sem cargo definido'}
                 {employee.position?.level && (
                   <span className="text-slate-400 font-normal"> ({employee.position.level})</span>
@@ -229,30 +229,31 @@ export const EmployeeDetailPage: React.FC = () => {
                 )}
               </p>
 
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 pt-0.5">
+              <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[11px] sm:text-xs text-slate-500 pt-0.5">
                 <span className="flex items-center gap-1 font-mono">
-                  <Shield className="w-3.5 h-3.5 text-slate-400" />
+                  <Shield className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   Matrícula: {employee.registrationNumber}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                  <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   {employee.company?.tradeName}
                   {employee.unit ? ` (${employee.unit.name})` : ''}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   Admitido em: {formatDate(employee.admissionDate)} ({calculateTenure(employee.admissionDate)})
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+          <div className="flex items-center gap-2 shrink-0 self-stretch sm:self-center pt-2 sm:pt-0">
             <Button
               variant="secondary"
               size="sm"
               onClick={() => setIsEditModalOpen(true)}
               icon={<Edit2 className="w-4 h-4 text-atrio-teal-dark" />}
+              className="flex-1 sm:flex-initial justify-center"
             >
               Editar Colaborador
             </Button>

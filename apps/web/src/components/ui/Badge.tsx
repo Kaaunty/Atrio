@@ -16,11 +16,11 @@ export const Badge: React.FC<BadgeProps> = ({
   className,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center font-medium rounded-full border transition-colors';
+  const baseStyles = 'inline-flex items-center font-medium rounded-full border transition-colors whitespace-nowrap shrink-0';
 
   const sizeStyles = {
-    sm: 'px-2 py-0.5 text-[11px] gap-1',
-    md: 'px-2.5 py-1 text-xs gap-1.5',
+    sm: 'px-2 py-0.5 text-[11px] gap-1 leading-tight',
+    md: 'px-2.5 py-1 text-xs gap-1.5 leading-tight',
   };
 
   const variantStyles = {

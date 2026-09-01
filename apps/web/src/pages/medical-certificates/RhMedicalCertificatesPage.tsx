@@ -217,19 +217,19 @@ export const RhMedicalCertificatesPage: React.FC = () => {
     <AppLayout title="Homologação de Atestados RH">
       <div className="space-y-6 max-w-7xl mx-auto">
         {/* Banner do Topo */}
-        <div className="bg-gradient-to-r from-atrio-navy to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+        <div className="bg-gradient-to-r from-atrio-navy to-slate-900 text-white rounded-2xl p-4 sm:p-8 shadow-xl relative overflow-hidden">
           <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-atrio-teal/10 rounded-l-full blur-2xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold text-atrio-teal mb-3">
-                <ShieldCheck className="w-4 h-4" />
+                <ShieldCheck className="w-4 h-4 shrink-0" />
                 <span>Módulo de Gestão LGPD & Saúde Ocupacional</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight leading-tight">
                 Painel de Homologação de Atestados
               </h1>
-              <p className="text-slate-300 text-sm mt-1 max-w-2xl">
+              <p className="text-slate-300 text-xs sm:text-sm mt-1.5 max-w-2xl leading-relaxed">
                 Análise técnica, checagem de CRM, identificação de regras INSS (&gt;15 dias) e abono automático no espelho de ponto.
               </p>
             </div>
@@ -263,15 +263,15 @@ export const RhMedicalCertificatesPage: React.FC = () => {
             </div>
 
             {/* Busca */}
-            <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-              <div className="relative">
+            <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:flex-initial">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type="text"
                   placeholder="Buscar colaborador ou matrícula..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-3 py-2 bg-slate-50 border border-atrio-border rounded-xl text-xs w-64 focus:outline-none focus:ring-2 focus:ring-atrio-teal"
+                  className="pl-9 pr-3 py-2 bg-slate-50 border border-atrio-border rounded-xl text-xs w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-atrio-teal"
                 />
               </div>
               <Button variant="secondary" size="sm" type="submit">

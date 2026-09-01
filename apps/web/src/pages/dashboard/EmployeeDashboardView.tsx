@@ -49,7 +49,7 @@ export const EmployeeDashboardView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Banner de Boas-Vindas */}
-      <div className="bg-gradient-to-r from-atrio-navy to-atrio-navy-dark p-6 rounded-xl text-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-atrio-navy to-atrio-navy-dark p-4 sm:p-6 rounded-xl text-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-atrio-teal">
             Painel do Colaborador
@@ -65,10 +65,10 @@ export const EmployeeDashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* Cards Principais de Indicadores */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Cards Principais de Indicadores - Carrossel no Mobile / Grade no Desktop */}
+      <div className="flex overflow-x-auto pb-3 pt-1 -mx-3.5 px-3.5 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 snap-x snap-mandatory no-scrollbar sm:pb-0 touch-pan-x">
         {/* Card 1: Banco de Horas */}
-        <Card className="space-y-2 border-l-4 border-l-atrio-teal">
+        <Card className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start space-y-2 border-l-4 border-l-atrio-teal">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-atrio-text-secondary uppercase tracking-wider">
               Banco de Horas
@@ -89,7 +89,7 @@ export const EmployeeDashboardView: React.FC = () => {
         </Card>
 
         {/* Card 2: Férias Disponíveis */}
-        <Card className="space-y-2 border-l-4 border-l-semantic-info">
+        <Card className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start space-y-2 border-l-4 border-l-semantic-info">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-atrio-text-secondary uppercase tracking-wider">
               Férias Disponíveis
@@ -111,7 +111,7 @@ export const EmployeeDashboardView: React.FC = () => {
         </Card>
 
         {/* Card 3: Solicitações em Andamento */}
-        <Card className="space-y-2 border-l-4 border-l-semantic-warning">
+        <Card className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start space-y-2 border-l-4 border-l-semantic-warning">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-atrio-text-secondary uppercase tracking-wider">
               Solicitações Abertas
@@ -129,7 +129,7 @@ export const EmployeeDashboardView: React.FC = () => {
         </Card>
 
         {/* Card 4: Documentos Pendentes */}
-        <Card className="space-y-2 border-l-4 border-l-semantic-purple">
+        <Card className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start space-y-2 border-l-4 border-l-semantic-purple">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-atrio-text-secondary uppercase tracking-wider">
               Documentos Pendentes

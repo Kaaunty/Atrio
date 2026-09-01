@@ -85,9 +85,9 @@ export const MyBenefitsPage: React.FC = () => {
       subtitle="Consulte seus cartões, coberturas ativas e dependentes vinculados ao plano corporativo"
     >
       <div className="space-y-6">
-        {/* Resumo no Topo */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="flex items-center gap-4 bg-gradient-to-br from-atrio-navy to-slate-900 text-white">
+        {/* Resumo no Topo - Carrossel no Mobile / Grade no Desktop */}
+        <div className="flex overflow-x-auto pb-3 pt-1 -mx-3.5 px-3.5 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 gap-3 sm:gap-4 snap-x snap-mandatory no-scrollbar sm:pb-0 touch-pan-x">
+          <Card className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start flex items-center gap-4 bg-gradient-to-br from-atrio-navy to-slate-900 text-white">
             <div className="p-3 rounded-2xl bg-white/10 text-atrio-teal border border-white/10">
               <CreditCard className="w-6 h-6" />
             </div>
@@ -97,7 +97,7 @@ export const MyBenefitsPage: React.FC = () => {
             </div>
           </Card>
 
-          <Card className="flex items-center gap-4">
+          <Card className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start flex items-center gap-4">
             <div className="p-3 rounded-2xl bg-atrio-teal-light text-atrio-teal-dark">
               <CheckCircle2 className="w-6 h-6" />
             </div>
@@ -107,7 +107,7 @@ export const MyBenefitsPage: React.FC = () => {
             </div>
           </Card>
 
-          <Card className="flex items-center gap-4">
+          <Card className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start flex items-center gap-4">
             <div className="p-3 rounded-2xl bg-semantic-info-light text-semantic-info">
               <Users className="w-6 h-6" />
             </div>

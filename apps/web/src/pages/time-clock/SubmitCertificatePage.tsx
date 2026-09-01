@@ -158,19 +158,19 @@ export const SubmitCertificatePage: React.FC = () => {
     <AppLayout title="Enviar Atestado Médico">
       <div className="space-y-6 max-w-7xl mx-auto">
         {/* Banner do Topo com Glassmorphism & Botão de Envio */}
-        <div className="bg-gradient-to-r from-atrio-navy to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+        <div className="bg-gradient-to-r from-atrio-navy to-slate-900 text-white rounded-2xl p-4 sm:p-8 shadow-xl relative overflow-hidden">
           <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-atrio-teal/10 rounded-l-full blur-2xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold text-atrio-teal mb-3">
-                <ShieldCheck className="w-4 h-4" />
+                <ShieldCheck className="w-4 h-4 shrink-0" />
                 <span>Proteção LGPD • Comunicação Direta com o RH</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight leading-tight">
                 Envio Seguro de Atestados Médicos
               </h1>
-              <p className="text-slate-300 text-sm mt-1 max-w-2xl">
+              <p className="text-slate-300 text-xs sm:text-sm mt-1.5 max-w-2xl leading-relaxed">
                 Envie a foto ou documento do seu atestado para justificativa de faltas ou consultas. O envio é recebido diretamente pela equipe de RH / Saúde Ocupacional.
               </p>
             </div>
@@ -182,7 +182,7 @@ export const SubmitCertificatePage: React.FC = () => {
                 resetForm();
                 setIsModalOpen(true);
               }}
-              className="shrink-0 flex items-center gap-2 bg-atrio-teal hover:bg-atrio-teal-dark text-atrio-navy-dark font-bold shadow-lg shadow-atrio-teal/20 border-0"
+              className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 bg-atrio-teal hover:bg-atrio-teal-dark text-atrio-navy-dark font-bold shadow-lg shadow-atrio-teal/20 border-0"
             >
               <Plus className="w-5 h-5" />
               Enviar Novo Atestado
@@ -191,29 +191,35 @@ export const SubmitCertificatePage: React.FC = () => {
         </div>
 
         {/* Alerta de Diretrizes LGPD */}
-        <div className="p-4 bg-slate-800/40 border border-slate-700/60 rounded-xl text-slate-300 text-xs flex items-start gap-3">
-          <Info className="w-5 h-5 text-atrio-teal shrink-0 mt-0.5" />
-          <div>
-            <p className="font-bold text-white mb-0.5">Privacidade e Proteção de Dados Médicos (LGPD)</p>
-            <p>
+        <div className="p-4 bg-sky-50/80 border border-sky-200/80 rounded-2xl text-slate-700 text-xs flex items-start gap-3.5 shadow-sm">
+          <div className="p-2 bg-sky-100 text-sky-700 rounded-xl shrink-0 mt-0.5">
+            <Info className="w-4 h-4" />
+          </div>
+          <div className="space-y-1">
+            <p className="font-bold text-sky-950 text-xs sm:text-sm">
+              Privacidade e Proteção de Dados Médicos (LGPD)
+            </p>
+            <p className="text-slate-600 leading-relaxed">
               Conforme o Artigo 11 da LGPD, os documentos de saúde anexados nesta plataforma são de acesso restrito ao Recursos Humanos e Medicina do Trabalho. O seu gestor imediato visualizará apenas o período da ausência para planejamento de escala.
             </p>
           </div>
         </div>
 
         {/* Tabela de Histórico de Atestados Enviados */}
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-5">
+        <Card className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 mb-5 pb-3 border-b border-slate-100">
             <div>
-              <h2 className="text-lg font-bold text-atrio-text-primary flex items-center gap-2">
-                <FileCheck className="w-5 h-5 text-atrio-teal" />
-                Histórico de Atestados Enviados
+              <h2 className="text-base sm:text-lg font-bold text-atrio-text-primary flex items-center gap-2">
+                <FileCheck className="w-5 h-5 text-atrio-teal shrink-0" />
+                <span>Histórico de Atestados Enviados</span>
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
                 Acompanhe o status de homologação dos seus atestados junto ao RH
               </p>
             </div>
-            <Badge variant="info">{certificates.length} atestado(s) registrado(s)</Badge>
+            <div className="self-start sm:self-auto">
+              <Badge variant="info">{certificates.length} atestado(s) registrado(s)</Badge>
+            </div>
           </div>
 
           {loading ? (
@@ -221,10 +227,10 @@ export const SubmitCertificatePage: React.FC = () => {
               Carregando atestados...
             </div>
           ) : certificates.length === 0 ? (
-            <div className="py-12 text-center text-slate-400 text-sm space-y-3">
+            <div className="py-12 text-center text-slate-400 text-sm space-y-2.5">
               <FileText className="w-12 h-12 text-slate-300 mx-auto" />
-              <p className="font-medium text-slate-600">Nenhum atestado enviado até o momento.</p>
-              <p className="text-xs text-slate-400">
+              <p className="font-semibold text-slate-700 text-sm">Nenhum atestado enviado até o momento.</p>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
                 Clique no botão &quot;Enviar Novo Atestado&quot; acima para registrar sua primeira ausência médica.
               </p>
             </div>

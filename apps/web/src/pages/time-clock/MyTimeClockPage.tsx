@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Clock, 
   ChevronLeft, 
@@ -166,12 +166,13 @@ export const MyTimeClockPage: React.FC = () => {
           </div>
 
           {/* Ações Rápidas do Topo */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             <Button
               variant="secondary"
               size="sm"
               icon={<FileText className="w-4 h-4 text-atrio-teal" />}
               onClick={handleOpenHistory}
+              className="text-xs"
             >
               Minhas Solicitações
             </Button>
@@ -181,6 +182,7 @@ export const MyTimeClockPage: React.FC = () => {
               icon={<RefreshCw className={`w-4 h-4 ${recalculating ? 'animate-spin' : ''}`} />}
               onClick={handleRecalculate}
               disabled={recalculating || loading}
+              className="text-xs"
             >
               {recalculating ? 'Recalculando...' : 'Recalcular'}
             </Button>
@@ -189,8 +191,9 @@ export const MyTimeClockPage: React.FC = () => {
               size="sm"
               icon={<Printer className="w-4 h-4" />}
               onClick={handlePrint}
+              className="text-xs"
             >
-              Imprimir Espelho
+              Imprimir
             </Button>
           </div>
         </div>
@@ -219,15 +222,15 @@ export const MyTimeClockPage: React.FC = () => {
         )}
 
         {/* Barra de Navegação de Mês/Ano */}
-        <div className="bg-white border border-atrio-border rounded-xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm print:hidden">
-          <div className="flex items-center gap-2">
+        <div className="bg-white border border-atrio-border rounded-xl p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 shadow-sm print:hidden">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
             <Button
               variant="secondary"
               size="sm"
               icon={<ChevronLeft className="w-4 h-4" />}
               onClick={handlePrevMonth}
             />
-            <div className="px-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-atrio-text-primary font-mono min-w-44 text-center">
+            <div className="px-3 sm:px-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-bold text-atrio-text-primary font-mono flex-1 sm:flex-initial sm:min-w-44 text-center truncate">
               {data?.period?.monthName ? `${data.period.monthName.toUpperCase()} DE ${currentYear}` : `${currentMonth}/${currentYear}`}
             </div>
             <Button
@@ -238,9 +241,9 @@ export const MyTimeClockPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center gap-4 text-xs text-atrio-text-secondary">
+          <div className="flex items-center justify-center sm:justify-end gap-2 text-xs text-atrio-text-secondary">
             <span>
-              Escala de Trabalho:{' '}
+              Escala:{' '}
               <strong className="text-atrio-text-primary">{data?.employee?.scheduleName || 'Padrão 44h'}</strong>
             </span>
           </div>
@@ -311,19 +314,19 @@ export const MyTimeClockPage: React.FC = () => {
 
         {/* Tabela Diária Detalhada */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-atrio-text-primary tracking-tight">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 mb-3">
+            <h2 className="text-sm sm:text-base font-bold text-atrio-text-primary tracking-tight">
               Apuração Diária do Mês ({data?.days?.length || 0} dias)
             </h2>
-            <div className="flex items-center gap-3 text-xs text-atrio-text-secondary print:hidden">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3.5 text-[11px] sm:text-xs text-atrio-text-secondary print:hidden">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Regular
+                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 shrink-0" /> Regular
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Divergência
+                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-rose-500 shrink-0" /> Divergência
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-400" /> Folga / FDS
+                <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-slate-400 shrink-0" /> Folga / FDS
               </span>
             </div>
           </div>
@@ -340,8 +343,9 @@ export const MyTimeClockPage: React.FC = () => {
               onRequestAdjustment={handleOpenAdjustment}
             />
           ) : (
-            <Card padding="lg" className="text-center text-atrio-text-secondary py-8">
-              Nenhum dado encontrado para o período selecionado.
+            <Card padding="lg" className="text-center py-10 space-y-2">
+              <p className="font-semibold text-slate-700 text-sm">Nenhum dado encontrado para o período selecionado.</p>
+              <p className="text-xs text-slate-400">Utilize as setas de navegação acima para consultar outros meses.</p>
             </Card>
           )}
         </div>

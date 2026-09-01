@@ -87,7 +87,7 @@ export const ManagerDashboardView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Banner de Boas-Vindas Gestor */}
-      <div className="bg-gradient-to-r from-atrio-navy to-slate-900 p-6 rounded-xl text-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-atrio-navy to-slate-900 p-4 sm:p-6 rounded-xl text-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-atrio-teal">
             Painel do Gestor de Equipe
@@ -110,10 +110,10 @@ export const ManagerDashboardView: React.FC = () => {
         </div>
       )}
 
-      {/* Cards Táticos */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Cards Táticos - Carrossel no Mobile / Grade no Desktop */}
+      <div className="flex overflow-x-auto pb-3 pt-1 -mx-3.5 px-3.5 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 snap-x snap-mandatory no-scrollbar sm:pb-0 touch-pan-x">
         {/* Card 1: Ausentes Hoje */}
-        <Card className="space-y-2 border-l-4 border-l-semantic-warning">
+        <Card className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start space-y-2 border-l-4 border-l-semantic-warning">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-atrio-text-secondary uppercase tracking-wider">
               Ausentes Hoje
@@ -132,7 +132,7 @@ export const ManagerDashboardView: React.FC = () => {
         </Card>
 
         {/* Card 2: Pendências de Aprovação */}
-        <Card className="space-y-2 border-l-4 border-l-atrio-teal">
+        <Card className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start space-y-2 border-l-4 border-l-atrio-teal">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-atrio-text-secondary uppercase tracking-wider">
               Pendências de Aprovação
@@ -150,7 +150,7 @@ export const ManagerDashboardView: React.FC = () => {
         </Card>
 
         {/* Card 3: Divergências do Mês */}
-        <Card className="space-y-2 border-l-4 border-l-semantic-error">
+        <Card className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start space-y-2 border-l-4 border-l-semantic-error">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-atrio-text-secondary uppercase tracking-wider">
               Divergências da Equipe
@@ -168,7 +168,7 @@ export const ManagerDashboardView: React.FC = () => {
         </Card>
 
         {/* Card 4: Horas Extras da Equipe */}
-        <Card className="space-y-2 border-l-4 border-l-semantic-info">
+        <Card className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start space-y-2 border-l-4 border-l-semantic-info">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-atrio-text-secondary uppercase tracking-wider">
               Horas Extras (Mês)

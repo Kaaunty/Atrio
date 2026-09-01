@@ -121,10 +121,16 @@ describe('Dashboards Operacionais Integration Flow', () => {
     assert.equal(summary.pendingTimeAdjustments[0].employeeName, 'Mariana Silva');
   });
 
-  it('deve retornar resumo corporativo do RH com headcount e férias a vencer', async () => {
+  it('deve retornar resumo corporativo do RH com headcount, status de colaboradores e distribuição por setor', async () => {
     const summary = await DashboardService.getRhDashboardSummary({ companyId: testCompanyId });
 
     assert.ok(summary.headcount >= 2);
+    assert.ok(summary.statusCounts);
+    assert.ok(summary.statusCounts.active >= 2);
+    assert.ok(typeof summary.statusCounts.vacation === 'number');
+    assert.ok(typeof summary.statusCounts.leave === 'number');
+    assert.ok(Array.isArray(summary.departmentBreakdown));
+    assert.ok(summary.departmentBreakdown.length >= 1);
     assert.ok(typeof summary.turnoverRate === 'string');
     assert.ok(summary.expiringVacationsCount >= 1);
   });

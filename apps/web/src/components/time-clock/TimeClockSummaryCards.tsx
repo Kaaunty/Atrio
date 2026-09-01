@@ -33,9 +33,9 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
   const isAccNegative = accumulatedClosingMinutes < 0;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="flex overflow-x-auto pb-3 pt-1 -mx-3.5 px-3.5 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 snap-x snap-mandatory no-scrollbar sm:pb-0 touch-pan-x">
       {/* 1. Horas Previstas */}
-      <Card padding="sm" className="relative overflow-hidden flex flex-col justify-between">
+      <Card padding="sm" className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-atrio-text-secondary uppercase tracking-wider">
             Horas Previstas
@@ -55,7 +55,7 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
       </Card>
 
       {/* 2. Horas Realizadas */}
-      <Card padding="sm" className="relative overflow-hidden flex flex-col justify-between">
+      <Card padding="sm" className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-atrio-text-secondary uppercase tracking-wider">
             Horas Realizadas
@@ -77,7 +77,7 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
       {/* 3. Saldo do Mês */}
       <Card
         padding="sm"
-        className={`relative overflow-hidden flex flex-col justify-between border-l-4 ${
+        className={`w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start relative overflow-hidden flex flex-col justify-between border-l-4 ${
           isMonthPositive
             ? 'border-l-emerald-500 bg-emerald-50/20'
             : isMonthNegative
@@ -136,7 +136,7 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
         padding="sm"
         hoverable={Boolean(onOpenBalanceExtract)}
         onClick={onOpenBalanceExtract}
-        className="relative overflow-hidden flex flex-col justify-between group"
+        className="w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start relative overflow-hidden flex flex-col justify-between group"
       >
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-atrio-text-secondary uppercase tracking-wider">
@@ -174,7 +174,7 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
       {/* 5. Divergências / Pendências */}
       <Card
         padding="sm"
-        className={`relative overflow-hidden flex flex-col justify-between ${
+        className={`w-[72vw] xs:w-[260px] sm:w-auto shrink-0 snap-start relative overflow-hidden flex flex-col justify-between ${
           divergencesCount > 0 ? 'bg-amber-50/40 border-amber-200' : ''
         }`}
       >

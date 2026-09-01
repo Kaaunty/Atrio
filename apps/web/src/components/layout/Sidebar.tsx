@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -21,6 +21,7 @@ import {
   Megaphone,
   UserPlus,
   Compass,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PermissionScope } from '../../services/authService';
@@ -47,10 +48,33 @@ interface NavSection {
   items: NavItem[];
 }
 
-export const Sidebar: React.FC = () => {
+export interface SidebarProps {
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMobile }) => {
   const { user, employee, roles, logout, hasPermission, hasRole } = useAuth();
   const navigate = useNavigate();
   const navRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && mobileOpen && onCloseMobile) {
+        onCloseMobile();
+      }
+    };
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [mobileOpen, onCloseMobile]);
 
   useLayoutEffect(() => {
     const nav = navRef.current;
@@ -67,6 +91,7 @@ export const Sidebar: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
+    if (onCloseMobile) onCloseMobile();
     logout();
     navigate('/login');
   };
@@ -325,18 +350,32 @@ export const Sidebar: React.FC = () => {
     .join('')
     .toUpperCase();
 
-  return (
-    <aside className="w-64 bg-atrio-navy-dark h-screen sticky top-0 flex flex-col shrink-0 border-r border-slate-800 text-slate-300 select-none z-30">
-      {/* Topo da Sidebar: Logo Oficial do Átrio (Sempre Fixo no Topo) */}
-      <div className="h-16 px-6 flex items-center gap-3.5 border-b border-slate-800/80 bg-[#04162e] shrink-0">
-        <div className="w-8 h-8 flex items-center justify-center shrink-0">
-          <img src="/logo-white.png" alt="Átrio Logo" className="w-full h-full object-contain scale-110" />
+  const renderSidebarContent = (isMobile: boolean) => (
+    <>
+      {/* Topo da Sidebar: Logo Oficial do Átrio */}
+      <div className="h-16 px-5 sm:px-6 flex items-center justify-between border-b border-slate-800/80 bg-[#04162e] shrink-0">
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className="w-8 h-8 flex items-center justify-center shrink-0">
+            <img src="/logo-white.png" alt="Átrio Logo" className="w-full h-full object-contain scale-110" />
+          </div>
+          <span className="font-bold text-white text-lg tracking-tight">Átrio</span>
         </div>
-        <span className="font-bold text-white text-lg tracking-tight">Átrio</span>
+
+        {/* Botão Fechar exclusivo para Mobile */}
+        {isMobile && (
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+            aria-label="Fechar menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Navegação Intermediária com Scroll Independente e Filtragem por Perfil */}
-      <nav ref={navRef} className="flex-1 px-3 py-4 space-y-5 overflow-y-auto min-h-0 custom-scrollbar">
+      <nav ref={!isMobile ? navRef : undefined} className="flex-1 px-3 py-4 space-y-5 overflow-y-auto min-h-0 custom-scrollbar">
         {visibleSections.map((section, sIdx) => (
           <div key={sIdx} className="space-y-1">
             {section.title && (
@@ -348,6 +387,11 @@ export const Sidebar: React.FC = () => {
               <NavLink
                 key={iIdx}
                 to={item.to}
+                onClick={() => {
+                  if (isMobile && onCloseMobile) {
+                    onCloseMobile();
+                  }
+                }}
                 className={({ isActive }) =>
                   `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     isActive
@@ -404,6 +448,32 @@ export const Sidebar: React.FC = () => {
           <LogOut className="w-4 h-4" />
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Sidebar Desktop Fixa */}
+      <aside className="hidden lg:flex w-64 bg-atrio-navy-dark h-full flex-col shrink-0 border-r border-slate-800 text-slate-300 select-none z-30">
+        {renderSidebarContent(false)}
+      </aside>
+
+      {/* Drawer Mobile com Backdrop Suave */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          {/* Backdrop Escuro */}
+          <div
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
+            onClick={onCloseMobile}
+            aria-hidden="true"
+          />
+
+          {/* Container Drawer */}
+          <aside className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-atrio-navy-dark h-full flex flex-col shadow-2xl border-r border-slate-800 text-slate-300 select-none z-10 animate-in slide-in-from-left duration-200">
+            {renderSidebarContent(true)}
+          </aside>
+        </div>
+      )}
+    </>
   );
 };

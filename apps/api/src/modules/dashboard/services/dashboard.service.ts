@@ -28,7 +28,7 @@ export class DashboardService {
       where: { employeeId, yearMonth },
     });
 
-    const totalBalanceMinutes = timeBalance ? timeBalance.accumulatedMinutes : 0;
+    const totalBalanceMinutes = timeBalance ? timeBalance.closingBalanceMinutes : 0;
     const sign = totalBalanceMinutes >= 0 ? '+' : '-';
     const absMins = Math.abs(totalBalanceMinutes);
     const hours = Math.floor(absMins / 60);
@@ -220,7 +220,7 @@ export class DashboardService {
       },
     });
 
-    const teamDivergencesCount = summariesMonth.filter((s) => s.status === 'DIVERGENTE').length;
+    const teamDivergencesCount = summariesMonth.filter((s) => s.status === 'DIVERGENCIA').length;
     const teamExtraHoursMins = summariesMonth.reduce((acc, s) => acc + s.extraHoursMinutes, 0);
 
     // 5. Ausências Agendadas nos Próximos 30 Dias
@@ -277,10 +277,94 @@ export class DashboardService {
     const whereEmp: any = { deletedAt: null };
     if (filters.departmentId) whereEmp.departmentId = filters.departmentId;
 
-    // 1. Headcount de Ativos
-    const headcount = await prisma.employee.count({
-      where: { ...whereEmp, status: 'ATIVO' },
+    // 1. Contagens de Colaboradores por Status
+    const statusGroup = await prisma.employee.groupBy({
+      by: ['status'],
+      where: whereEmp,
+      _count: true,
     });
+
+    const statusCounts = {
+      total: 0,
+      active: 0,
+      vacation: 0,
+      leave: 0,
+      terminated: 0,
+    };
+
+    statusGroup.forEach((g) => {
+      if (g.status === 'ATIVO') statusCounts.active = g._count;
+      if (g.status === 'FERIAS') statusCounts.vacation = g._count;
+      if (g.status === 'AFASTADO') statusCounts.leave = g._count;
+      if (g.status === 'DESLIGADO') statusCounts.terminated = g._count;
+    });
+    // Headcount ativo em quadro (ativos + férias + afastados)
+    statusCounts.total = statusCounts.active + statusCounts.vacation + statusCounts.leave;
+    const headcount = statusCounts.active;
+
+    // 2. Distribuição por Setor / Departamento
+    const departmentsWhere: any = { deletedAt: null };
+    if (filters.departmentId) {
+      departmentsWhere.id = filters.departmentId;
+    }
+
+    const departments = await prisma.department.findMany({
+      where: departmentsWhere,
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        employees: {
+          where: { deletedAt: null, status: { not: 'DESLIGADO' } },
+          select: { status: true },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    const departmentBreakdown = departments.map((dept) => {
+      const active = dept.employees.filter((e) => e.status === 'ATIVO').length;
+      const vacation = dept.employees.filter((e) => e.status === 'FERIAS').length;
+      const leave = dept.employees.filter((e) => e.status === 'AFASTADO').length;
+      const total = dept.employees.length;
+
+      return {
+        id: dept.id,
+        name: dept.name,
+        code: dept.code,
+        total,
+        active,
+        vacation,
+        leave,
+      };
+    });
+
+    // Colaboradores sem departamento atribuído
+    if (!filters.departmentId) {
+      const unassignedEmployees = await prisma.employee.findMany({
+        where: {
+          departmentId: null,
+          deletedAt: null,
+          status: { not: 'DESLIGADO' },
+        },
+        select: { status: true },
+      });
+
+      if (unassignedEmployees.length > 0) {
+        const active = unassignedEmployees.filter((e) => e.status === 'ATIVO').length;
+        const vacation = unassignedEmployees.filter((e) => e.status === 'FERIAS').length;
+        const leave = unassignedEmployees.filter((e) => e.status === 'AFASTADO').length;
+        departmentBreakdown.push({
+          id: 'unassigned',
+          name: 'Sem Setor Definido',
+          code: '—',
+          total: unassignedEmployees.length,
+          active,
+          vacation,
+          leave,
+        });
+      }
+    }
 
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -289,7 +373,7 @@ export class DashboardService {
     const startOfMonth = new Date(currentYear, currentMonth, 1);
     const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
 
-    // 2. Admissões e Desligamentos do Mês
+    // 3. Admissões e Desligamentos do Mês
     const admissionsMonth = await prisma.employee.count({
       where: {
         ...whereEmp,
@@ -308,7 +392,7 @@ export class DashboardService {
       ? Number((((admissionsMonth + terminationsMonth) / 2 / headcount) * 100).toFixed(1))
       : 0;
 
-    // 3. Férias a Vencer (Expiração em < 60 dias)
+    // 4. Férias a Vencer (Expiração em < 60 dias)
     const sixtyDaysAhead = new Date();
     sixtyDaysAhead.setDate(sixtyDaysAhead.getDate() + 60);
 
@@ -339,7 +423,7 @@ export class DashboardService {
       })
       .filter((p) => p.availableDays > 0);
 
-    // 4. Divergências de Ponto e Fila de Solicitações do RH
+    // 5. Divergências de Ponto e Fila de Solicitações do RH
     const pendingDivergencesCount = await prisma.timeDailySummary.count({
       where: {
         status: 'FALTA',
@@ -365,7 +449,7 @@ export class DashboardService {
       }
     });
 
-    // 5. Absenteísmo Estimado
+    // 6. Absenteísmo Estimado
     const totalDailySummaries = await prisma.timeDailySummary.count({
       where: { date: { gte: startOfMonth, lte: endOfMonth } },
     });
@@ -383,6 +467,8 @@ export class DashboardService {
 
     return {
       headcount,
+      statusCounts,
+      departmentBreakdown,
       admissionsMonth,
       terminationsMonth,
       turnoverRate: `${turnoverRate}%`,
