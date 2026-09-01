@@ -11,6 +11,8 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { DeviceModal } from '../../components/integrations/DeviceModal';
 import { ManualSyncModal } from '../../components/integrations/ManualSyncModal';
 import { AfdUploadModal } from '../../components/integrations/AfdUploadModal';
+import { RhidSettingsModal } from '../../components/integrations/RhidSettingsModal';
+import { RhidEmployeeSyncTab } from '../../components/integrations/RhidEmployeeSyncTab';
 import {
   IntegrationConfigItem,
   TimeClockDeviceItem,
@@ -36,6 +38,9 @@ import {
   Edit2,
   Radio,
   Shield,
+  Cloud,
+  Users,
+  Building2,
 } from 'lucide-react';
 
 export const ControlIdPage: React.FC = () => {
@@ -51,6 +56,7 @@ export const ControlIdPage: React.FC = () => {
   const [editingDevice, setEditingDevice] = useState<TimeClockDeviceItem | null>(null);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [isAfdModalOpen, setIsAfdModalOpen] = useState(false);
+  const [isRhidModalOpen, setIsRhidModalOpen] = useState(false);
 
   // Dispositivo para exclusão
   const [deviceToDelete, setDeviceToDelete] = useState<TimeClockDeviceItem | null>(null);
@@ -170,6 +176,35 @@ export const ControlIdPage: React.FC = () => {
     }
   };
 
+  const [syncingDevices, setSyncingDevices] = useState(false);
+  const [syncingOrg, setSyncingOrg] = useState(false);
+
+  const handleSyncDevicesFromRhid = async () => {
+    try {
+      setSyncingDevices(true);
+      const res = await integrationService.syncRhidDevices();
+      alert(res.message);
+      await loadData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Falha ao sincronizar relógios do RHiD');
+    } finally {
+      setSyncingDevices(false);
+    }
+  };
+
+  const handleSyncOrgFromRhid = async () => {
+    try {
+      setSyncingOrg(true);
+      const res = await integrationService.syncRhidOrganization();
+      alert(`Estrutura sincronizada com sucesso!\n• ${res.departmentsCount} Departamentos\n• ${res.positionsCount} Cargos\n• ${res.schedulesCount} Escalas/Horários\n• ${res.employeesUpdated} Colaboradores atualizados`);
+      await loadData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Falha ao sincronizar estrutura organizacional do RHiD');
+    } finally {
+      setSyncingOrg(false);
+    }
+  };
+
   const copyToClipboard = (text: string, type: 'hash' | 'webhook') => {
     navigator.clipboard.writeText(text);
     if (type === 'hash') {
@@ -189,6 +224,11 @@ export const ControlIdPage: React.FC = () => {
       label: 'Relógios Cadastrados',
       badge: integration?.devices?.length || 0,
       icon: <Cpu className="w-4 h-4" />,
+    },
+    {
+      id: 'employees',
+      label: 'Colaboradores & RHiD',
+      icon: <Users className="w-4 h-4" />,
     },
     {
       id: 'logs',
@@ -274,6 +314,36 @@ export const ControlIdPage: React.FC = () => {
             </div>
 
             {/* Ações Rápidas */}
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setIsRhidModalOpen(true)}
+              icon={<Cloud className="w-4 h-4 text-indigo-600" />}
+            >
+              RHiD Cloud
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={handleSyncDevicesFromRhid}
+              disabled={syncingDevices || !integration?.enabled}
+              icon={<RefreshCw className={`w-4 h-4 text-indigo-600 ${syncingDevices ? 'animate-spin' : ''}`} />}
+            >
+              {syncingDevices ? 'Puxando do RHiD...' : 'Puxar Relógios do RHiD'}
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={handleSyncOrgFromRhid}
+              disabled={syncingOrg || !integration?.enabled}
+              icon={<Building2 className={`w-4 h-4 text-indigo-600 ${syncingOrg ? 'animate-spin' : ''}`} />}
+              title="Sincroniza Departamentos, Cargos e Escalas/Horários do RHiD"
+            >
+              {syncingOrg ? 'Sincronizando...' : 'Sincronizar Cargos & Escalas'}
+            </Button>
+
             <Button
               variant="secondary"
               size="md"
@@ -431,7 +501,14 @@ export const ControlIdPage: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* ABA 2: HISTÓRICO DE LOGS */}
+        {/* ABA 2: COLABORADORES & RHID */}
+        {/* ========================================================================= */}
+        {activeTab === 'employees' && (
+          <RhidEmployeeSyncTab onOpenSettings={() => setIsRhidModalOpen(true)} />
+        )}
+
+        {/* ========================================================================= */}
+        {/* ABA 3: HISTÓRICO DE LOGS */}
         {/* ========================================================================= */}
         {activeTab === 'logs' && (
           <div className="space-y-4">
@@ -653,6 +730,35 @@ export const ControlIdPage: React.FC = () => {
         {activeTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="p-6 border border-slate-200 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Cloud className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-base font-bold text-atrio-text-primary">RHiD Cloud (Control iD API v2)</h3>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsRhidModalOpen(true)}
+                  icon={<Cloud className="w-3.5 h-3.5" />}
+                >
+                  Configurar Acesso
+                </Button>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Integração direta com o portal oficial RHiD na nuvem. Permite o cadastro e sincronização de colaboradores com todos os relógios da conta, apuração do espelho de ponto e coleta automática de marcações.
+              </p>
+
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-slate-500">Status da Conta RHiD:</span>
+                <span className="font-semibold text-emerald-600 flex items-center">
+                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                  Pronto para Sincronizar
+                </span>
+              </div>
+            </Card>
+
+            <Card className="p-6 border border-slate-200 space-y-4">
               <div className="flex items-center gap-2.5">
                 <Radio className="w-5 h-5 text-atrio-teal" />
                 <h3 className="text-base font-bold text-atrio-text-primary">URL de Push / Webhook Control iD</h3>
@@ -716,6 +822,12 @@ export const ControlIdPage: React.FC = () => {
       </div>
 
       {/* Modais */}
+      <RhidSettingsModal
+        isOpen={isRhidModalOpen}
+        onClose={() => setIsRhidModalOpen(false)}
+        onSaved={loadData}
+      />
+
       <DeviceModal
         isOpen={isDeviceModalOpen}
         onClose={() => setIsDeviceModalOpen(false)}

@@ -150,9 +150,17 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
           employeeService.getEmployees({ pageSize: 100, status: 'ATIVO' }),
         ]);
 
-        setCompanies(comps.data || []);
+        const compList = comps.data || [];
+        setCompanies(compList);
         setDepartments(depts || []);
         setPositions(pos.data || []);
+
+        if (!employee) {
+          setForm((prev) => ({
+            ...prev,
+            companyId: prev.companyId || compList[0]?.id || '',
+          }));
+        }
 
         // Filtra potenciais gestores (remove o próprio colaborador para evitar auto-gestão óbvia)
         const validManagers = (emps.data || []).filter((e) => !employee || e.id !== employee.id);
@@ -186,6 +194,8 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
 
   // Preenche dados para edição
   useEffect(() => {
+    if (!isOpen) return;
+
     if (employee) {
       setForm({
         name: employee.name || '',
@@ -265,7 +275,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
     }
     setError(null);
     setActiveTab('personal');
-  }, [employee, isOpen, companies]);
+  }, [employee, isOpen]);
 
   // Formatação automática do CPF
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {

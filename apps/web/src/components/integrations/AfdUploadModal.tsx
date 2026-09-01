@@ -28,6 +28,9 @@ export const AfdUploadModal: React.FC<AfdUploadModalProps> = ({
   const [result, setResult] = useState<SyncResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [progressText, setProgressText] = useState<string>('');
+  const [progressPercent, setProgressPercent] = useState<number>(0);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,6 +39,9 @@ export const AfdUploadModal: React.FC<AfdUploadModalProps> = ({
 
     setFileName(file.name);
     setError(null);
+    setResult(null);
+    setProgressText('');
+    setProgressPercent(0);
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -50,9 +56,84 @@ export const AfdUploadModal: React.FC<AfdUploadModalProps> = ({
     reader.readAsText(file);
   };
 
+  const normalizeAfdLine = (line: string): string => {
+    const trimmed = line.trim();
+    if (!trimmed) return '';
+
+    // 1. Linhas já delimitadas (CSV / ponto e vírgula / vírgula)
+    if (trimmed.includes(';') || trimmed.includes(',')) {
+      return trimmed;
+    }
+
+    // 2. Cabeçalho (Tipo 1) ou Trailer (Tipo 9): repassa intacto
+    if (trimmed.length >= 10 && (trimmed[9] === '1' || trimmed[9] === '9')) {
+      return trimmed;
+    }
+
+    // 3. Formato Control iD / Portaria 671 (Tipo 3, 7, 4 ou 5) com Timestamp ISO "YYYY-MM-DDTHH:mm:ss"
+    // Ex real: 00000000132025-05-21T16:39:00-0300021394413442C1AC
+    if (trimmed.length >= 35 && (trimmed[9] === '3' || trimmed[9] === '7' || trimmed[9] === '4' || trimmed[9] === '5')) {
+      const candidateDate = trimmed.substring(10, 34).trim();
+      if (candidateDate.includes('-') && candidateDate.includes('T')) {
+        const formattedDateStr = candidateDate.replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+        const d = new Date(formattedDateStr);
+        if (!isNaN(d.getTime())) {
+          // Identificador (PIS/CPF) nas posições 34 a 46
+          const rawId = trimmed.length >= 46 ? trimmed.substring(34, 46).trim() : trimmed.substring(34).trim();
+          const digitsOnly = rawId.replace(/\D/g, '');
+          const idToUse = digitsOnly || rawId;
+          if (idToUse) {
+            return `${idToUse};${d.toISOString()}`;
+          }
+        }
+      }
+    }
+
+    // 4. Formato Legado Portaria 1510 com [DDMMAAAA][HHMM]
+    // Ex: 0000000013010620240800000123456789
+    if (trimmed.length >= 22 && (trimmed[9] === '3' || trimmed[9] === '4' || trimmed[9] === '5')) {
+      const day = parseInt(trimmed.substring(10, 12), 10);
+      const month = parseInt(trimmed.substring(12, 14), 10) - 1;
+      const year = parseInt(trimmed.substring(14, 18), 10);
+      const hour = parseInt(trimmed.substring(18, 20), 10);
+      const minute = parseInt(trimmed.substring(20, 22), 10);
+
+      if (!isNaN(day) && !isNaN(month) && !isNaN(year) && year >= 2000 && month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+        const d = new Date(Date.UTC(year, month, day, hour, minute, 0));
+        const rawIdentifier = trimmed.length >= 34 ? trimmed.substring(22, 34) : trimmed.substring(22);
+        const cleanReg = rawIdentifier.replace(/^0+/, '') || rawIdentifier;
+        if (!isNaN(d.getTime()) && cleanReg) {
+          return `${cleanReg.trim()};${d.toISOString()}`;
+        }
+      }
+    }
+
+    // 5. Fallback Regex para qualquer linha com data ISO e identificador
+    const isoMatch = trimmed.match(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:[+-]\d{2}:?\d{2}|Z)?)/);
+    if (isoMatch && isoMatch.index !== undefined) {
+      const dateStr = isoMatch[1].replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const rest = trimmed.substring(isoMatch.index + isoMatch[1].length);
+        const matchDigits = rest.match(/(\d{8,14})/);
+        if (matchDigits) {
+          return `${matchDigits[1]};${d.toISOString()}`;
+        }
+      }
+    }
+
+    return trimmed;
+  };
+
   const handleUpload = async () => {
     if (!fileContent.trim()) {
       setError('Selecione um arquivo AFD válido');
+      return;
+    }
+
+    const allLines = fileContent.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (allLines.length === 0) {
+      setError('O arquivo selecionado está vazio');
       return;
     }
 
@@ -61,13 +142,69 @@ export const AfdUploadModal: React.FC<AfdUploadModalProps> = ({
       setError(null);
       setResult(null);
 
-      const res = await integrationService.uploadAfd(
-        integrationKey,
-        fileContent,
-        selectedDeviceId || null
-      );
+      // Normaliza as linhas de dados para compatibilidade universal com a API
+      const normalizedLines = allLines.map((l) => normalizeAfdLine(l)).filter(Boolean);
 
-      setResult(res);
+      // Identifica linha de cabeçalho (Tipo 1)
+      const headerLine = normalizedLines.find((l) => l.length >= 10 && l[9] === '1') || '';
+      // Linhas de dados (marcações)
+      const dataLines = normalizedLines.filter((l) => !(l.length >= 10 && l[9] === '1'));
+
+      const CHUNK_SIZE = 1500;
+      const totalChunks = Math.max(1, Math.ceil(dataLines.length / CHUNK_SIZE));
+
+      const aggregatedResult: SyncResult = {
+        syncLogId: '',
+        status: 'SUCCESS',
+        totalRecords: 0,
+        importedRecords: 0,
+        ignoredRecords: 0,
+        unmappedRecords: 0,
+        errorCount: 0,
+        durationMs: 0,
+        message: '',
+      };
+
+      const startTime = Date.now();
+
+      for (let i = 0; i < totalChunks; i++) {
+        const chunkIndex = i + 1;
+        const currentSlice = dataLines.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+        const chunkContent = headerLine
+          ? `${headerLine}\n${currentSlice.join('\n')}`
+          : currentSlice.join('\n');
+
+        const pct = Math.round((chunkIndex / totalChunks) * 100);
+        setProgressPercent(pct);
+        setProgressText(
+          totalChunks > 1
+            ? `Processando lote ${chunkIndex} de ${totalChunks} (${pct}%)...`
+            : 'Processando arquivo AFD...'
+        );
+
+        const res = await integrationService.uploadAfd(
+          integrationKey,
+          chunkContent,
+          selectedDeviceId || null
+        );
+
+        aggregatedResult.syncLogId = res.syncLogId;
+        aggregatedResult.totalRecords += res.totalRecords;
+        aggregatedResult.importedRecords += res.importedRecords;
+        aggregatedResult.ignoredRecords += res.ignoredRecords;
+        aggregatedResult.unmappedRecords += res.unmappedRecords;
+        aggregatedResult.errorCount += res.errorCount;
+        if (res.status === 'PARTIAL_SUCCESS' || res.status === 'FAILED') {
+          aggregatedResult.status = res.status;
+        }
+      }
+
+      aggregatedResult.durationMs = Date.now() - startTime;
+      aggregatedResult.message = `Processamento concluído com sucesso: ${aggregatedResult.importedRecords} novas marcações salvas, ${aggregatedResult.ignoredRecords} já existentes.`;
+
+      setResult(aggregatedResult);
+      setProgressText('');
+      setProgressPercent(100);
       onSuccess();
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Falha ao processar arquivo AFD');
@@ -82,6 +219,8 @@ export const AfdUploadModal: React.FC<AfdUploadModalProps> = ({
     setLinesCount(0);
     setResult(null);
     setError(null);
+    setProgressText('');
+    setProgressPercent(0);
     onClose();
   };
 
@@ -108,13 +247,27 @@ export const AfdUploadModal: React.FC<AfdUploadModalProps> = ({
               disabled={loading || !fileContent}
               icon={<Upload className="w-4 h-4" />}
             >
-              {loading ? 'Processando...' : 'Processar e Importar'}
+              {loading ? (progressText || 'Processando...') : 'Processar e Importar'}
             </Button>
           </>
         )
       }
     >
       <div className="space-y-4">
+        {loading && progressPercent > 0 && (
+          <div className="p-3 bg-atrio-teal-light/20 border border-atrio-teal/30 rounded-xl space-y-2">
+            <div className="flex justify-between text-xs font-semibold text-atrio-navy">
+              <span>{progressText}</span>
+              <span>{progressPercent}%</span>
+            </div>
+            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-atrio-teal h-full transition-all duration-300 rounded-full"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
         {error && (
           <div className="p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 flex items-start gap-2.5 text-xs">
             <XCircle className="w-4 h-4 shrink-0 mt-0.5" />

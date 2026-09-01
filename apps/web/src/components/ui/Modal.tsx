@@ -68,6 +68,7 @@ export const Modal: React.FC<ModalProps> = ({
             {subtitle && <p className="text-xs text-atrio-text-secondary mt-0.5">{subtitle}</p>}
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
             title="Fechar"
