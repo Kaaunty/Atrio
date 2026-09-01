@@ -122,4 +122,68 @@ export class TimeClockEntryService {
       unmappedEntries,
     };
   }
+
+  /**
+   * Reconcilia e vincula retroativamente marcações sem colaborador aos novos registros
+   */
+  static async remapUnmappedEntries() {
+    const unmapped = await prisma.timeClockEntry.findMany({
+      where: { employeeId: null },
+      select: { id: true, registrationNumber: true },
+    });
+
+    if (unmapped.length === 0) {
+      return { totalUnmapped: 0, remappedCount: 0, message: 'Nenhuma marcação pendente de vínculo.' };
+    }
+
+    const employees = await prisma.employee.findMany({
+      where: { deletedAt: null },
+      select: { id: true, registrationNumber: true, code: true, cpf: true },
+    });
+
+    const employeeMap = new Map<string, string>();
+    for (const emp of employees) {
+      if (emp.registrationNumber) {
+        employeeMap.set(emp.registrationNumber.trim(), emp.id);
+        employeeMap.set(emp.registrationNumber.trim().replace(/^0+/, ''), emp.id);
+      }
+      if (emp.code) {
+        employeeMap.set(emp.code.trim(), emp.id);
+        employeeMap.set(emp.code.trim().replace(/^0+/, ''), emp.id);
+      }
+      if (emp.cpf) {
+        employeeMap.set(emp.cpf.trim().replace(/\D/g, ''), emp.id);
+      }
+    }
+
+    let remappedCount = 0;
+    const updatesByEmployee = new Map<string, string[]>();
+
+    for (const entry of unmapped) {
+      const reg = entry.registrationNumber.trim();
+      const cleanReg = reg.replace(/^0+/, '');
+      const empId = employeeMap.get(reg) || employeeMap.get(cleanReg);
+
+      if (empId) {
+        remappedCount++;
+        const list = updatesByEmployee.get(empId) || [];
+        list.push(entry.id);
+        updatesByEmployee.set(empId, list);
+      }
+    }
+
+    for (const [empId, entryIds] of updatesByEmployee.entries()) {
+      await prisma.timeClockEntry.updateMany({
+        where: { id: { in: entryIds } },
+        data: { employeeId: empId },
+      });
+    }
+
+    return {
+      totalUnmapped: unmapped.length,
+      remappedCount,
+      remainingUnmapped: unmapped.length - remappedCount,
+      message: `${remappedCount} marcações foram vinculadas com sucesso aos colaboradores cadastrados.`,
+    };
+  }
 }

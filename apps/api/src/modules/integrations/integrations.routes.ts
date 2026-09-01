@@ -4,6 +4,7 @@ import { IntegrationController } from './controllers/integration.controller.js';
 import { DeviceController } from './controllers/device.controller.js';
 import { SyncLogController } from './controllers/sync-log.controller.js';
 import { TimeClockEntryController } from './controllers/time-clock-entry.controller.js';
+import { RhidController } from './controllers/rhid.controller.js';
 
 const router = Router();
 
@@ -67,6 +68,58 @@ router.get(
   '/integrations/entries/stats',
   requirePermission('integracoes.visualizar'),
   TimeClockEntryController.stats
+);
+router.post(
+  '/integrations/entries/remap',
+  requirePermission('integracoes.gerenciar'),
+  TimeClockEntryController.remap
+);
+
+// --- RHiD Cloud (Control iD API v2) & Sincronização de Colaboradores ---
+router.get(
+  '/integrations/control-id/rhid/settings',
+  requirePermission('integracoes.visualizar'),
+  RhidController.getSettings
+);
+router.put(
+  '/integrations/control-id/rhid/settings',
+  requirePermission('integracoes.gerenciar'),
+  RhidController.updateSettings
+);
+router.post(
+  '/integrations/control-id/rhid/test-connection',
+  requirePermission('integracoes.gerenciar'),
+  RhidController.testConnection
+);
+router.get(
+  '/integrations/control-id/rhid/employees/overview',
+  requirePermission('integracoes.visualizar'),
+  RhidController.getOverview
+);
+router.post(
+  '/integrations/control-id/rhid/employees/import',
+  requirePermission('integracoes.gerenciar'),
+  RhidController.importEmployees
+);
+router.post(
+  '/integrations/control-id/rhid/employees/push',
+  requirePermission('integracoes.gerenciar'),
+  RhidController.pushEmployees
+);
+router.get(
+  '/integrations/control-id/rhid/employees/export-csv',
+  requirePermission('integracoes.visualizar'),
+  RhidController.exportCsv
+);
+router.post(
+  '/integrations/control-id/rhid/devices/sync',
+  requirePermission('integracoes.gerenciar'),
+  RhidController.syncDevices
+);
+router.post(
+  '/integrations/control-id/rhid/organization/sync',
+  requirePermission('integracoes.gerenciar'),
+  RhidController.syncOrganization
 );
 
 // --- Integrações (Hub, Configurações e Disparo Manual) ---

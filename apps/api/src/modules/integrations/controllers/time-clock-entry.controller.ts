@@ -60,7 +60,27 @@ export class TimeClockEntryController {
       return sendError({
         res,
         statusCode: err.statusCode || 500,
-        message: err.message || 'Falha ao obter métricas de marcações',
+        message: err.message || 'Falha ao obter estatísticas das batidas',
+      });
+    }
+  }
+
+  /**
+   * POST /api/v1/integrations/entries/remap
+   */
+  static async remap(req: Request, res: Response) {
+    try {
+      const result = await TimeClockEntryService.remapUnmappedEntries();
+      return sendSuccess({
+        res,
+        message: result.message,
+        data: result,
+      });
+    } catch (err: any) {
+      return sendError({
+        res,
+        statusCode: err.statusCode || 500,
+        message: err.message || 'Falha ao remapear vínculos de ponto',
       });
     }
   }

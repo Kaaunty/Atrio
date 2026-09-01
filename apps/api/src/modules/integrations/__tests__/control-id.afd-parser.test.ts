@@ -53,6 +53,42 @@ describe('Control iD AFD Parser (Portarias 1510 & 671)', () => {
     assert.equal(result.records[1].registrationNumber, 'MAT-200');
   });
 
+  it('deve parsear registros de ponto Tipo 5 (REP-P Portaria 671 / AFDR)', () => {
+    // Registro Tipo 5: [NSR 9][Tipo '5'][Data 8 DDMMAAAA][Hora 4 HHMM][CPF 11][Hash SHA-256...]
+    const repPLine1 = '000000001501062024080012345678901e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+    const repPLine2 = '000000002501062024120012345678901e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+    const sample = `${repPLine1}\n${repPLine2}`;
+
+    const result = ControlIdAfdParser.parse(sample);
+    assert.equal(result.validPunches, 2);
+    assert.equal(result.records[0].nsr, 1n);
+    assert.equal(result.records[0].registrationNumber, '12345678901');
+    assert.equal(result.records[0].timestamp.getUTCHours(), 8);
+    assert.equal(result.records[1].nsr, 2n);
+    assert.equal(result.records[1].registrationNumber, '12345678901');
+    assert.equal(result.records[1].timestamp.getUTCHours(), 12);
+  });
+
+  it('deve parsear registros reais do coletor Control iD com data ISO (Portaria 671 REP-C / REP-P)', () => {
+    const header = '000000000110000000000000000000000000000ControliD                                                                                                                                             032064851442800112025-05-212026-09-012026-09-01T15:41:00-0300003108238299000129                              4CE3';
+    const line1 = '00000000132025-05-21T16:39:00-0300021394413442C1AC';
+    const line2 = '00000000832025-05-22T06:42:00-0300026963870525F707';
+    const line3 = '00000001232025-05-22T13:01:00-03000160478826775824';
+    const sample = `${header}\n${line1}\n${line2}\n${line3}`;
+
+    const result = ControlIdAfdParser.parse(sample);
+    assert.equal(result.validPunches, 3);
+    assert.equal(result.records[0].registrationNumber, '21394413442');
+    assert.equal(result.records[0].timestamp.getUTCFullYear(), 2025);
+    assert.equal(result.records[0].timestamp.getUTCMonth(), 4); // Maio = 4 (0-indexed)
+    assert.equal(result.records[0].timestamp.getUTCDate(), 21);
+    assert.equal(result.records[0].timestamp.getUTCHours(), 19); // 16:39 -0300 = 19:39 UTC
+    assert.equal(result.records[0].timestamp.getUTCMinutes(), 39);
+
+    assert.equal(result.records[1].registrationNumber, '26963870525');
+    assert.equal(result.records[2].registrationNumber, '16047882677');
+  });
+
   it('deve lidar com arquivo vazio ou linhas corrompidas graciosamente', () => {
     const emptyResult = ControlIdAfdParser.parse('');
     assert.equal(emptyResult.validPunches, 0);

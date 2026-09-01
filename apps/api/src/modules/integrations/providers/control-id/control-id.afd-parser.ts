@@ -47,10 +47,9 @@ export class ControlIdAfdParser {
         continue;
       }
 
-      // Registro Tipo 3: Marcação de Ponto
-      // Padrão Portaria 1510: 9 dígitos NSR + '3' + 8 dígitos Data (DDMMAAAA) + 4 dígitos Hora (HHMM) + PIS/Matrícula
-      if (line.length >= 23 && line[9] === '3') {
-        const punch = this.parseType3Line(line);
+      // Registro Tipo 3 (Portaria 1510 & 671 REP-C), Tipo 4 (REP-A) e Tipo 5 (REP-P / AFDR)
+      if (line.length >= 23 && (line[9] === '3' || line[9] === '4' || line[9] === '5' || line[9] === '7')) {
+        const punch = this.parsePunchRecordLine(line);
         if (punch) {
           records.push(punch);
           continue;
@@ -107,25 +106,58 @@ export class ControlIdAfdParser {
   }
 
   /**
-   * Parse do Registro Tipo 3 (Marcação de Ponto Padrão Portaria 1510/671)
-   * Formato: [NSR 9][Tipo '3'][Data 8 DDMMAAAA][Hora 4 HHMM][PIS/Matrícula ...]
+   * Parse do Registro de Marcação de Ponto (Portaria 1510 Tipo 3, Portaria 671 Tipo 3/4/5/7)
    */
-  private static parseType3Line(line: string): RawPunchRecord | null {
+  private static parsePunchRecordLine(line: string): RawPunchRecord | null {
     try {
       const nsrStr = line.substring(0, 9);
+      const recordType = line[9];
+
+      // 1. Registro Tipo 3 ou Tipo 7 com data ISO (Padrão Moderno Control iD / Portaria 671):
+      // Ex: 00000000132025-05-21T16:39:00-0300021394413442C1AC
+      if (line.length >= 35) {
+        const candidateDate = line.substring(10, 34).trim();
+        if (candidateDate.includes('-') && candidateDate.includes('T')) {
+          const formattedDateStr = candidateDate.replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+          const d = new Date(formattedDateStr);
+          if (!isNaN(d.getTime())) {
+            const rawId = line.length >= 46 ? line.substring(34, 46).trim() : line.substring(34).trim();
+            const digitsOnly = rawId.replace(/\D/g, '');
+            const cleanReg = digitsOnly.replace(/^0+/, '') || digitsOnly || rawId;
+
+            return {
+              nsr: nsrStr && !isNaN(Number(nsrStr)) ? BigInt(nsrStr) : null,
+              registrationNumber: cleanReg.trim(),
+              timestamp: d,
+              source: TimeClockSource.CONTROL_ID_AFD,
+              rawPayload: {
+                rawLine: line,
+                recordType,
+                parsedNsr: nsrStr,
+                rawIdentifier: rawId,
+              },
+            };
+          }
+        }
+      }
+
+      // 2. Registro Legado Portaria 1510 Tipo 3 / REP-C com formato [DDMMAAAA][HHMM]
       const day = parseInt(line.substring(10, 12), 10);
       const month = parseInt(line.substring(12, 14), 10) - 1; // 0-indexed JS month
       const year = parseInt(line.substring(14, 18), 10);
       const hour = parseInt(line.substring(18, 20), 10);
       const minute = parseInt(line.substring(20, 22), 10);
-      const second = line.length >= 24 && !isNaN(parseInt(line.substring(22, 24), 10)) && line.length >= 34
-        ? parseInt(line.substring(22, 24), 10)
-        : 0;
 
-      const rawPisOrReg = line.length >= 34 ? line.substring(22, 34) : line.substring(22);
-      const cleanReg = rawPisOrReg.replace(/^0+/, '') || rawPisOrReg;
+      // Em Tipo 5 (REP-P Portaria 671 compacto), após os 22 caracteres temos CPF (11 dígitos): posições 22 a 33
+      let rawIdentifier = '';
+      if (recordType === '5') {
+        rawIdentifier = line.length >= 33 ? line.substring(22, 33) : line.substring(22);
+      } else {
+        rawIdentifier = line.length >= 34 ? line.substring(22, 34) : line.substring(22);
+      }
 
-      const timestamp = new Date(Date.UTC(year, month, day, hour, minute, second));
+      const cleanReg = rawIdentifier.replace(/^0+/, '') || rawIdentifier;
+      const timestamp = new Date(Date.UTC(year, month, day, hour, minute, 0));
 
       if (isNaN(timestamp.getTime())) {
         return null;
@@ -138,8 +170,9 @@ export class ControlIdAfdParser {
         source: TimeClockSource.CONTROL_ID_AFD,
         rawPayload: {
           rawLine: line,
+          recordType,
           parsedNsr: nsrStr,
-          rawPis: rawPisOrReg,
+          rawIdentifier: rawIdentifier.trim(),
         },
       };
     } catch {
@@ -152,8 +185,8 @@ export class ControlIdAfdParser {
    */
   private static tryRelaxedParse(line: string): RawPunchRecord | null {
     // Ex: "001;2024-06-01T08:00:00Z" ou "MAT-001;2024-06-01;08:00"
-    if (line.includes(';') || line.includes(',')) {
-      const parts = line.split(/[;,]/).map((p) => p.trim());
+    if (line.includes(';') || line.includes(',') || line.includes('\t')) {
+      const parts = line.split(/[;,\t]/).map((p) => p.trim());
       if (parts.length >= 2) {
         const regNumber = parts[0];
         const datePart = parts[1];
@@ -161,14 +194,15 @@ export class ControlIdAfdParser {
 
         let dt: Date;
         if (timePart) {
-          dt = new Date(`${datePart}T${timePart}:00`);
+          dt = new Date(`${datePart}T${timePart}`);
         } else {
           dt = new Date(datePart);
         }
 
         if (!isNaN(dt.getTime()) && regNumber) {
+          const cleanReg = regNumber.replace(/^0+/, '') || regNumber;
           return {
-            registrationNumber: regNumber,
+            registrationNumber: cleanReg,
             timestamp: dt,
             source: TimeClockSource.CONTROL_ID_AFD,
             rawPayload: { rawLine: line },

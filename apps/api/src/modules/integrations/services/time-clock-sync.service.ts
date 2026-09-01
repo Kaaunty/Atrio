@@ -268,13 +268,19 @@ export class TimeClockSyncService {
 
     const allHashes = calculatedEntries.map((e) => e.hash);
 
-    // Consulta quais hashes já estão gravados no banco
-    const existingEntries = await prisma.timeClockEntry.findMany({
-      where: { hash: { in: allHashes } },
-      select: { hash: true },
-    });
-
-    const existingHashSet = new Set(existingEntries.map((e) => e.hash));
+    // Consulta quais hashes já estão gravados no banco (em lotes de 2.000 para performance e limites de parâmetros)
+    const existingHashSet = new Set<string>();
+    const HASH_CHUNK_SIZE = 2000;
+    for (let i = 0; i < allHashes.length; i += HASH_CHUNK_SIZE) {
+      const hashChunk = allHashes.slice(i, i + HASH_CHUNK_SIZE);
+      const existingEntries = await prisma.timeClockEntry.findMany({
+        where: { hash: { in: hashChunk } },
+        select: { hash: true },
+      });
+      for (const e of existingEntries) {
+        existingHashSet.add(e.hash);
+      }
+    }
 
     // Filtra apenas registros inéditos para inserção
     const toInsert = calculatedEntries.filter((e) => !existingHashSet.has(e.hash));
@@ -289,12 +295,16 @@ export class TimeClockSyncService {
     const importedRecords = toInsert.length;
     const ignoredRecords = rawPunches.length - importedRecords;
 
-    // 7. Insere as novas marcações no banco (de forma imutável)
+    // 7. Insere as novas marcações no banco em lotes seguros de 1.000 registros
     if (toInsert.length > 0) {
-      await prisma.timeClockEntry.createMany({
-        data: toInsert,
-        skipDuplicates: true,
-      });
+      const INSERT_CHUNK_SIZE = 1000;
+      for (let i = 0; i < toInsert.length; i += INSERT_CHUNK_SIZE) {
+        const insertChunk = toInsert.slice(i, i + INSERT_CHUNK_SIZE);
+        await prisma.timeClockEntry.createMany({
+          data: insertChunk,
+          skipDuplicates: true,
+        });
+      }
     }
 
     const finishedAt = new Date();

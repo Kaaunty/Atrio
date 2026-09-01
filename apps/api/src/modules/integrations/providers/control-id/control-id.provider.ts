@@ -164,62 +164,84 @@ export class ControlIdProvider implements ITimeClockProvider {
   }
 
   /**
-   * Obtém as marcações de ponto do relógio Control iD
+   * Obtém as marcações de ponto do relógio Control iD (via RHiD Cloud ou Conexão Direta IP)
    */
   async fetchPunches(options: FetchPunchesOptions): Promise<RawPunchRecord[]> {
-    const { device, startDate, endDate } = options;
-
-    // Se houver registros específicos ou AFD mock para o dispositivo de teste
-    const baseDate = startDate || new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const { device } = options;
     const punches: RawPunchRecord[] = [];
 
-    // Se o dispositivo possui credenciais com simulação de dados ou AFD embutido
-    if (device?.authCredentials?.mockRecords && Array.isArray(device.authCredentials.mockRecords)) {
-      for (const rec of device.authCredentials.mockRecords) {
-        punches.push({
-          nsr: rec.nsr ? BigInt(rec.nsr) : null,
-          registrationNumber: String(rec.registrationNumber || rec.matricula),
-          timestamp: new Date(rec.timestamp),
-          source: TimeClockSource.CONTROL_ID_API,
-          rawPayload: rec,
-        });
+    // 1. Tenta buscar marcações via nuvem do RHiD
+    try {
+      const { RhidService } = await import('../../services/rhid.service.js');
+      const { RhidClient } = await import('./rhid.client.js');
+
+      const creds = await RhidService.getStoredCredentials();
+      if (creds.email && creds.password) {
+        const loginRes = await RhidClient.login(creds);
+        const cloudPunches = await RhidClient.fetchAfdPunches(loginRes.accessToken, { length: 25000 });
+
+        for (const p of cloudPunches) {
+          if (!p.cpf && !p.idPerson) continue;
+
+          const match = p.dateTime && String(p.dateTime).match(/\/Date\((\d+)/);
+          const punchTime = match ? new Date(parseInt(match[1], 10)) : new Date();
+          const rawCpf = p.cpf ? String(p.cpf).padStart(11, '0') : '';
+
+          punches.push({
+            nsr: p.nsr ? BigInt(p.nsr) : null,
+            registrationNumber: rawCpf,
+            timestamp: punchTime,
+            source: TimeClockSource.CONTROL_ID_API,
+            rawPayload: p,
+          });
+        }
       }
-      return punches;
+    } catch (err: any) {
+      console.warn('Não foi possível obter batidas via RHiD Cloud:', err.message);
     }
 
-    // Geração de batidas de teste para simulação caso o relógio esteja em ambiente de desenvolvimento
-    if (process.env.NODE_ENV !== 'production' && device?.serialNumber?.startsWith('TEST-')) {
-      const now = new Date();
-      punches.push(
-        {
-          nsr: 1001n,
-          registrationNumber: 'MAT-001',
-          timestamp: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0),
-          source: TimeClockSource.CONTROL_ID_API,
-          rawPayload: { deviceSerial: device.serialNumber, event: 'PUNCH_IN', nsr: 1001 },
-        },
-        {
-          nsr: 1002n,
-          registrationNumber: 'MAT-001',
-          timestamp: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0),
-          source: TimeClockSource.CONTROL_ID_API,
-          rawPayload: { deviceSerial: device.serialNumber, event: 'PUNCH_OUT_LUNCH', nsr: 1002 },
-        },
-        {
-          nsr: 1003n,
-          registrationNumber: 'MAT-001',
-          timestamp: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 0, 0),
-          source: TimeClockSource.CONTROL_ID_API,
-          rawPayload: { deviceSerial: device.serialNumber, event: 'PUNCH_IN_LUNCH', nsr: 1003 },
-        },
-        {
-          nsr: 1004n,
-          registrationNumber: 'MAT-001',
-          timestamp: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0),
-          source: TimeClockSource.CONTROL_ID_API,
-          rawPayload: { deviceSerial: device.serialNumber, event: 'PUNCH_OUT', nsr: 1004 },
+    // 2. Se um dispositivo IP específico foi selecionado e punches está vazio, consulta o relógio local
+    if (device?.ipAddress && punches.length === 0) {
+      try {
+        const targetUrl = device.apiEndpoint || `http://${device.ipAddress}:${device.port || 80}`;
+        const loginRes = await fetch(`${targetUrl}/login.fcgi`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            login: device.authCredentials?.username || 'admin',
+            password: device.authCredentials?.password || 'admin',
+          }),
+        });
+
+        if (loginRes.ok) {
+          const { session } = (await loginRes.json()) as any;
+          if (session) {
+            const logsRes = await fetch(`${targetUrl}/load_objects.fcgi?session=${session}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ object: 'access_logs' }),
+            });
+
+            if (logsRes.ok) {
+              const logsData = (await logsRes.json()) as any;
+              const accessLogs = logsData.access_logs || [];
+
+              for (const log of accessLogs) {
+                const logTime = log.time ? new Date(log.time * 1000) : new Date();
+                punches.push({
+                  nsr: log.id ? BigInt(log.id) : null,
+                  registrationNumber: String(log.user_id || log.identifier_id || ''),
+                  timestamp: logTime,
+                  source: TimeClockSource.CONTROL_ID_API,
+                  rawPayload: log,
+                });
+              }
+            }
+          }
         }
-      );
+      } catch (devErr: any) {
+        console.warn(`Erro ao consultar logs do relógio ${device.name}:`, devErr.message);
+      }
     }
 
     return punches;
