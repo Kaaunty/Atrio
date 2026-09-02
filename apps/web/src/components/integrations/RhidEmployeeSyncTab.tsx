@@ -296,138 +296,180 @@ export const RhidEmployeeSyncTab: React.FC<RhidEmployeeSyncTabProps> = ({ onOpen
         </div>
       </div>
 
-      {/* Barra de Ações e Filtros */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-            <Input
-              placeholder="Buscar por nome, CPF ou matrícula..."
-              className="pl-10 h-10 text-xs bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 font-medium"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-
-          <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+      {/* Barra de Ações e Filtros Redesenhada */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+        {/* Nível 1: Filtros de Status & Utilitários de Estrutura */}
+        <div className="p-3.5 sm:p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-3 bg-slate-50/70">
+          {/* Segmented Filter Pills */}
+          <div className="inline-flex flex-wrap items-center bg-slate-200/70 p-1 rounded-xl text-xs font-semibold gap-1">
             <button
               onClick={() => setFilterStatus('ALL')}
-              className={`px-3 py-1.5 rounded-lg transition ${
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                 filterStatus === 'ALL'
                   ? 'bg-white text-slate-900 shadow-sm font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
               }`}
             >
-              Todos ({data?.items.length || 0})
+              Todos
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                filterStatus === 'ALL' ? 'bg-slate-100 text-slate-800' : 'bg-slate-300/60 text-slate-700'
+              }`}>
+                {data?.items.length || 0}
+              </span>
             </button>
             <button
               onClick={() => setFilterStatus('SYNCED')}
-              className={`px-3 py-1.5 rounded-lg transition ${
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                 filterStatus === 'SYNCED'
-                  ? 'bg-white text-emerald-700 shadow-sm font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-emerald-800 shadow-sm font-bold'
+                  : 'text-slate-600 hover:text-emerald-800 hover:bg-slate-200/50'
               }`}
             >
-              Sincronizados ({data?.totalSynced || 0})
+              Sincronizados
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                filterStatus === 'SYNCED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-300/60 text-slate-700'
+              }`}>
+                {data?.totalSynced || 0}
+              </span>
             </button>
             <button
               onClick={() => setFilterStatus('RHID_ONLY')}
-              className={`px-3 py-1.5 rounded-lg transition ${
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                 filterStatus === 'RHID_ONLY'
-                  ? 'bg-white text-indigo-700 shadow-sm font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-indigo-800 shadow-sm font-bold'
+                  : 'text-slate-600 hover:text-indigo-800 hover:bg-slate-200/50'
               }`}
             >
-              Apenas no RHiD ({data?.totalRhidOnly || 0})
+              Apenas no RHiD
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                filterStatus === 'RHID_ONLY' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-300/60 text-slate-700'
+              }`}>
+                {data?.totalRhidOnly || 0}
+              </span>
             </button>
             <button
               onClick={() => setFilterStatus('ATRIO_ONLY')}
-              className={`px-3 py-1.5 rounded-lg transition ${
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                 filterStatus === 'ATRIO_ONLY'
-                  ? 'bg-white text-amber-700 shadow-sm font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-amber-800 shadow-sm font-bold'
+                  : 'text-slate-600 hover:text-amber-800 hover:bg-slate-200/50'
               }`}
             >
-              Apenas no Átrio ({data?.totalAtrioOnly || 0})
+              Apenas no Átrio
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                filterStatus === 'ATRIO_ONLY' ? 'bg-amber-100 text-amber-800' : 'bg-slate-300/60 text-slate-700'
+              }`}>
+                {data?.totalAtrioOnly || 0}
+              </span>
             </button>
+          </div>
+
+          {/* Utilitários Secundários */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleSyncOrg}
+              disabled={loading || syncing || syncingOrg}
+              className="text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-semibold text-xs"
+              title="Sincroniza Departamentos, Cargos e Escalas contratuais do RHiD"
+            >
+              {syncingOrg ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Building2 className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
+              )}
+              Sincronizar Cargos & Escalas
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onOpenSettings}
+              title="Configurações de Acesso RHiD Cloud"
+              className="text-xs text-slate-700"
+            >
+              <Settings className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+              Configurar RHiD
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={loadOverview}
+              disabled={loading || syncing || syncingOrg}
+              title="Recarregar dados"
+              className="p-2"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onOpenSettings}
-            title="Configurações de Acesso RHiD Cloud"
-          >
-            <Settings className="w-4 h-4 mr-1.5 text-slate-600" />
-            Configurar RHiD
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleSyncOrg}
-            disabled={loading || syncing || syncingOrg}
-            className="text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-semibold"
-            title="Sincroniza Departamentos, Cargos e Escalas/Horários contratuais do RHiD"
-          >
-            {syncingOrg ? (
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-            ) : (
-              <Building2 className="w-4 h-4 mr-1.5 text-indigo-600" />
+        {/* Nível 2: Busca Rápida + Ações em Massa */}
+        <div className="p-3.5 sm:p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white">
+          {/* Campo de Busca Fluído */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <Input
+              placeholder="Buscar por nome, CPF ou matrícula..."
+              className="pl-10 h-10 text-xs bg-slate-50 hover:bg-slate-100/70 focus:bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 font-medium rounded-xl transition-all"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold px-1.5 py-0.5 rounded bg-slate-100"
+              >
+                Limpar
+              </button>
             )}
-            Sincronizar Cargos & Escalas
-          </Button>
+          </div>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={loadOverview}
-            disabled={loading || syncing || syncingOrg}
-            title="Recarregar dados"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
+          {/* Ações em Lote */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={handleExportCsv}
+              disabled={loading || syncing || syncingOrg}
+              className="text-xs"
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-600" />
+              Exportar CSV
+            </Button>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleExportCsv}
-            disabled={loading || syncing || syncingOrg}
-          >
-            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-600" />
-            Exportar CSV
-          </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => handleImportFromRhid(false)}
+              disabled={loading || syncing || syncingOrg || (!data?.totalRhidOnly && selectedKeys.size === 0)}
+              className="text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-bold text-xs"
+            >
+              {syncing ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-1.5 text-indigo-600" />
+              )}
+              {selectedKeys.size > 0 ? `Puxar (${selectedKeys.size}) Selecionados` : 'Puxar do RHiD'}
+            </Button>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => handleImportFromRhid(false)}
-            disabled={loading || syncing || syncingOrg || (!data?.totalRhidOnly && selectedKeys.size === 0)}
-            className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 font-semibold"
-          >
-            {syncing ? (
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4 mr-1.5" />
-            )}
-            Puxar do RHiD
-          </Button>
-
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handlePushToRhid}
-            disabled={loading || syncing || syncingOrg || (!data?.totalAtrioOnly && selectedKeys.size === 0)}
-          >
-            {syncing ? (
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-            ) : (
-              <Upload className="w-4 h-4 mr-1.5" />
-            )}
-            Enviar para o RHiD
-          </Button>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handlePushToRhid}
+              disabled={loading || syncing || syncingOrg || (!data?.totalAtrioOnly && selectedKeys.size === 0)}
+              className="text-xs font-bold"
+            >
+              {syncing ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4 mr-1.5" />
+              )}
+              {selectedKeys.size > 0 ? `Enviar (${selectedKeys.size}) Selecionados` : 'Enviar para o RHiD'}
+            </Button>
+          </div>
         </div>
       </div>
 
