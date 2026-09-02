@@ -9,7 +9,9 @@ import {
   ChevronRight, 
   ChevronDown, 
   Layers, 
-  Briefcase 
+  Briefcase,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { 
   organizationService, 
@@ -17,6 +19,7 @@ import {
   DepartmentTreeNode, 
   Company 
 } from '../../services/organizationService';
+import { integrationService } from '../../services/integrationService';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Input } from '../../components/ui/Input';
@@ -32,6 +35,7 @@ export const DepartmentsTab: React.FC = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [syncingRhid, setSyncingRhid] = useState(false);
 
   // Nós expandidos na visualização em árvore
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
@@ -111,6 +115,25 @@ export const DepartmentsTab: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [selectedCompanyId, search]);
+
+  const handleSyncRhid = async () => {
+    try {
+      setSyncingRhid(true);
+      const res = await integrationService.syncRhidOrganization();
+      setFeedback({
+        type: 'success',
+        message: `Sincronização RHiD concluída: ${res.departmentsCount} departamentos e ${res.positionsCount} cargos mapeados.`,
+      });
+      await loadData();
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err.response?.data?.message || err.message || 'Falha ao sincronizar departamentos com o RHiD.',
+      });
+    } finally {
+      setSyncingRhid(false);
+    }
+  };
 
   const toggleNode = (nodeId: string) => {
     setExpandedNodes((prev) => ({ ...prev, [nodeId]: !prev[nodeId] }));
@@ -377,6 +400,21 @@ export const DepartmentsTab: React.FC = () => {
               Tabela
             </button>
           </div>
+
+          <Button
+            variant="secondary"
+            onClick={handleSyncRhid}
+            disabled={loading || syncingRhid}
+            className="text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-semibold"
+            title="Sincronizar departamentos com o RHiD Cloud"
+          >
+            {syncingRhid ? (
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 mr-1.5 text-indigo-600" />
+            )}
+            Sincronizar com RHiD
+          </Button>
 
           <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => handleOpenModal()}>
             Novo Setor

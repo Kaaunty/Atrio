@@ -7,13 +7,16 @@ import {
   Trash2, 
   Layers, 
   FileText, 
-  Eye 
+  Eye,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { 
   organizationService, 
   Position, 
   Department 
 } from '../../services/organizationService';
+import { integrationService } from '../../services/integrationService';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Input } from '../../components/ui/Input';
@@ -23,7 +26,11 @@ import { Modal } from '../../components/ui/Modal';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 
 const LEVEL_OPTIONS = [
+  'Operacional',
   'Estagiário',
+  'Assistente',
+  'Auxiliar',
+  'Analista',
   'Júnior',
   'Pleno',
   'Sênior',
@@ -39,6 +46,7 @@ export const PositionsTab: React.FC = () => {
   const [positions, setPositions] = useState<Position[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncingRhid, setSyncingRhid] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('');
@@ -52,7 +60,7 @@ export const PositionsTab: React.FC = () => {
   const [positionForm, setPositionForm] = useState({
     departmentId: '',
     title: '',
-    level: 'Pleno',
+    level: 'Operacional',
     description: '',
     responsibilities: '',
     active: true,
@@ -83,12 +91,32 @@ export const PositionsTab: React.FC = () => {
         search: search || undefined,
         departmentId: selectedDepartmentId || undefined,
         level: selectedLevel || undefined,
+        pageSize: 1000,
       });
       setPositions(res.data || []);
     } catch (err) {
       setFeedback({ type: 'error', message: 'Erro ao carregar cargos' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSyncRhid = async () => {
+    try {
+      setSyncingRhid(true);
+      const res = await integrationService.syncRhidOrganization();
+      setFeedback({
+        type: 'success',
+        message: `Sincronização RHiD concluída: ${res.positionsCount} cargos e ${res.departmentsCount} departamentos mapeados.`,
+      });
+      await loadPositions();
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err.response?.data?.message || err.message || 'Falha ao sincronizar cargos com o RHiD.',
+      });
+    } finally {
+      setSyncingRhid(false);
     }
   };
 
@@ -267,9 +295,26 @@ export const PositionsTab: React.FC = () => {
           </div>
         </div>
 
-        <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => handleOpenModal()}>
-          Novo Cargo
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={handleSyncRhid}
+            disabled={loading || syncingRhid}
+            className="text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-semibold"
+            title="Sincronizar cargos com o RHiD Cloud"
+          >
+            {syncingRhid ? (
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 mr-1.5 text-indigo-600" />
+            )}
+            Sincronizar com RHiD
+          </Button>
+
+          <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => handleOpenModal()}>
+            Novo Cargo
+          </Button>
+        </div>
       </div>
 
       {/* Tabela de Cargos */}

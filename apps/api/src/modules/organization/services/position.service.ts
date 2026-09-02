@@ -193,6 +193,12 @@ export class PositionService {
       throw error;
     }
 
+    // Desvincula colaboradores deste cargo
+    await prisma.employee.updateMany({
+      where: { positionId: id, deletedAt: null },
+      data: { positionId: null },
+    });
+
     await prisma.position.update({
       where: { id },
       data: {

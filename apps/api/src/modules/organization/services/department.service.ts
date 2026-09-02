@@ -332,13 +332,16 @@ export class DepartmentService {
       throw error;
     }
 
-    if (department._count.positions > 0) {
-      const error: any = new Error(
-        `Não é possível remover o setor "${department.name}" pois ele possui ${department._count.positions} cargo(s) vinculado(s). Realoque ou remova os cargos primeiro.`
-      );
-      error.statusCode = 400;
-      throw error;
-    }
+    // Desvincula cargos e colaboradores deste departamento para evitar órfãos
+    await prisma.position.updateMany({
+      where: { departmentId: id, deletedAt: null },
+      data: { departmentId: null },
+    });
+
+    await prisma.employee.updateMany({
+      where: { departmentId: id, deletedAt: null },
+      data: { departmentId: null },
+    });
 
     await prisma.department.update({
       where: { id },
