@@ -2,7 +2,7 @@ import { prisma } from '../../../database/prisma.js';
 import { ScheduleRuleDay } from '../time-clock.dto.js';
 import { TimeBalanceService } from './time-balance.service.js';
 import { TimeCalculationEngine, ProcessedEntryItem } from './time-calculation.engine.js';
-import { WorkScheduleService } from './work-schedule.service.js';
+import { WorkScheduleService, DEFAULT_STANDARD_44H_RULES } from './work-schedule.service.js';
 
 export interface DaySummaryView {
   date: string; // YYYY-MM-DD
@@ -59,6 +59,122 @@ export class TimeSummaryService {
     const dayOfWeek = localDate.getDay();
 
     return { start, end, dayOfWeek };
+  }
+
+  /**
+   * Converte uma string de horários do RHiD/Control iD em um array estruturado de regras por dia da semana
+   */
+  static parseRawScheduleText(rawStr: string): ScheduleRuleDay[] {
+    const DAY_MAP: Record<string, number> = { dom: 0, seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6, sáb: 6 };
+    const resultDays: Record<number, { isWorkDay: boolean; expectedWorkMinutes: number; intervals: { start: string; end: string }[] }> = {};
+    for (let d = 0; d <= 6; d++) {
+      resultDays[d] = { isWorkDay: false, expectedWorkMinutes: 0, intervals: [] };
+    }
+    if (!rawStr || typeof rawStr !== 'string') return Object.entries(resultDays).map(([d, val]) => ({ dayOfWeek: Number(d), ...val }));
+
+    const blockRegex = /(?:Seg|Ter|Qua|Qui|Sex|Sáb|Sab|Dom)(?:[\s,]+(?:Seg|Ter|Qua|Qui|Sex|Sáb|Sab|Dom))*\s*:/gi;
+    const matches = Array.from(rawStr.matchAll(blockRegex));
+
+    if (matches.length === 0) {
+      const times = Array.from(rawStr.matchAll(/(\d{2}:\d{2})-(\d{2}:\d{2})/g));
+      let totalMins = 0;
+      const intervals = times.map((m) => {
+        const [h1, m1] = m[1].split(':').map(Number);
+        const [h2, m2] = m[2].split(':').map(Number);
+        totalMins += (h2 * 60 + m2) - (h1 * 60 + m1);
+        return { start: m[1], end: m[2] };
+      });
+      for (let d = 1; d <= 5; d++) {
+        resultDays[d] = { isWorkDay: true, expectedWorkMinutes: totalMins, intervals };
+      }
+      return Object.entries(resultDays).map(([d, val]) => ({ dayOfWeek: Number(d), ...val }));
+    }
+
+    for (let i = 0; i < matches.length; i++) {
+      const match = matches[i];
+      const header = match[0].toLowerCase();
+      const startIdx = match.index! + match[0].length;
+      const endIdx = i + 1 < matches.length ? matches[i + 1].index! : rawStr.length;
+      const body = rawStr.substring(startIdx, endIdx);
+      const matchedDays: number[] = [];
+
+      for (const [name, dayNum] of Object.entries(DAY_MAP)) {
+        const regex = new RegExp('\\b' + name + '\\b', 'i');
+        if (regex.test(header)) {
+          matchedDays.push(dayNum);
+        }
+      }
+
+      const isFolga = /folga/i.test(body);
+      const times = Array.from(body.matchAll(/(\d{2}:\d{2})-(\d{2}:\d{2})/g));
+      let totalMins = 0;
+      const intervals = times.map((m) => {
+        const [h1, m1] = m[1].split(':').map(Number);
+        const [h2, m2] = m[2].split(':').map(Number);
+        totalMins += (h2 * 60 + m2) - (h1 * 60 + m1);
+        return { start: m[1], end: m[2] };
+      });
+
+      for (const d of matchedDays) {
+        resultDays[d] = {
+          isWorkDay: !isFolga && intervals.length > 0,
+          expectedWorkMinutes: isFolga ? 0 : totalMins,
+          intervals: isFolga ? [] : intervals,
+        };
+      }
+    }
+
+    return Object.entries(resultDays).map(([d, val]) => ({ dayOfWeek: Number(d), ...val }));
+  }
+
+  /**
+   * Extrai com segurança o array de regras da escala de trabalho, previnindo falhas quando scheduleRules for objeto ou string raw
+   */
+  static getScheduleRulesArray(scheduleRules: any): ScheduleRuleDay[] {
+    if (Array.isArray(scheduleRules) && scheduleRules.length > 0 && typeof scheduleRules[0] === 'object') {
+      const first = scheduleRules[0];
+      if ('dayOfWeek' in first && ('isWorkDay' in first || 'expectedWorkMinutes' in first || 'startTime' in first)) {
+        return scheduleRules.map((r: any) => {
+          let expectedMins = r.expectedWorkMinutes ?? r.expectedMinutes;
+          let intervals = r.intervals || [];
+          if ((expectedMins === undefined || expectedMins === null) && r.startTime && r.endTime) {
+            const [h1, m1] = r.startTime.split(':').map(Number);
+            const [h2, m2] = r.endTime.split(':').map(Number);
+            let dur = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (r.lunchStart && r.lunchEnd) {
+              const [lh1, lm1] = r.lunchStart.split(':').map(Number);
+              const [lh2, lm2] = r.lunchEnd.split(':').map(Number);
+              dur -= ((lh2 * 60 + lm2) - (lh1 * 60 + lm1));
+              intervals = [
+                { start: r.startTime, end: r.lunchStart },
+                { start: r.lunchEnd, end: r.endTime },
+              ];
+            } else {
+              intervals = [{ start: r.startTime, end: r.endTime }];
+            }
+            expectedMins = Math.max(0, dur);
+          }
+          return {
+            dayOfWeek: r.dayOfWeek,
+            isWorkDay: r.isWorkDay ?? true,
+            expectedWorkMinutes: expectedMins ?? 0,
+            intervals,
+          };
+        });
+      }
+    }
+    if (scheduleRules && typeof scheduleRules === 'object') {
+      if (Array.isArray(scheduleRules.rules)) {
+        return this.getScheduleRulesArray(scheduleRules.rules);
+      }
+      if (typeof scheduleRules.raw === 'string' && scheduleRules.raw.trim().length > 0) {
+        return this.parseRawScheduleText(scheduleRules.raw);
+      }
+    }
+    if (typeof scheduleRules === 'string' && scheduleRules.trim().length > 0) {
+      return this.parseRawScheduleText(scheduleRules);
+    }
+    return DEFAULT_STANDARD_44H_RULES;
   }
 
   /**
@@ -120,7 +236,7 @@ export class TimeSummaryService {
     const { start, end, dayOfWeek } = this.getDayDateRange(todayStr);
 
     const schedule = await WorkScheduleService.getScheduleForEmployee(employee.id);
-    const rules = (schedule.scheduleRules as unknown as ScheduleRuleDay[]) || [];
+    const rules = this.getScheduleRulesArray(schedule.scheduleRules);
     const todayRule = rules.find((r) => r.dayOfWeek === dayOfWeek) || null;
 
     // Busca batidas registradas hoje e ajustes homologados
@@ -234,7 +350,7 @@ export class TimeSummaryService {
     }
 
     const schedule = await WorkScheduleService.getScheduleForEmployee(employee.id);
-    const rules = (schedule.scheduleRules as unknown as ScheduleRuleDay[]) || [];
+    const rules = this.getScheduleRulesArray(schedule.scheduleRules);
     const daysInMonth = new Date(targetYear, targetMonth, 0).getDate();
 
     const monthStart = new Date(Date.UTC(targetYear, targetMonth - 1, 1, 0, 0, 0));
@@ -494,7 +610,7 @@ export class TimeSummaryService {
 
     for (const emp of employees) {
       const schedule = await WorkScheduleService.getScheduleForEmployee(emp.id);
-      const rules = (schedule.scheduleRules as unknown as ScheduleRuleDay[]) || [];
+      const rules = this.getScheduleRulesArray(schedule.scheduleRules);
 
       const currDate = new Date(start);
       const lastDate = new Date(end);

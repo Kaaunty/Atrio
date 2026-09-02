@@ -24,6 +24,21 @@ export class EmployeeController {
     }
   }
 
+  static async getStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const companyId = req.query.companyId as string | undefined;
+      const departmentId = req.query.departmentId as string | undefined;
+      const stats = await EmployeeService.getStats(companyId, departmentId);
+
+      return sendSuccess({
+        res,
+        data: stats,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;

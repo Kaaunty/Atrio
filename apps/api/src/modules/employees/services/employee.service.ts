@@ -100,6 +100,37 @@ export class EmployeeService {
   }
 
   /**
+   * Estatísticas agregadas de colaboradores por status
+   */
+  static async getStats(companyId?: string, departmentId?: string) {
+    const where: any = { deletedAt: null };
+    if (companyId) where.companyId = companyId;
+    if (departmentId) where.departmentId = departmentId;
+
+    const [total, grouped] = await Promise.all([
+      prisma.employee.count({ where }),
+      prisma.employee.groupBy({
+        by: ['status'],
+        where,
+        _count: { status: true },
+      }),
+    ]);
+
+    const statusMap = grouped.reduce((acc, item) => {
+      acc[item.status] = item._count.status;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      total,
+      active: statusMap['ATIVO'] || 0,
+      vacation: statusMap['FERIAS'] || 0,
+      leave: statusMap['AFASTADO'] || 0,
+      terminated: statusMap['DESLIGADO'] || 0,
+    };
+  }
+
+  /**
    * Busca detalhes completos do colaborador
    */
   static async getById(id: string) {

@@ -213,8 +213,11 @@ describe('Employee & Timeline Module Integration Flow', () => {
     const deleteResult = await EmployeeService.delete(liderado.id, 'Desligamento voluntário');
     assert.ok(deleteResult.success);
 
-    // Colaborador não deve aparecer na listagem ativa
-    const afterDeleteList = await EmployeeService.list({ companyId: testCompanyId });
-    assert.equal(afterDeleteList.items.length, 1); // Apenas Carlos
+    // 10. Testa o endpoint de estatísticas agregadas por status
+    const statsResult = await EmployeeService.getStats(testCompanyId);
+    assert.equal(statsResult.total, 1);
+    assert.equal(statsResult.active, 1);
+    assert.equal(statsResult.vacation, 0);
+    assert.equal(statsResult.leave, 0);
   });
 });

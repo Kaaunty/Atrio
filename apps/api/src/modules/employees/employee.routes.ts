@@ -7,6 +7,7 @@ const router = Router();
 // COLABORADORES (EMPLOYEES)
 // -----------------------------------------------------------------------------
 router.get('/employees', EmployeeController.list);
+router.get('/employees/stats', EmployeeController.getStats);
 router.post('/employees', EmployeeController.create);
 router.get('/employees/:id', EmployeeController.getById);
 router.put('/employees/:id', EmployeeController.update);

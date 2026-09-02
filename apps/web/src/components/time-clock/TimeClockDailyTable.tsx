@@ -195,13 +195,23 @@ export const TimeClockDailyTable: React.FC<TimeClockDailyTableProps> = ({
 
                 {/* S2 */}
                 <td className="py-3 px-3 text-center whitespace-nowrap font-mono font-medium">
-                  {day.s2 !== '---' ? (
-                    <span className="text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-xs">
-                      {day.s2}
-                    </span>
-                  ) : (
-                    <span className="text-slate-300">---</span>
-                  )}
+                  <div className="flex flex-col items-center gap-1">
+                    {day.s2 !== '---' ? (
+                      <span className="text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-xs">
+                        {day.s2}
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">---</span>
+                    )}
+                    {day.extraEntries && day.extraEntries.length > 0 && (
+                      <span
+                        className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-bold"
+                        title={`Batidas adicionais no dia: ${day.extraEntries.join(', ')}`}
+                      >
+                        +{day.extraEntries.join(', ')}
+                      </span>
+                    )}
+                  </div>
                 </td>
 
                 {/* Previsto */}

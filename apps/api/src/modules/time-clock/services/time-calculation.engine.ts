@@ -197,9 +197,13 @@ export class TimeCalculationEngine {
       }
     }
 
-    // 5. Caso especial: Falta integral (Dia de trabalho, 0 batidas, data hoje ou passada)
+    const todayStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+    const isToday = dateStr === todayStr;
+    const isPast = dateStr < todayStr;
+
+    // 5. Caso especial: Falta integral (Dia de trabalho, 0 batidas, data estritamente passada)
     if (isWorkDay && entries.length === 0) {
-      if (isPastOrToday) {
+      if (isPast) {
         divergenceReasons.push('Falta integral no dia trabalhado previsto');
         return {
           date: dateStr,
@@ -215,7 +219,7 @@ export class TimeCalculationEngine {
         };
       }
 
-      // Dia futuro sem batidas ainda
+      // Dia de HOJE (em andamento) ou futuro sem batidas ainda
       return {
         date: dateStr,
         expectedWorkMinutes,
@@ -242,9 +246,9 @@ export class TimeCalculationEngine {
       actualWorkMinutes += durationMinutes;
     }
 
-    // Verificação de batida ímpar (saída não registrada)
+    // Verificação de batida ímpar (apenas para dias já encerrados no passado)
     const isOddEntries = numEntries % 2 !== 0;
-    if (isOddEntries) {
+    if (isOddEntries && isPast) {
       divergenceReasons.push('Batida ímpar registrada (marcação de saída ausente ou pendente)');
     }
 
@@ -273,6 +277,11 @@ export class TimeCalculationEngine {
       // Em dias de folga, todo o tempo trabalhado é crédito/hora extra
       balanceMinutes = actualWorkMinutes;
       extraHoursMinutes = actualWorkMinutes;
+    } else if (isToday && rawDiff < 0) {
+      // O dia de HOJE está em andamento: não gera débito nem atraso enquanto a jornada não terminar
+      balanceMinutes = 0;
+      extraHoursMinutes = 0;
+      delayMinutes = 0;
     } else {
       if (Math.abs(rawDiff) <= toleranceMinutes) {
         // Dentro da tolerância CLT diária: saldo zero
@@ -294,9 +303,9 @@ export class TimeCalculationEngine {
 
     // 8. Determinação do Status Diário
     let status: TimeDailySummaryStatus = 'OK';
-    if (isOddEntries || divergenceReasons.length > 0) {
+    if (divergenceReasons.length > 0) {
       status = 'DIVERGENCIA';
-    } else if (!isWorkDay) {
+    } else if (!isWorkDay && entries.length === 0) {
       status = 'FOLGA';
     }
 

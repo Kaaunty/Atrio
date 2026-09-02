@@ -75,6 +75,16 @@ export const EmployeesPage: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
 
+  // Debounce para o campo de busca
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 350);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   // Carrega opções de filtro uma vez
   useEffect(() => {
     const loadFilterOptions = async () => {
@@ -95,18 +105,18 @@ export const EmployeesPage: React.FC = () => {
   }, []);
 
   // Carrega lista de colaboradores
-  const loadEmployees = async (page = meta.page) => {
+  const loadEmployees = async (page = meta.page, pageSize = meta.pageSize) => {
     try {
       setLoading(true);
       const res = await employeeService.getEmployees({
-        search: search || undefined,
+        search: debouncedSearch || undefined,
         companyId: companyId || undefined,
         departmentId: departmentId || undefined,
         positionId: positionId || undefined,
         status: status ? status : undefined,
         contractType: contractType ? contractType : undefined,
         page,
-        pageSize: meta.pageSize,
+        pageSize,
       });
 
       setEmployees(res.data || []);
@@ -120,21 +130,19 @@ export const EmployeesPage: React.FC = () => {
     }
   };
 
-  // Carrega estatísticas gerais
+  // Carrega estatísticas gerais via endpoint otimizado de agregação no backend
   const loadStats = async () => {
     try {
-      const [allRes, activeRes, vacationRes, leaveRes] = await Promise.all([
-        employeeService.getEmployees({ pageSize: 1 }),
-        employeeService.getEmployees({ status: 'ATIVO', pageSize: 1 }),
-        employeeService.getEmployees({ status: 'FERIAS', pageSize: 1 }),
-        employeeService.getEmployees({ status: 'AFASTADO', pageSize: 1 }),
-      ]);
+      const data = await employeeService.getEmployeeStats({
+        companyId: companyId || undefined,
+        departmentId: departmentId || undefined,
+      });
 
       setStats({
-        total: allRes.meta?.total || 0,
-        active: activeRes.meta?.total || 0,
-        vacation: vacationRes.meta?.total || 0,
-        leave: leaveRes.meta?.total || 0,
+        total: data.total || 0,
+        active: data.active || 0,
+        vacation: data.vacation || 0,
+        leave: data.leave || 0,
       });
     } catch (err) {
       console.error('Erro ao carregar estatísticas:', err);
@@ -143,8 +151,11 @@ export const EmployeesPage: React.FC = () => {
 
   useEffect(() => {
     loadEmployees(1);
+  }, [debouncedSearch, companyId, departmentId, positionId, status, contractType]);
+
+  useEffect(() => {
     loadStats();
-  }, [search, companyId, departmentId, positionId, status, contractType]);
+  }, [companyId, departmentId]);
 
   const handleClearFilters = () => {
     setSearch('');
@@ -502,10 +513,29 @@ export const EmployeesPage: React.FC = () => {
 
         {/* Paginação */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 text-xs text-slate-500">
-          <p>
-            Mostrando <span className="font-semibold text-slate-700">{employees.length}</span> de{' '}
-            <span className="font-semibold text-slate-700">{meta.total}</span> colaboradores
-          </p>
+          <div className="flex items-center gap-4">
+            <p>
+              Mostrando <span className="font-semibold text-slate-700">{employees.length}</span> de{' '}
+              <span className="font-semibold text-slate-700">{meta.total}</span> colaboradores
+            </p>
+            <div className="flex items-center gap-1.5 border-l border-slate-200 pl-4">
+              <span>Exibir</span>
+              <select
+                value={meta.pageSize}
+                onChange={(e) => {
+                  const newSize = Number(e.target.value);
+                  setMeta((prev) => ({ ...prev, pageSize: newSize }));
+                  loadEmployees(1, newSize);
+                }}
+                className="bg-white border border-atrio-border rounded px-2 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-atrio-teal cursor-pointer"
+              >
+                <option value={10}>10 por página</option>
+                <option value={15}>15 por página</option>
+                <option value={25}>25 por página</option>
+                <option value={50}>50 por página</option>
+              </select>
+            </div>
+          </div>
 
           <div className="flex items-center gap-2">
             <Button

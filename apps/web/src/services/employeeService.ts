@@ -195,6 +195,19 @@ export const employeeService = {
     return data;
   },
 
+  getEmployeeStats: async (params?: { companyId?: string; departmentId?: string }) => {
+    const { data } = await api.get<
+      ApiResponse<{
+        total: number;
+        active: number;
+        vacation: number;
+        leave: number;
+        terminated: number;
+      }>
+    >('/employees/stats', { params });
+    return data.data;
+  },
+
   getEmployee: async (id: string) => {
     const { data } = await api.get<ApiResponse<Employee>>(`/employees/${id}`);
     return data.data;
