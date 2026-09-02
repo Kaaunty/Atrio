@@ -477,7 +477,7 @@ export class TimeSummaryService {
       const s2 = dayCalc.entries[3]?.time || '---';
       const extraEntries = dayCalc.entries.slice(4).map((e) => e.time);
 
-      if (dayCalc.status === 'DIVERGENCIA' || dayCalc.status === 'FALTA') {
+      if (dayCalc.status === 'DIVERGENCIA') {
         divergencesCount++;
       }
       if (dayCalc.expectedWorkMinutes > 0) {
