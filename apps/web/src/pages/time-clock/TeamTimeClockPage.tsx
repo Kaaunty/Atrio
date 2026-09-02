@@ -16,6 +16,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { TimeClockSummaryCards } from '../../components/time-clock/TimeClockSummaryCards';
 import { TimeClockDailyTable } from '../../components/time-clock/TimeClockDailyTable';
+import { PrintableTimeSheet } from '../../components/time-clock/PrintableTimeSheet';
 import { api } from '../../services/api';
 
 export const TeamTimeClockPage: React.FC = () => {
@@ -122,7 +123,7 @@ export const TeamTimeClockPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 print:hidden">
         {/* Cabeçalho */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -285,42 +286,31 @@ export const TeamTimeClockPage: React.FC = () => {
             ) : memberMonthlyData ? (
               <>
                 {/* Header do Colaborador Selecionado */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-100 text-teal-700 font-extrabold text-base flex items-center justify-center shrink-0 shadow-xs">
-                      {memberMonthlyData.employee.name
-                        .split(' ')
-                        .filter(Boolean)
-                        .slice(0, 2)
-                        .map((n: string) => n[0])
-                        .join('')}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200/80">
-                          Espelho de Ponto Individual
+                <div className="bg-white border border-slate-200/90 rounded-xl p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-teal-600 uppercase tracking-wider">
+                        Espelho de Ponto Individual
+                      </span>
+                      {memberMonthlyData.employee.registrationNumber && (
+                        <span className="text-xs text-slate-400">
+                          • Matrícula #{memberMonthlyData.employee.registrationNumber}
                         </span>
-                        {memberMonthlyData.employee.registrationNumber && (
-                          <span className="text-xs text-slate-400 font-mono">
-                            Matrícula: #{memberMonthlyData.employee.registrationNumber}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-900 mt-0.5">
-                        {memberMonthlyData.employee.name}
-                      </h3>
-                      <p className="text-xs font-medium text-slate-500 mt-0.5">
-                        {memberMonthlyData.employee.department} • {memberMonthlyData.employee.position}
-                      </p>
+                      )}
                     </div>
+                    <h3 className="text-xl font-bold text-slate-900 mt-1">
+                      {memberMonthlyData.employee.name}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {memberMonthlyData.employee.department} • {memberMonthlyData.employee.position}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Button
                       variant="secondary"
                       size="sm"
-                      icon={<Printer className="w-4 h-4 text-slate-600" />}
+                      icon={<Printer className="w-4 h-4" />}
                       onClick={() => window.print()}
-                      className="rounded-xl border-slate-200 hover:bg-slate-50 font-medium"
                     >
                       Imprimir
                     </Button>
@@ -354,6 +344,27 @@ export const TeamTimeClockPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Documento de Impressão Oficial A4 */}
+      {memberMonthlyData && (
+        <PrintableTimeSheet
+          employee={{
+            name: memberMonthlyData.employee.name,
+            registrationNumber: memberMonthlyData.employee.registrationNumber,
+            department: memberMonthlyData.employee.department,
+            position: memberMonthlyData.employee.position,
+          }}
+          period={`${String(currentMonth).padStart(2, '0')}/${currentYear}`}
+          summary={{
+            totalExpectedFormatted: memberMonthlyData.summary.totalExpectedFormatted,
+            totalActualFormatted: memberMonthlyData.summary.totalActualFormatted,
+            totalBalanceFormatted: memberMonthlyData.summary.totalBalanceFormatted,
+            accumulatedClosingFormatted: memberMonthlyData.bankBalance?.accumulatedClosingFormatted,
+            divergencesCount: memberMonthlyData.summary.divergencesCount,
+          }}
+          days={memberMonthlyData.days}
+        />
+      )}
     </AppLayout>
   );
 };

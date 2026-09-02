@@ -14,6 +14,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { TimeClockSummaryCards } from '../../components/time-clock/TimeClockSummaryCards';
 import { TimeClockDailyTable, DailyRowItem } from '../../components/time-clock/TimeClockDailyTable';
+import { PrintableTimeSheet } from '../../components/time-clock/PrintableTimeSheet';
 import { RequestAdjustmentModal } from '../../components/time-clock/RequestAdjustmentModal';
 import { api } from '../../services/api';
 
@@ -152,7 +153,7 @@ export const MyTimeClockPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 print:hidden">
         {/* Cabeçalho da Página */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
           <div>
@@ -350,19 +351,27 @@ export const MyTimeClockPage: React.FC = () => {
           )}
         </div>
 
-        {/* Rodapé de Assinatura para Impressão */}
-        <div className="hidden print:block mt-12 pt-8 border-t border-slate-400 text-xs">
-          <div className="grid grid-cols-2 gap-12 text-center">
-            <div>
-              <div className="border-t border-slate-700 pt-1 font-semibold">{data?.employee?.name}</div>
-              <p className="text-[10px] text-slate-500">Assinatura do Colaborador</p>
-            </div>
-            <div>
-              <div className="border-t border-slate-700 pt-1 font-semibold">Responsável / Recursos Humanos</div>
-              <p className="text-[10px] text-slate-500">Assinatura da Empresa</p>
-            </div>
-          </div>
-        </div>
+        {/* Documento de Impressão Oficial */}
+        {data?.employee && data?.days && (
+          <PrintableTimeSheet
+            employee={{
+              name: data.employee.name,
+              registrationNumber: data.employee.registrationNumber,
+              department: data.employee.department,
+              position: data.employee.position,
+            }}
+            period={`${String(currentMonth).padStart(2, '0')}/${currentYear}`}
+            summary={{
+              totalExpectedFormatted: data.summary?.totalExpectedFormatted || '00h 00m',
+              totalActualFormatted: data.summary?.totalActualFormatted || '00h 00m',
+              totalBalanceFormatted: data.summary?.totalBalanceFormatted || '00h 00m',
+              accumulatedClosingFormatted: balanceData?.accumulatedClosingFormatted || '00h 00m',
+              divergencesCount: data.summary?.divergencesCount || 0,
+            }}
+            days={data.days}
+            companyName={data.employee.company?.tradeName || 'ÁTRIO RH'}
+          />
+        )}
 
         {/* Modal de Extrato do Banco de Horas */}
         <Modal

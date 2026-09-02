@@ -1,6 +1,5 @@
 import React from 'react';
 import { Clock, CheckCircle2, TrendingUp, TrendingDown, Layers, AlertCircle } from 'lucide-react';
-import { Badge } from '../ui/Badge';
 
 export interface TimeClockSummaryProps {
   totalExpectedFormatted: string;
@@ -37,78 +36,62 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
       {/* 1. Horas Previstas */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
-        <div className="flex items-center justify-between gap-2">
+      <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 shadow-2xs flex flex-col justify-between">
+        <div className="flex items-center justify-between gap-1.5">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Horas Previstas
           </span>
-          <div className="w-8 h-8 rounded-xl bg-blue-50/80 text-blue-600 flex items-center justify-center shrink-0">
-            <Clock className="w-4 h-4" />
+          <div className="w-6 h-6 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+            <Clock className="w-3 h-3" />
           </div>
         </div>
-        <div className="mt-3">
-          <div className="text-2xl font-extrabold text-slate-900 tracking-tight font-sans">
+        <div className="mt-2.5">
+          <div className="text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">
             {cleanFormatted(totalExpectedFormatted)}
           </div>
-          <p className="text-[11px] font-medium text-slate-400 mt-1">Carga horária da escala</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Carga horária da escala</p>
         </div>
       </div>
 
       {/* 2. Horas Realizadas */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
-        <div className="flex items-center justify-between gap-2">
+      <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 shadow-2xs flex flex-col justify-between">
+        <div className="flex items-center justify-between gap-1.5">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Horas Realizadas
           </span>
-          <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-4 h-4" />
+          <div className="w-6 h-6 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-3 h-3" />
           </div>
         </div>
-        <div className="mt-3">
-          <div className="text-2xl font-extrabold text-slate-900 tracking-tight font-sans">
+        <div className="mt-2.5">
+          <div className="text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">
             {cleanFormatted(totalActualFormatted)}
           </div>
-          <p className="text-[11px] font-medium text-slate-400 mt-1">Tempo líquido trabalhado</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Tempo líquido trabalhado</p>
         </div>
       </div>
 
       {/* 3. Saldo do Mês */}
-      <div
-        className={`bg-white border rounded-2xl p-4.5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between ${
-          isMonthPositive
-            ? 'border-emerald-200 bg-gradient-to-br from-white via-emerald-50/20 to-emerald-50/40 ring-1 ring-emerald-500/20'
-            : isMonthNegative
-            ? 'border-rose-200 bg-gradient-to-br from-white via-rose-50/20 to-rose-50/40 ring-1 ring-rose-500/20'
-            : 'border-slate-200/90'
-        }`}
-      >
-        <div className="flex items-center justify-between gap-2">
+      <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 shadow-2xs flex flex-col justify-between">
+        <div className="flex items-center justify-between gap-1.5">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Saldo do Mês
           </span>
-          <div
-            className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-              isMonthPositive
-                ? 'bg-emerald-100/80 text-emerald-700'
-                : isMonthNegative
-                ? 'bg-rose-100/80 text-rose-700'
-                : 'bg-slate-100 text-slate-600'
-            }`}
-          >
+          <div className="w-6 h-6 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
             {isMonthPositive ? (
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className="w-3 h-3 text-emerald-600" />
             ) : isMonthNegative ? (
-              <TrendingDown className="w-4 h-4" />
+              <TrendingDown className="w-3 h-3 text-rose-600" />
             ) : (
-              <Clock className="w-4 h-4" />
+              <Clock className="w-3 h-3 text-slate-500" />
             )}
           </div>
         </div>
-        <div className="mt-3">
+        <div className="mt-2.5">
           <div
-            className={`text-2xl font-extrabold tracking-tight font-sans ${
+            className={`text-lg font-bold tracking-tight whitespace-nowrap ${
               isMonthPositive
                 ? 'text-emerald-600'
                 : isMonthNegative
@@ -118,11 +101,11 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
           >
             {cleanFormatted(totalBalanceFormatted)}
           </div>
-          <p className="text-[11px] font-medium text-slate-400 mt-1">
+          <p className="text-[10px] text-slate-400 mt-0.5">
             {isMonthPositive
               ? 'Crédito no período'
               : isMonthNegative
-              ? 'Débito / Atraso no período'
+              ? 'Débito no período'
               : 'Jornada cumprida'}
           </p>
         </div>
@@ -131,21 +114,21 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
       {/* 4. Banco de Horas */}
       <div
         onClick={onOpenBalanceExtract}
-        className={`bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between ${
-          onOpenBalanceExtract ? 'cursor-pointer group hover:border-teal-300' : ''
+        className={`bg-white border border-slate-200/90 rounded-xl p-3.5 shadow-2xs flex flex-col justify-between ${
+          onOpenBalanceExtract ? 'cursor-pointer hover:border-slate-300 transition-colors group' : ''
         }`}
       >
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-1.5">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Banco de Horas
           </span>
-          <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-            <Layers className="w-4 h-4" />
+          <div className="w-6 h-6 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+            <Layers className="w-3 h-3" />
           </div>
         </div>
-        <div className="mt-3">
+        <div className="mt-2.5">
           <div
-            className={`text-2xl font-extrabold tracking-tight font-sans ${
+            className={`text-lg font-bold tracking-tight whitespace-nowrap ${
               isAccPositive
                 ? 'text-emerald-600'
                 : isAccNegative
@@ -155,10 +138,10 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
           >
             {cleanFormatted(accumulatedClosingFormatted)}
           </div>
-          <div className="flex items-center justify-between mt-1">
-            <span className="text-[11px] font-medium text-slate-400">Saldo Total Acumulado</span>
+          <div className="flex items-center justify-between mt-0.5 gap-1">
+            <span className="text-[10px] text-slate-400">Saldo Total Acumulado</span>
             {onOpenBalanceExtract && (
-              <span className="text-[10px] text-teal-600 font-bold group-hover:underline flex items-center gap-0.5">
+              <span className="text-[9px] text-teal-600 font-bold group-hover:underline shrink-0">
                 Extrato →
               </span>
             )}
@@ -167,53 +150,41 @@ export const TimeClockSummaryCards: React.FC<TimeClockSummaryProps> = ({
       </div>
 
       {/* 5. Divergências */}
-      <div
-        className={`bg-white border rounded-2xl p-4.5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between ${
-          divergencesCount > 0
-            ? 'border-amber-200 bg-gradient-to-br from-white via-amber-50/20 to-amber-50/40 ring-1 ring-amber-500/20'
-            : 'border-slate-200/90'
-        }`}
-      >
-        <div className="flex items-center justify-between gap-2">
+      <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 shadow-2xs flex flex-col justify-between overflow-hidden">
+        <div className="flex items-center justify-between gap-1.5">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Divergências
           </span>
-          <div
-            className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-              divergencesCount > 0
-                ? 'bg-amber-100 text-amber-700'
-                : 'bg-emerald-50 text-emerald-600'
-            }`}
-          >
+          <div className="w-6 h-6 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
             {divergencesCount > 0 ? (
-              <AlertCircle className="w-4 h-4 text-amber-600" />
+              <AlertCircle className="w-3 h-3 text-amber-600" />
             ) : (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
             )}
           </div>
         </div>
-        <div className="mt-3 flex items-end justify-between">
-          <div>
+        <div className="mt-2.5 flex items-end justify-between gap-1">
+          <div className="flex items-baseline gap-1 whitespace-nowrap">
             <span
-              className={`text-2xl font-extrabold font-sans ${
-                divergencesCount > 0 ? 'text-amber-600' : 'text-emerald-600'
+              className={`text-lg font-bold ${
+                divergencesCount > 0 ? 'text-amber-600' : 'text-slate-900'
               }`}
             >
               {divergencesCount}
             </span>
-            <p className="text-[11px] font-medium text-slate-400 mt-0.5">
-              {divergencesCount === 1 ? 'dia com alerta' : 'dias com alerta'}
-            </p>
+            <span className="text-[10px] text-slate-400">
+              {divergencesCount === 1 ? 'alerta' : 'alertas'}
+            </span>
           </div>
-          <div>
+          <div className="shrink-0">
             {divergencesCount > 0 ? (
-              <Badge variant="warning" size="sm">
-                Ajuste pendente
-              </Badge>
+              <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                Pendente
+              </span>
             ) : (
-              <Badge variant="success" size="sm">
-                Espelho regular
-              </Badge>
+              <span className="inline-block text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                Regular
+              </span>
             )}
           </div>
         </div>
