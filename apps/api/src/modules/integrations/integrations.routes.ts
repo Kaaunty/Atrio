@@ -122,6 +122,28 @@ router.post(
   RhidController.syncOrganization
 );
 
+// --- RHiD Departamentos & Cargos ---
+router.get(
+  '/integrations/control-id/rhid/departments/overview',
+  requirePermission('integracoes.visualizar'),
+  RhidController.getDepartmentsOverview
+);
+router.post(
+  '/integrations/control-id/rhid/departments/import',
+  requirePermission('integracoes.gerenciar'),
+  RhidController.importDepartments
+);
+router.get(
+  '/integrations/control-id/rhid/positions/overview',
+  requirePermission('integracoes.visualizar'),
+  RhidController.getPositionsOverview
+);
+router.post(
+  '/integrations/control-id/rhid/positions/import',
+  requirePermission('integracoes.gerenciar'),
+  RhidController.importPositions
+);
+
 // --- Integrações (Hub, Configurações e Disparo Manual) ---
 router.get(
   '/integrations',

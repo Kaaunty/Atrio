@@ -628,8 +628,8 @@ export class RhidService {
 
       if (emp) {
         const deptId = p.idDepartment ? deptMap.get(p.idDepartment) : undefined;
-        const rhidRoleId = personToRole.get(p.id);
-        const rhidShiftId = personToShift.get(p.id);
+        const rhidRoleId = p.id ? personToRole.get(p.id) : undefined;
+        const rhidShiftId = p.id ? personToShift.get(p.id) : undefined;
 
         const positionId = rhidRoleId ? roleMap.get(rhidRoleId) : undefined;
         const workScheduleId = rhidShiftId ? shiftMap.get(rhidShiftId) : undefined;
@@ -651,6 +651,336 @@ export class RhidService {
       positionsCount: roleMap.size,
       schedulesCount: shiftMap.size,
       employeesUpdated: updatedCount,
+    };
+  }
+
+  /**
+   * Visão comparativa de Departamentos entre Átrio e RHiD Cloud
+   */
+  static async getDepartmentsOverview(): Promise<{
+    totalAtrio: number;
+    totalRhid: number;
+    totalSynced: number;
+    totalAtrioOnly: number;
+    totalRhidOnly: number;
+    items: Array<{
+      key: string;
+      name: string;
+      code?: string | null;
+      status: 'SYNCED' | 'ATRIO_ONLY' | 'RHID_ONLY';
+      atrioId?: string | null;
+      rhidId?: number | null;
+      employeesCount: number;
+    }>;
+  }> {
+    const creds = await this.getStoredCredentials();
+    const login = await RhidClient.login(creds);
+
+    const atrioDepts = await prisma.department.findMany({
+      where: { deletedAt: null },
+      include: { _count: { select: { employees: { where: { deletedAt: null } } } } },
+    });
+
+    const depRes = await fetch('https://www.rhid.com.br/v2/customerdb/department.svc/a?draw=1&start=0&length=300', {
+      headers: { Authorization: `Bearer ${login.accessToken}` },
+    });
+    const depJson: any = await depRes.json();
+    const rhidDepts = depJson.data || [];
+
+    const atrioByName = new Map<string, typeof atrioDepts[0]>();
+    for (const d of atrioDepts) {
+      atrioByName.set(d.name.trim().toLowerCase(), d);
+    }
+
+    const items: Array<any> = [];
+    const matchedAtrioIds = new Set<string>();
+
+    for (const rd of rhidDepts) {
+      if (!rd.name) continue;
+      const cleanName = rd.name.trim();
+      const matched = atrioByName.get(cleanName.toLowerCase());
+
+      if (matched) {
+        matchedAtrioIds.add(matched.id);
+        items.push({
+          key: `matched_${matched.id}_${rd.id}`,
+          name: matched.name,
+          code: matched.code || `DEP-${rd.id}`,
+          status: 'SYNCED',
+          atrioId: matched.id,
+          rhidId: rd.id,
+          employeesCount: matched._count.employees,
+        });
+      } else {
+        items.push({
+          key: `rhid_${rd.id}`,
+          name: cleanName,
+          code: `DEP-${rd.id}`,
+          status: 'RHID_ONLY',
+          atrioId: null,
+          rhidId: rd.id,
+          employeesCount: rd.numPersons || 0,
+        });
+      }
+    }
+
+    for (const ad of atrioDepts) {
+      if (!matchedAtrioIds.has(ad.id)) {
+        items.push({
+          key: `atrio_${ad.id}`,
+          name: ad.name,
+          code: ad.code,
+          status: 'ATRIO_ONLY',
+          atrioId: ad.id,
+          rhidId: null,
+          employeesCount: ad._count.employees,
+        });
+      }
+    }
+
+    const totalSynced = items.filter((i) => i.status === 'SYNCED').length;
+    const totalAtrioOnly = items.filter((i) => i.status === 'ATRIO_ONLY').length;
+    const totalRhidOnly = items.filter((i) => i.status === 'RHID_ONLY').length;
+
+    return {
+      totalAtrio: atrioDepts.length,
+      totalRhid: rhidDepts.length,
+      totalSynced,
+      totalAtrioOnly,
+      totalRhidOnly,
+      items,
+    };
+  }
+
+  /**
+   * Importa Departamentos selecionados do RHiD
+   */
+  static async importDepartments(rhidDepartmentIds?: number[]) {
+    const creds = await this.getStoredCredentials();
+    const login = await RhidClient.login(creds);
+
+    let company = await prisma.company.findFirst();
+    if (!company) {
+      company = await prisma.company.create({
+        data: {
+          legalName: 'Rainha das Sete Indústria e Comércio de Autopeças Ltda',
+          tradeName: 'Rainha das Sete',
+          cnpj: '61.033.155/0001-19',
+        },
+      });
+    }
+
+    const depRes = await fetch('https://www.rhid.com.br/v2/customerdb/department.svc/a?draw=1&start=0&length=300', {
+      headers: { Authorization: `Bearer ${login.accessToken}` },
+    });
+    const depJson: any = await depRes.json();
+    let rhidDepts = depJson.data || [];
+
+    if (rhidDepartmentIds && rhidDepartmentIds.length > 0) {
+      const idSet = new Set(rhidDepartmentIds);
+      rhidDepts = rhidDepts.filter((d: any) => idSet.has(d.id));
+    }
+
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    for (const d of rhidDepts) {
+      if (!d.name) continue;
+      const cleanName = d.name.trim();
+      let dept = await prisma.department.findFirst({
+        where: { companyId: company.id, name: cleanName },
+      });
+
+      if (!dept) {
+        await prisma.department.create({
+          data: {
+            companyId: company.id,
+            name: cleanName,
+            code: `DEP-${d.id}`,
+            active: !d.excluded,
+          },
+        });
+        createdCount++;
+      } else {
+        await prisma.department.update({
+          where: { id: dept.id },
+          data: {
+            active: !d.excluded,
+            deletedAt: null,
+          },
+        });
+        updatedCount++;
+      }
+    }
+
+    return {
+      success: true,
+      createdCount,
+      updatedCount,
+      message: `${createdCount} departamento(s) criado(s) e ${updatedCount} atualizado(s) com sucesso.`,
+    };
+  }
+
+  /**
+   * Visão comparativa de Cargos & Níveis entre Átrio e RHiD Cloud
+   */
+  static async getPositionsOverview(): Promise<{
+    totalAtrio: number;
+    totalRhid: number;
+    totalSynced: number;
+    totalAtrioOnly: number;
+    totalRhidOnly: number;
+    items: Array<{
+      key: string;
+      title: string;
+      level: string;
+      departmentName?: string | null;
+      status: 'SYNCED' | 'ATRIO_ONLY' | 'RHID_ONLY';
+      atrioId?: string | null;
+      rhidId?: number | null;
+      employeesCount: number;
+    }>;
+  }> {
+    const creds = await this.getStoredCredentials();
+    const login = await RhidClient.login(creds);
+
+    const atrioPositions = await prisma.position.findMany({
+      where: { deletedAt: null },
+      include: {
+        department: { select: { name: true } },
+        _count: { select: { employees: { where: { deletedAt: null } } } },
+      },
+    });
+
+    const roleRes = await fetch('https://www.rhid.com.br/v2/customerdb/personrole.svc/a?draw=1&start=0&length=500', {
+      headers: { Authorization: `Bearer ${login.accessToken}` },
+    });
+    const roleJson: any = await roleRes.json();
+    const rhidRoles = roleJson.data || [];
+
+    const atrioByTitle = new Map<string, typeof atrioPositions[0]>();
+    for (const p of atrioPositions) {
+      atrioByTitle.set(p.title.trim().toLowerCase(), p);
+    }
+
+    const items: Array<any> = [];
+    const matchedAtrioIds = new Set<string>();
+
+    for (const rr of rhidRoles) {
+      if (!rr.name) continue;
+      const cleanTitle = rr.name.trim();
+      const matched = atrioByTitle.get(cleanTitle.toLowerCase());
+
+      if (matched) {
+        matchedAtrioIds.add(matched.id);
+        items.push({
+          key: `matched_${matched.id}_${rr.id}`,
+          title: matched.title,
+          level: matched.level || 'Operacional',
+          departmentName: matched.department?.name || rr.departmentName || null,
+          status: 'SYNCED',
+          atrioId: matched.id,
+          rhidId: rr.id,
+          employeesCount: matched._count.employees,
+        });
+      } else {
+        items.push({
+          key: `rhid_${rr.id}`,
+          title: cleanTitle,
+          level: 'Operacional',
+          departmentName: rr.departmentName || null,
+          status: 'RHID_ONLY',
+          atrioId: null,
+          rhidId: rr.id,
+          employeesCount: rr.numPersons || 0,
+        });
+      }
+    }
+
+    for (const ap of atrioPositions) {
+      if (!matchedAtrioIds.has(ap.id)) {
+        items.push({
+          key: `atrio_${ap.id}`,
+          title: ap.title,
+          level: ap.level,
+          departmentName: ap.department?.name || null,
+          status: 'ATRIO_ONLY',
+          atrioId: ap.id,
+          rhidId: null,
+          employeesCount: ap._count.employees,
+        });
+      }
+    }
+
+    const totalSynced = items.filter((i) => i.status === 'SYNCED').length;
+    const totalAtrioOnly = items.filter((i) => i.status === 'ATRIO_ONLY').length;
+    const totalRhidOnly = items.filter((i) => i.status === 'RHID_ONLY').length;
+
+    return {
+      totalAtrio: atrioPositions.length,
+      totalRhid: rhidRoles.length,
+      totalSynced,
+      totalAtrioOnly,
+      totalRhidOnly,
+      items,
+    };
+  }
+
+  /**
+   * Importa Cargos selecionados do RHiD
+   */
+  static async importPositions(rhidPositionIds?: number[]) {
+    const creds = await this.getStoredCredentials();
+    const login = await RhidClient.login(creds);
+
+    const roleRes = await fetch('https://www.rhid.com.br/v2/customerdb/personrole.svc/a?draw=1&start=0&length=500', {
+      headers: { Authorization: `Bearer ${login.accessToken}` },
+    });
+    const roleJson: any = await roleRes.json();
+    let rhidRoles = roleJson.data || [];
+
+    if (rhidPositionIds && rhidPositionIds.length > 0) {
+      const idSet = new Set(rhidPositionIds);
+      rhidRoles = rhidRoles.filter((r: any) => idSet.has(r.id));
+    }
+
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    for (const r of rhidRoles) {
+      if (!r.name) continue;
+      const cleanTitle = r.name.trim();
+      let pos = await prisma.position.findFirst({
+        where: { title: cleanTitle },
+      });
+
+      if (!pos) {
+        await prisma.position.create({
+          data: {
+            title: cleanTitle,
+            level: 'Operacional',
+            description: `Importado do RHiD (ID: ${r.id})`,
+            active: !r.excluded,
+          },
+        });
+        createdCount++;
+      } else {
+        await prisma.position.update({
+          where: { id: pos.id },
+          data: {
+            active: !r.excluded,
+            deletedAt: null,
+          },
+        });
+        updatedCount++;
+      }
+    }
+
+    return {
+      success: true,
+      createdCount,
+      updatedCount,
+      message: `${createdCount} cargo(s) criado(s) e ${updatedCount} atualizado(s) com sucesso.`,
     };
   }
 }

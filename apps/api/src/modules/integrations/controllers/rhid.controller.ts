@@ -219,4 +219,86 @@ export class RhidController {
       });
     }
   }
+
+  /**
+   * Obtém visão comparativa de Departamentos entre Átrio e RHiD
+   */
+  static async getDepartmentsOverview(req: Request, res: Response) {
+    try {
+      const result = await RhidService.getDepartmentsOverview();
+      return sendSuccess({
+        res,
+        message: 'Visão de departamentos carregada com sucesso',
+        data: result,
+      });
+    } catch (err: any) {
+      return sendError({
+        res,
+        statusCode: err.statusCode || 500,
+        message: err.message || 'Falha ao carregar visão de departamentos do RHiD',
+      });
+    }
+  }
+
+  /**
+   * Importa Departamentos do RHiD para o Átrio
+   */
+  static async importDepartments(req: Request, res: Response) {
+    try {
+      const { rhidDepartmentIds } = req.body;
+      const result = await RhidService.importDepartments(rhidDepartmentIds);
+      return sendSuccess({
+        res,
+        message: result.message,
+        data: result,
+      });
+    } catch (err: any) {
+      return sendError({
+        res,
+        statusCode: err.statusCode || 500,
+        message: err.message || 'Falha ao importar departamentos do RHiD',
+      });
+    }
+  }
+
+  /**
+   * Obtém visão comparativa de Cargos & Níveis entre Átrio e RHiD
+   */
+  static async getPositionsOverview(req: Request, res: Response) {
+    try {
+      const result = await RhidService.getPositionsOverview();
+      return sendSuccess({
+        res,
+        message: 'Visão de cargos carregada com sucesso',
+        data: result,
+      });
+    } catch (err: any) {
+      return sendError({
+        res,
+        statusCode: err.statusCode || 500,
+        message: err.message || 'Falha ao carregar visão de cargos do RHiD',
+      });
+    }
+  }
+
+  /**
+   * Importa Cargos do RHiD para o Átrio
+   */
+  static async importPositions(req: Request, res: Response) {
+    try {
+      const { rhidPositionIds } = req.body;
+      const result = await RhidService.importPositions(rhidPositionIds);
+      return sendSuccess({
+        res,
+        message: result.message,
+        data: result,
+      });
+    } catch (err: any) {
+      return sendError({
+        res,
+        statusCode: err.statusCode || 500,
+        message: err.message || 'Falha ao importar cargos do RHiD',
+      });
+    }
+  }
 }
