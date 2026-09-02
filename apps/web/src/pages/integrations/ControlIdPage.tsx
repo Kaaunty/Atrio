@@ -41,8 +41,6 @@ import {
   Shield,
   Cloud,
   Users,
-  Building2,
-  Briefcase,
 } from 'lucide-react';
 
 export const ControlIdPage: React.FC = () => {
@@ -205,7 +203,6 @@ export const ControlIdPage: React.FC = () => {
   };
 
   const [syncingDevices, setSyncingDevices] = useState(false);
-  const [syncingOrg, setSyncingOrg] = useState(false);
 
   const handleSyncDevicesFromRhid = async () => {
     try {
@@ -232,35 +229,6 @@ export const ControlIdPage: React.FC = () => {
       });
     } finally {
       setSyncingDevices(false);
-    }
-  };
-
-  const handleSyncOrgFromRhid = async () => {
-    try {
-      setSyncingOrg(true);
-      const res = await integrationService.syncRhidOrganization();
-      setFeedback({
-        isOpen: true,
-        type: 'success',
-        title: 'Estrutura Sincronizada com Sucesso!',
-        description: 'Todos os departamentos, cargos e escalas de horários do RHiD foram importados e vinculados aos colaboradores da empresa.',
-        metrics: [
-          { label: 'Departamentos', value: res.departmentsCount, icon: <Building2 className="w-5 h-5" /> },
-          { label: 'Cargos', value: res.positionsCount, icon: <Briefcase className="w-5 h-5" /> },
-          { label: 'Escalas / Horários', value: res.schedulesCount, icon: <Clock className="w-5 h-5" /> },
-          { label: 'Colaboradores', value: res.employeesUpdated, icon: <Users className="w-5 h-5" /> },
-        ],
-      });
-      await loadData();
-    } catch (err: any) {
-      setFeedback({
-        isOpen: true,
-        type: 'error',
-        title: 'Falha na Sincronização',
-        description: err.response?.data?.message || err.message || 'Falha ao sincronizar estrutura organizacional do RHiD.',
-      });
-    } finally {
-      setSyncingOrg(false);
     }
   };
 
@@ -376,36 +344,6 @@ export const ControlIdPage: React.FC = () => {
             <Button
               variant="secondary"
               size="md"
-              onClick={() => setIsRhidModalOpen(true)}
-              icon={<Cloud className="w-4 h-4 text-indigo-600" />}
-            >
-              RHiD Cloud
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={handleSyncDevicesFromRhid}
-              disabled={syncingDevices || !integration?.enabled}
-              icon={<RefreshCw className={`w-4 h-4 text-indigo-600 ${syncingDevices ? 'animate-spin' : ''}`} />}
-            >
-              {syncingDevices ? 'Puxando do RHiD...' : 'Puxar Relógios do RHiD'}
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={handleSyncOrgFromRhid}
-              disabled={syncingOrg || !integration?.enabled}
-              icon={<Building2 className={`w-4 h-4 text-indigo-600 ${syncingOrg ? 'animate-spin' : ''}`} />}
-              title="Sincroniza Departamentos, Cargos e Escalas/Horários do RHiD"
-            >
-              {syncingOrg ? 'Sincronizando...' : 'Sincronizar Cargos & Escalas'}
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="md"
               onClick={() => setIsAfdModalOpen(true)}
               icon={<FileUp className="w-4 h-4 text-slate-600" />}
               disabled={!integration?.enabled}
@@ -417,10 +355,10 @@ export const ControlIdPage: React.FC = () => {
               variant="secondary"
               size="md"
               onClick={() => setIsSyncModalOpen(true)}
-              icon={<RefreshCw className="w-4 h-4 text-slate-600" />}
+              icon={<RefreshCw className="w-4 h-4 text-indigo-600" />}
               disabled={!integration?.enabled}
             >
-              Sincronizar Agora
+              Sincronizar Ponto
             </Button>
 
             <Button
@@ -445,6 +383,21 @@ export const ControlIdPage: React.FC = () => {
         {/* ========================================================================= */}
         {activeTab === 'devices' && (
           <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Relógios Físicos de Ponto</h3>
+                <p className="text-xs text-slate-500">Equipamentos biométricos e faciais conectados na rede local</p>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleSyncDevicesFromRhid}
+                disabled={syncingDevices || !integration?.enabled}
+                icon={<RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${syncingDevices ? 'animate-spin' : ''}`} />}
+              >
+                {syncingDevices ? 'Buscando no RHiD...' : 'Buscar Relógios no RHiD'}
+              </Button>
+            </div>
             {loading ? (
               <div className="p-8 text-center text-slate-400">Carregando dispositivos...</div>
             ) : !integration?.devices || integration.devices.length === 0 ? (

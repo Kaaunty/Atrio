@@ -3,6 +3,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 import { integrationService } from '../../services/integrationService';
+import { FeedbackDialog, FeedbackMetric } from '../ui/FeedbackDialog';
 import {
   Users,
   RefreshCw,
@@ -18,6 +19,9 @@ import {
   FileSpreadsheet,
   Loader2,
   Settings,
+  Building2,
+  Briefcase,
+  Clock,
 } from 'lucide-react';
 
 interface EmployeeItem {
@@ -55,6 +59,46 @@ export const RhidEmployeeSyncTab: React.FC<RhidEmployeeSyncTabProps> = ({ onOpen
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'SYNCED' | 'ATRIO_ONLY' | 'RHID_ONLY'>('ALL');
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [syncingOrg, setSyncingOrg] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    isOpen: boolean;
+    type?: 'success' | 'warning' | 'error' | 'info';
+    title: string;
+    description?: string;
+    metrics?: FeedbackMetric[];
+  }>({
+    isOpen: false,
+    title: '',
+  });
+
+  const handleSyncOrg = async () => {
+    try {
+      setSyncingOrg(true);
+      const res = await integrationService.syncRhidOrganization();
+      setFeedback({
+        isOpen: true,
+        type: 'success',
+        title: 'Estrutura Sincronizada com Sucesso!',
+        description: 'Departamentos, Cargos e Escalas contratuais importados e atualizados para todos os colaboradores.',
+        metrics: [
+          { label: 'Departamentos', value: res.departmentsCount, icon: <Building2 className="w-5 h-5" /> },
+          { label: 'Cargos', value: res.positionsCount, icon: <Briefcase className="w-5 h-5" /> },
+          { label: 'Escalas / Horários', value: res.schedulesCount, icon: <Clock className="w-5 h-5" /> },
+          { label: 'Colaboradores', value: res.employeesUpdated, icon: <Users className="w-5 h-5" /> },
+        ],
+      });
+      await loadOverview();
+    } catch (err: any) {
+      setFeedback({
+        isOpen: true,
+        type: 'error',
+        title: 'Falha na Sincronização',
+        description: err.response?.data?.message || err.message || 'Falha ao sincronizar estrutura organizacional do RHiD.',
+      });
+    } finally {
+      setSyncingOrg(false);
+    }
+  };
 
   const loadOverview = async () => {
     try {
@@ -323,8 +367,24 @@ export const RhidEmployeeSyncTab: React.FC<RhidEmployeeSyncTabProps> = ({ onOpen
           <Button
             variant="secondary"
             size="sm"
+            onClick={handleSyncOrg}
+            disabled={loading || syncing || syncingOrg}
+            className="text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-semibold"
+            title="Sincroniza Departamentos, Cargos e Escalas/Horários contratuais do RHiD"
+          >
+            {syncingOrg ? (
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+            ) : (
+              <Building2 className="w-4 h-4 mr-1.5 text-indigo-600" />
+            )}
+            Sincronizar Cargos & Escalas
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={loadOverview}
-            disabled={loading || syncing}
+            disabled={loading || syncing || syncingOrg}
             title="Recarregar dados"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -334,7 +394,7 @@ export const RhidEmployeeSyncTab: React.FC<RhidEmployeeSyncTabProps> = ({ onOpen
             variant="secondary"
             size="sm"
             onClick={handleExportCsv}
-            disabled={loading || syncing}
+            disabled={loading || syncing || syncingOrg}
           >
             <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-600" />
             Exportar CSV
@@ -344,7 +404,7 @@ export const RhidEmployeeSyncTab: React.FC<RhidEmployeeSyncTabProps> = ({ onOpen
             variant="secondary"
             size="sm"
             onClick={() => handleImportFromRhid(false)}
-            disabled={loading || syncing || (!data?.totalRhidOnly && selectedKeys.size === 0)}
+            disabled={loading || syncing || syncingOrg || (!data?.totalRhidOnly && selectedKeys.size === 0)}
             className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 font-semibold"
           >
             {syncing ? (
@@ -359,7 +419,7 @@ export const RhidEmployeeSyncTab: React.FC<RhidEmployeeSyncTabProps> = ({ onOpen
             variant="primary"
             size="sm"
             onClick={handlePushToRhid}
-            disabled={loading || syncing || (!data?.totalAtrioOnly && selectedKeys.size === 0)}
+            disabled={loading || syncing || syncingOrg || (!data?.totalAtrioOnly && selectedKeys.size === 0)}
           >
             {syncing ? (
               <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
@@ -516,6 +576,16 @@ export const RhidEmployeeSyncTab: React.FC<RhidEmployeeSyncTabProps> = ({ onOpen
           </table>
         </div>
       </div>
+
+      {/* Diálogo de Feedback & Resultados Elegante */}
+      <FeedbackDialog
+        isOpen={feedback.isOpen}
+        onClose={() => setFeedback((prev) => ({ ...prev, isOpen: false }))}
+        type={feedback.type}
+        title={feedback.title}
+        description={feedback.description}
+        metrics={feedback.metrics}
+      />
     </div>
   );
 };
