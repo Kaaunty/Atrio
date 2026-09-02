@@ -400,6 +400,69 @@ export const integrationService = {
     const res = await api.post('/integrations/control-id/rhid/organization/sync');
     return res.data?.data !== undefined ? res.data.data : res.data;
   },
+
+  // --- Sincronização de Departamentos RHiD ---
+  async getRhidDepartmentsOverview(): Promise<{
+    totalAtrio: number;
+    totalRhid: number;
+    totalSynced: number;
+    totalAtrioOnly: number;
+    totalRhidOnly: number;
+    items: Array<{
+      key: string;
+      name: string;
+      code?: string | null;
+      status: 'SYNCED' | 'ATRIO_ONLY' | 'RHID_ONLY';
+      atrioId?: string | null;
+      rhidId?: number | null;
+      employeesCount: number;
+    }>;
+  }> {
+    const res = await api.get('/integrations/control-id/rhid/departments/overview');
+    return res.data?.data !== undefined ? res.data.data : res.data;
+  },
+
+  async importRhidDepartments(rhidDepartmentIds?: number[]): Promise<{
+    success: boolean;
+    createdCount: number;
+    updatedCount: number;
+    message: string;
+  }> {
+    const res = await api.post('/integrations/control-id/rhid/departments/import', { rhidDepartmentIds });
+    return res.data?.data !== undefined ? res.data.data : res.data;
+  },
+
+  // --- Sincronização de Cargos RHiD ---
+  async getRhidPositionsOverview(): Promise<{
+    totalAtrio: number;
+    totalRhid: number;
+    totalSynced: number;
+    totalAtrioOnly: number;
+    totalRhidOnly: number;
+    items: Array<{
+      key: string;
+      title: string;
+      level: string;
+      departmentName?: string | null;
+      status: 'SYNCED' | 'ATRIO_ONLY' | 'RHID_ONLY';
+      atrioId?: string | null;
+      rhidId?: number | null;
+      employeesCount: number;
+    }>;
+  }> {
+    const res = await api.get('/integrations/control-id/rhid/positions/overview');
+    return res.data?.data !== undefined ? res.data.data : res.data;
+  },
+
+  async importRhidPositions(rhidPositionIds?: number[]): Promise<{
+    success: boolean;
+    createdCount: number;
+    updatedCount: number;
+    message: string;
+  }> {
+    const res = await api.post('/integrations/control-id/rhid/positions/import', { rhidPositionIds });
+    return res.data?.data !== undefined ? res.data.data : res.data;
+  },
 };
 
 

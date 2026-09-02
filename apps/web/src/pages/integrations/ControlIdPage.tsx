@@ -13,6 +13,8 @@ import { ManualSyncModal } from '../../components/integrations/ManualSyncModal';
 import { AfdUploadModal } from '../../components/integrations/AfdUploadModal';
 import { RhidSettingsModal } from '../../components/integrations/RhidSettingsModal';
 import { RhidEmployeeSyncTab } from '../../components/integrations/RhidEmployeeSyncTab';
+import { RhidDepartmentSyncTab } from '../../components/integrations/RhidDepartmentSyncTab';
+import { RhidPositionSyncTab } from '../../components/integrations/RhidPositionSyncTab';
 import {
   IntegrationConfigItem,
   TimeClockDeviceItem,
@@ -41,6 +43,8 @@ import {
   Shield,
   Cloud,
   Users,
+  Building2,
+  Briefcase,
 } from 'lucide-react';
 
 export const ControlIdPage: React.FC = () => {
@@ -254,18 +258,28 @@ export const ControlIdPage: React.FC = () => {
     },
     {
       id: 'employees',
-      label: 'Colaboradores & RHiD',
+      label: 'Colaboradores (RHiD)',
       icon: <Users className="w-4 h-4" />,
     },
     {
-      id: 'logs',
-      label: 'Histórico de Sincronizações',
-      icon: <Activity className="w-4 h-4" />,
+      id: 'departments',
+      label: 'Departamentos (RHiD)',
+      icon: <Building2 className="w-4 h-4" />,
+    },
+    {
+      id: 'positions',
+      label: 'Cargos & Níveis (RHiD)',
+      icon: <Briefcase className="w-4 h-4" />,
     },
     {
       id: 'entries',
       label: 'Registros Brutos (Portaria 671)',
       icon: <Clock className="w-4 h-4" />,
+    },
+    {
+      id: 'logs',
+      label: 'Histórico de Sincronizações',
+      icon: <Activity className="w-4 h-4" />,
     },
     {
       id: 'settings',
@@ -517,6 +531,20 @@ export const ControlIdPage: React.FC = () => {
         {/* ========================================================================= */}
         {activeTab === 'employees' && (
           <RhidEmployeeSyncTab onOpenSettings={() => setIsRhidModalOpen(true)} />
+        )}
+
+        {/* ========================================================================= */}
+        {/* ABA 3: DEPARTAMENTOS & RHID */}
+        {/* ========================================================================= */}
+        {activeTab === 'departments' && (
+          <RhidDepartmentSyncTab onOpenSettings={() => setIsRhidModalOpen(true)} />
+        )}
+
+        {/* ========================================================================= */}
+        {/* ABA 4: CARGOS & NÍVEIS & RHID */}
+        {/* ========================================================================= */}
+        {activeTab === 'positions' && (
+          <RhidPositionSyncTab onOpenSettings={() => setIsRhidModalOpen(true)} />
         )}
 
         {/* ========================================================================= */}
