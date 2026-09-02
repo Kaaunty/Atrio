@@ -21,6 +21,7 @@ import {
   TestConnectionResult,
   integrationService,
 } from '../../services/integrationService';
+import { FeedbackDialog, FeedbackMetric } from '../../components/ui/FeedbackDialog';
 import {
   Cpu,
   RefreshCw,
@@ -41,6 +42,7 @@ import {
   Cloud,
   Users,
   Building2,
+  Briefcase,
 } from 'lucide-react';
 
 export const ControlIdPage: React.FC = () => {
@@ -77,6 +79,16 @@ export const ControlIdPage: React.FC = () => {
   const [entriesSearch, setEntriesSearch] = useState('');
   const [copiedHash, setCopiedHash] = useState<string | null>(null);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    isOpen: boolean;
+    type?: 'success' | 'warning' | 'error' | 'info';
+    title: string;
+    description?: string;
+    metrics?: FeedbackMetric[];
+  }>({
+    isOpen: false,
+    title: '',
+  });
 
   const loadData = async () => {
     try {
@@ -141,7 +153,12 @@ export const ControlIdPage: React.FC = () => {
       const updated = await integrationService.toggleIntegration('control_id', !integration.enabled);
       setIntegration((prev) => (prev ? { ...prev, enabled: updated.enabled, status: updated.status } : null));
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Falha ao alterar status da integração');
+      setFeedback({
+        isOpen: true,
+        type: 'error',
+        title: 'Erro ao Alterar Status',
+        description: err.response?.data?.message || 'Falha ao alterar status da integração.',
+      });
     } finally {
       setToggling(false);
     }
@@ -168,9 +185,20 @@ export const ControlIdPage: React.FC = () => {
       setDeleting(true);
       await integrationService.deleteDevice(deviceToDelete.id);
       setDeviceToDelete(null);
+      setFeedback({
+        isOpen: true,
+        type: 'success',
+        title: 'Relógio Removido',
+        description: `O relógio '${deviceToDelete.name}' foi removido com sucesso.`,
+      });
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Falha ao excluir relógio');
+      setFeedback({
+        isOpen: true,
+        type: 'error',
+        title: 'Erro ao Excluir',
+        description: err.response?.data?.message || 'Falha ao excluir relógio.',
+      });
     } finally {
       setDeleting(false);
     }
@@ -183,10 +211,25 @@ export const ControlIdPage: React.FC = () => {
     try {
       setSyncingDevices(true);
       const res = await integrationService.syncRhidDevices();
-      alert(res.message);
+      setFeedback({
+        isOpen: true,
+        type: 'success',
+        title: 'Relógios Físicos Sincronizados!',
+        description: res.message,
+        metrics: [
+          { label: 'Total Encontrados', value: res.total, icon: <Radio className="w-5 h-5" /> },
+          { label: 'Novos Cadastrados', value: res.createdCount, icon: <CheckCircle2 className="w-5 h-5" /> },
+          { label: 'Atualizados', value: res.updatedCount, icon: <RefreshCw className="w-5 h-5" /> },
+        ],
+      });
       await loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || 'Falha ao sincronizar relógios do RHiD');
+      setFeedback({
+        isOpen: true,
+        type: 'error',
+        title: 'Falha ao Sincronizar Relógios',
+        description: err.response?.data?.message || err.message || 'Falha ao sincronizar relógios do RHiD.',
+      });
     } finally {
       setSyncingDevices(false);
     }
@@ -196,10 +239,26 @@ export const ControlIdPage: React.FC = () => {
     try {
       setSyncingOrg(true);
       const res = await integrationService.syncRhidOrganization();
-      alert(`Estrutura sincronizada com sucesso!\n• ${res.departmentsCount} Departamentos\n• ${res.positionsCount} Cargos\n• ${res.schedulesCount} Escalas/Horários\n• ${res.employeesUpdated} Colaboradores atualizados`);
+      setFeedback({
+        isOpen: true,
+        type: 'success',
+        title: 'Estrutura Sincronizada com Sucesso!',
+        description: 'Todos os departamentos, cargos e escalas de horários do RHiD foram importados e vinculados aos colaboradores da empresa.',
+        metrics: [
+          { label: 'Departamentos', value: res.departmentsCount, icon: <Building2 className="w-5 h-5" /> },
+          { label: 'Cargos', value: res.positionsCount, icon: <Briefcase className="w-5 h-5" /> },
+          { label: 'Escalas / Horários', value: res.schedulesCount, icon: <Clock className="w-5 h-5" /> },
+          { label: 'Colaboradores', value: res.employeesUpdated, icon: <Users className="w-5 h-5" /> },
+        ],
+      });
       await loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || 'Falha ao sincronizar estrutura organizacional do RHiD');
+      setFeedback({
+        isOpen: true,
+        type: 'error',
+        title: 'Falha na Sincronização',
+        description: err.response?.data?.message || err.message || 'Falha ao sincronizar estrutura organizacional do RHiD.',
+      });
     } finally {
       setSyncingOrg(false);
     }
@@ -948,6 +1007,16 @@ export const ControlIdPage: React.FC = () => {
           isLoading={deleting}
         />
       )}
+
+      {/* Diálogo de Feedback & Resultados Elegante */}
+      <FeedbackDialog
+        isOpen={feedback.isOpen}
+        onClose={() => setFeedback((prev) => ({ ...prev, isOpen: false }))}
+        type={feedback.type}
+        title={feedback.title}
+        description={feedback.description}
+        metrics={feedback.metrics}
+      />
     </AppLayout>
   );
 };

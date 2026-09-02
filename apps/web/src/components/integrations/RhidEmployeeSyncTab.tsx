@@ -157,7 +157,7 @@ export const RhidEmployeeSyncTab: React.FC<RhidEmployeeSyncTabProps> = ({ onOpen
     try {
       await integrationService.downloadRhidCsv();
     } catch (err) {
-      alert('Falha ao exportar CSV.');
+      setActionMessage({ type: 'error', text: 'Falha ao exportar arquivo CSV.' });
     }
   };
 

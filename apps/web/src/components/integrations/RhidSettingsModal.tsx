@@ -3,7 +3,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { integrationService } from '../../services/integrationService';
-import { Cloud, CheckCircle2, XCircle, Loader2, ShieldCheck, Activity, Key, Mail, Globe } from 'lucide-react';
+import { Cloud, CheckCircle2, XCircle, Loader2, ShieldCheck, Activity, Key, Mail, Globe, AlertCircle } from 'lucide-react';
 
 interface RhidSettingsModalProps {
   isOpen: boolean;
@@ -48,13 +48,16 @@ export const RhidSettingsModal: React.FC<RhidSettingsModalProps> = ({ isOpen, on
     }
   };
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const handleTestConnection = async () => {
+    setErrorMessage(null);
     if (!email) {
-      alert('Informe o e-mail da conta RHiD antes de testar.');
+      setErrorMessage('Informe o e-mail da conta RHiD antes de testar.');
       return;
     }
     if (!password && !hasStoredPassword) {
-      alert('Informe a senha do RHiD antes de testar.');
+      setErrorMessage('Informe a senha do RHiD antes de testar.');
       return;
     }
 
@@ -78,8 +81,9 @@ export const RhidSettingsModal: React.FC<RhidSettingsModalProps> = ({ isOpen, on
   };
 
   const handleSave = async () => {
+    setErrorMessage(null);
     if (!email) {
-      alert('Informe o e-mail da conta RHiD.');
+      setErrorMessage('Informe o e-mail da conta RHiD.');
       return;
     }
 
@@ -96,7 +100,7 @@ export const RhidSettingsModal: React.FC<RhidSettingsModalProps> = ({ isOpen, on
       if (onSaved) onSaved();
       onClose();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Erro ao salvar configurações do RHiD');
+      setErrorMessage(err.response?.data?.message || 'Erro ao salvar configurações do RHiD');
     } finally {
       setSaving(false);
     }
@@ -158,6 +162,13 @@ export const RhidSettingsModal: React.FC<RhidSettingsModalProps> = ({ isOpen, on
               A conexão com a nuvem permite sincronizar colaboradores com todos os relógios físicos cadastrados na conta, além de baixar apurações e registros de ponto em tempo real.
             </div>
           </div>
+
+          {errorMessage && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-900 rounded-xl text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
           <div className="space-y-4">
             <div>
