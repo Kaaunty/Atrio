@@ -28,7 +28,8 @@ export const Tabs: React.FC<TabsProps> = ({
     <div className={twMerge('border-b border-atrio-border', className)}>
       <nav
         className={clsx(
-          '-mb-px flex overflow-x-auto no-scrollbar',
+          '-mb-px flex overflow-x-auto custom-scrollbar touch-pan-x',
+          variant !== 'fullWidth' && 'w-max min-w-full',
           variant === 'center' && 'justify-center space-x-2 sm:space-x-4',
           variant === 'fullWidth' && 'w-full grid',
           variant === 'default' && 'space-x-2 sm:space-x-4'
@@ -47,7 +48,7 @@ export const Tabs: React.FC<TabsProps> = ({
               key={tab.id}
               onClick={() => onChange(tab.id)}
               className={clsx(
-                'group inline-flex items-center justify-center gap-1.5 py-3 px-3.5 border-b-2 font-medium text-xs sm:text-sm transition-all whitespace-nowrap',
+                'group inline-flex shrink-0 items-center justify-center gap-1.5 py-3 px-3.5 border-b-2 font-medium text-xs sm:text-sm transition-all whitespace-nowrap',
                 variant === 'fullWidth' && 'w-full text-center',
                 isActive
                   ? 'border-atrio-navy text-atrio-navy font-semibold'
