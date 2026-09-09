@@ -37,8 +37,8 @@ export const LoginPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      await login({ email, password });
-      navigate('/');
+      const requiresPasswordChange = await login({ email, password });
+      navigate(requiresPasswordChange ? '/alterar-senha' : '/');
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||

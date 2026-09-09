@@ -18,11 +18,13 @@ import { benefitsRoutes } from './modules/benefits/benefits.routes.js';
 import { announcementsRoutes } from './modules/announcements/announcements.routes.js';
 import { lifecycleRoutes } from './modules/lifecycle/lifecycle.routes.js';
 import { developmentRoutes } from './modules/development/development.routes.js';
+import { blockPendingPasswordChange } from './middlewares/auth.middleware.js';
 
 const router = Router();
 
 // Sub-rotas v1
 router.use('/', healthRoutes);
+router.use(blockPendingPasswordChange);
 router.use('/', authRoutes);
 router.use('/', rbacRoutes);
 router.use('/', auditRoutes);
@@ -43,5 +45,4 @@ router.use('/notifications', notificationsRoutes);
 router.use('/reports', reportsRoutes);
 
 export { router };
-
 

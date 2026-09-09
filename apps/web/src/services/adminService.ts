@@ -83,7 +83,6 @@ export interface AuditLogItem {
 export const adminService = {
   async createUser(data: {
     email: string;
-    password: string;
     employeeId?: string | null;
     roleNames?: string[];
   }): Promise<{ id: string; email: string; employeeId: string | null }> {

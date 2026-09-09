@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginPage } from './pages/auth/LoginPage';
+import { ChangePasswordPage } from './pages/auth/ChangePasswordPage';
 import { HomePage } from './pages/HomePage';
 import { OrganizationPage } from './pages/organization/OrganizationPage';
 import { EmployeesPage } from './pages/employees/EmployeesPage';
@@ -47,6 +48,14 @@ export const App: React.FC = () => {
         <Routes>
           {/* Rota Pública de Autenticação */}
           <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/alterar-senha"
+            element={
+              <ProtectedRoute>
+                <ChangePasswordPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Rotas de Autosserviço / Meu Espaço */}
           <Route

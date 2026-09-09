@@ -25,6 +25,7 @@ model User {
   passwordHash String    @map("password_hash")
   employeeId   String?   @unique @map("employee_id")
   active       Boolean   @default(true)
+  mustChangePassword Boolean @default(false) @map("must_change_password")
   lastLoginAt  DateTime? @map("last_login_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
@@ -1434,7 +1435,6 @@ model DevelopmentPlanGoal {
   @@index([status])
   @@map("development_plan_goals")
 }
-
 
 
 

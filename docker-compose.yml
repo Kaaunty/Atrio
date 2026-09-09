@@ -41,6 +41,8 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-atrio_rh}?schema=public
       JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-in-production}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Atrio@2026}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-Atrio@2026}
       TIMEZONE: America/Sao_Paulo
     depends_on:
       postgres:

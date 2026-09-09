@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service.js';
-import { loginSchema, refreshTokenSchema, registerUserSchema } from '../auth.dto.js';
+import { changePasswordSchema, loginSchema, refreshTokenSchema, registerUserSchema } from '../auth.dto.js';
 import { sendSuccess } from '../../../shared/response.js';
 
 export class AuthController {
@@ -52,6 +52,30 @@ export class AuthController {
       return sendSuccess({
         res,
         data: me,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        const error: any = new Error('Não autenticado');
+        error.statusCode = 401;
+        throw error;
+      }
+
+      const body = changePasswordSchema.parse(req.body);
+      const ipAddress = req.ip || req.socket.remoteAddress || undefined;
+      const userAgent = req.headers['user-agent'] || undefined;
+      const tokens = await AuthService.changePassword(userId, body, { ipAddress, userAgent });
+
+      return sendSuccess({
+        res,
+        message: 'Senha alterada com sucesso',
+        data: tokens,
       });
     } catch (error) {
       next(error);

@@ -15,9 +15,11 @@ interface AuthContextData {
   employee: Employee | null;
   roles: string[];
   permissions: Record<string, PermissionScope>;
+  requiresPasswordChange: boolean;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<void>;
+  login: (credentials: { email: string; password: string }) => Promise<boolean>;
+  completePasswordChange: (data: { currentPassword: string; newPassword: string }) => Promise<void>;
   logout: () => void;
   hasPermission: (permissionCode: string, minScope?: PermissionScope) => boolean;
   hasRole: (...roleNames: string[]) => boolean;
@@ -31,6 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [permissions, setPermissions] = useState<Record<string, PermissionScope>>({});
+  const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Inicializa sessão a partir do localStorage
@@ -41,6 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setRoles(session.roles);
       setPermissions(session.permissions);
       setEmployee(session.employee);
+      setRequiresPasswordChange(session.requiresPasswordChange);
     }
     setLoading(false);
   }, []);
@@ -51,6 +55,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRoles(data.roles);
     setPermissions(data.permissions);
     setEmployee(data.employee || null);
+    setRequiresPasswordChange(data.requiresPasswordChange);
+    return data.requiresPasswordChange;
+  };
+
+  const completePasswordChange = async (data: { currentPassword: string; newPassword: string }) => {
+    await authService.changePassword(data);
+    setRequiresPasswordChange(false);
+    setUser((currentUser) => (currentUser ? { ...currentUser, mustChangePassword: false } : currentUser));
   };
 
   const logout = () => {
@@ -59,6 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setEmployee(null);
     setRoles([]);
     setPermissions({});
+    setRequiresPasswordChange(false);
   };
 
   const refreshProfile = async () => {
@@ -68,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setRoles(data.roles);
       setPermissions(data.permissions);
       setEmployee(data.employee || null);
+      setRequiresPasswordChange(Boolean(data.user.mustChangePassword));
     } catch {
       logout();
     }
@@ -109,9 +123,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         employee,
         roles,
         permissions,
+        requiresPasswordChange,
         isAuthenticated: !!user,
         loading,
         login,
+        completePasswordChange,
         logout,
         hasPermission,
         hasRole,

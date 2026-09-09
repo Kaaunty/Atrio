@@ -16,6 +16,7 @@ export interface AuthenticatedUser {
   id: string;
   email: string;
   employeeId?: string | null;
+  mustChangePassword: boolean;
   roles: string[];
   permissions: Record<string, PermissionScope>;
 }
@@ -48,6 +49,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       id: decoded.sub,
       email: decoded.email,
       employeeId: decoded.employeeId,
+      mustChangePassword: decoded.mustChangePassword ?? false,
       roles: decoded.roles || [],
       permissions: decoded.permissions || {},
     };
@@ -58,6 +60,45 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       message: 'Token de autenticação expirado ou inválido',
     });
   }
+};
+
+/**
+ * Impede que uma sessão com senha temporária acesse o restante da API.
+ * A rota de troca de senha fica liberada para concluir o primeiro acesso.
+ */
+export const blockPendingPasswordChange = (req: Request, res: Response, next: NextFunction) => {
+  const allowedAuthPaths = new Set([
+    '/auth/login',
+    '/auth/refresh-token',
+    '/auth/me',
+    '/auth/change-password',
+  ]);
+
+  if (allowedAuthPaths.has(req.path)) {
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, env.JWT_SECRET) as TokenPayload;
+
+    if (decoded.mustChangePassword) {
+      return res.status(403).json({
+        success: false,
+        code: 'PASSWORD_CHANGE_REQUIRED',
+        message: 'Altere sua senha antes de acessar o sistema',
+      });
+    }
+  } catch {
+    // A validação definitiva do token continua sendo responsabilidade do authenticate.
+  }
+
+  return next();
 };
 
 /**

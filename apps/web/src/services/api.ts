@@ -41,6 +41,7 @@ const clearSession = () => {
   localStorage.removeItem('atrio_user');
   localStorage.removeItem('atrio_roles');
   localStorage.removeItem('atrio_permissions');
+  localStorage.removeItem('atrio_requires_password_change');
   localStorage.removeItem('atrio_employee');
 };
 
@@ -85,11 +86,18 @@ api.interceptors.response.use(
 
       try {
         const response = await axios.post(`${baseURL}/auth/refresh-token`, { refreshToken });
-        const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+        const {
+          accessToken,
+          refreshToken: newRefreshToken,
+          requiresPasswordChange,
+        } = response.data.data;
 
         localStorage.setItem('atrio_token', accessToken);
         if (newRefreshToken) {
           localStorage.setItem('atrio_refresh_token', newRefreshToken);
+        }
+        if (typeof requiresPasswordChange === 'boolean') {
+          localStorage.setItem('atrio_requires_password_change', String(requiresPasswordChange));
         }
 
         if (originalRequest.headers) {
@@ -110,6 +118,16 @@ api.interceptors.response.use(
       }
     }
 
+    if (
+      error.response?.status === 403 &&
+      (error.response.data as any)?.code === 'PASSWORD_CHANGE_REQUIRED'
+    ) {
+      localStorage.setItem('atrio_requires_password_change', 'true');
+      if (window.location.pathname !== '/alterar-senha') {
+        window.location.href = '/alterar-senha';
+      }
+    }
+
     return Promise.reject(error);
   }
 );
@@ -120,4 +138,3 @@ export interface ApiResponse<T = any> {
   data: T;
   meta?: any;
 }
-

@@ -75,8 +75,6 @@ export const AccessControlPage: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [createUserForm, setCreateUserForm] = useState({
     email: '',
-    password: '',
-    confirmPassword: '',
     employeeId: '',
     roleName: '',
   });
@@ -309,7 +307,7 @@ export const AccessControlPage: React.FC = () => {
 
   const handleOpenCreateUser = async () => {
     setError(null);
-    setCreateUserForm({ email: '', password: '', confirmPassword: '', employeeId: '', roleName: '' });
+    setCreateUserForm({ email: '', employeeId: '', roleName: '' });
     setIsCreateUserModalOpen(true);
 
     try {
@@ -324,14 +322,6 @@ export const AccessControlPage: React.FC = () => {
   const handleSubmitCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (createUserForm.password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres.');
-      return;
-    }
-    if (createUserForm.password !== createUserForm.confirmPassword) {
-      setError('A confirmação de senha não confere.');
-      return;
-    }
     if (!createUserForm.roleName) {
       setError('Selecione um perfil de acesso.');
       return;
@@ -342,7 +332,6 @@ export const AccessControlPage: React.FC = () => {
       setError(null);
       await adminService.createUser({
         email: createUserForm.email,
-        password: createUserForm.password,
         employeeId: createUserForm.employeeId || null,
         roleNames: [createUserForm.roleName],
       });
@@ -718,23 +707,8 @@ export const AccessControlPage: React.FC = () => {
             required
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input
-              label="Senha"
-              type="password"
-              minLength={6}
-              value={createUserForm.password}
-              onChange={(e) => setCreateUserForm({ ...createUserForm, password: e.target.value })}
-              required
-            />
-            <Input
-              label="Confirmar senha"
-              type="password"
-              minLength={6}
-              value={createUserForm.confirmPassword}
-              onChange={(e) => setCreateUserForm({ ...createUserForm, confirmPassword: e.target.value })}
-              required
-            />
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
+            O usuário receberá a senha temporária configurada no ambiente e deverá criar uma senha própria no primeiro acesso.
           </div>
 
           <Select

@@ -11,7 +11,6 @@ export const refreshTokenSchema = z.object({
 
 export const registerUserSchema = z.object({
   email: z.string().email('E-mail inválido'),
-  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
   employeeId: z.string().uuid().optional().nullable(),
   roleNames: z.array(z.string()).optional(),
 });

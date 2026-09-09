@@ -8,6 +8,7 @@ export interface AuthUser {
   email: string;
   employeeId?: string | null;
   active?: boolean;
+  mustChangePassword?: boolean;
   lastLoginAt?: string | null;
 }
 
@@ -18,6 +19,7 @@ export interface LoginResponse {
   permissions: Record<string, PermissionScope>;
   accessToken: string;
   refreshToken: string;
+  requiresPasswordChange: boolean;
 }
 
 export const authService = {
@@ -30,6 +32,7 @@ export const authService = {
       localStorage.setItem('atrio_user', JSON.stringify(data.user));
       localStorage.setItem('atrio_roles', JSON.stringify(data.roles));
       localStorage.setItem('atrio_permissions', JSON.stringify(data.permissions));
+      localStorage.setItem('atrio_requires_password_change', String(data.requiresPasswordChange));
       if (data.employee) {
         localStorage.setItem('atrio_employee', JSON.stringify(data.employee));
       }
@@ -37,8 +40,45 @@ export const authService = {
     return data;
   },
 
-  async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
-    const res = await api.post<{ success: boolean; data: { accessToken: string; refreshToken: string } }>(
+  async changePassword(data: { currentPassword: string; newPassword: string }): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    requiresPasswordChange: boolean;
+  }> {
+    const res = await api.post<{
+      success: boolean;
+      data: { accessToken: string; refreshToken: string; requiresPasswordChange: boolean };
+    }>('/auth/change-password', data);
+    const result = res.data.data;
+
+    localStorage.setItem('atrio_token', result.accessToken);
+    localStorage.setItem('atrio_refresh_token', result.refreshToken);
+    localStorage.setItem('atrio_requires_password_change', String(result.requiresPasswordChange));
+
+    const storedUser = localStorage.getItem('atrio_user');
+    if (storedUser) {
+      try {
+        localStorage.setItem(
+          'atrio_user',
+          JSON.stringify({ ...JSON.parse(storedUser), mustChangePassword: result.requiresPasswordChange })
+        );
+      } catch {
+        // A sessão inválida será tratada pelo fluxo normal de autenticação.
+      }
+    }
+
+    return result;
+  },
+
+  async refreshToken(refreshToken: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    requiresPasswordChange: boolean;
+  }> {
+    const res = await api.post<{
+      success: boolean;
+      data: { accessToken: string; refreshToken: string; requiresPasswordChange: boolean };
+    }>(
       '/auth/refresh-token',
       { refreshToken }
     );
@@ -46,6 +86,7 @@ export const authService = {
     if (data.accessToken) {
       localStorage.setItem('atrio_token', data.accessToken);
       localStorage.setItem('atrio_refresh_token', data.refreshToken);
+      localStorage.setItem('atrio_requires_password_change', String(data.requiresPasswordChange));
     }
     return data;
   },
@@ -74,6 +115,7 @@ export const authService = {
     localStorage.removeItem('atrio_user');
     localStorage.removeItem('atrio_roles');
     localStorage.removeItem('atrio_permissions');
+    localStorage.removeItem('atrio_requires_password_change');
     localStorage.removeItem('atrio_employee');
   },
 
@@ -83,6 +125,7 @@ export const authService = {
     const rolesStr = localStorage.getItem('atrio_roles');
     const permsStr = localStorage.getItem('atrio_permissions');
     const employeeStr = localStorage.getItem('atrio_employee');
+    const requiresPasswordChangeStr = localStorage.getItem('atrio_requires_password_change');
 
     if (!token || !userStr) return null;
 
@@ -93,6 +136,9 @@ export const authService = {
         roles: (rolesStr ? JSON.parse(rolesStr) : []) as string[],
         permissions: (permsStr ? JSON.parse(permsStr) : {}) as Record<string, PermissionScope>,
         employee: employeeStr ? (JSON.parse(employeeStr) as Employee) : null,
+        requiresPasswordChange:
+          requiresPasswordChangeStr === 'true' ||
+          (requiresPasswordChangeStr === null && Boolean((JSON.parse(userStr) as AuthUser).mustChangePassword)),
       };
     } catch {
       return null;

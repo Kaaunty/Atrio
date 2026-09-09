@@ -10,6 +10,7 @@ const router = Router();
 router.post('/auth/login', AuthController.login);
 router.post('/auth/refresh-token', AuthController.refreshToken);
 router.get('/auth/me', AuthController.getMe);
+router.post('/auth/change-password', authenticate, AuthController.changePassword);
 // Apenas administradores podem criar contas ou inicializar usuários padrão.
 // O bootstrap do servidor chama seedAdminUser() diretamente, sem passar por esta rota.
 router.post('/auth/register', authenticate, requireRole('ADMIN'), AuthController.registerUser);

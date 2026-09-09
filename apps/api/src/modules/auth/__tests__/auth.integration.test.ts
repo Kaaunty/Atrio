@@ -4,6 +4,8 @@ import { prisma } from '../../../database/prisma.js';
 import { AuthService } from '../services/auth.service.js';
 import { RbacService } from '../../rbac/services/rbac.service.js';
 import { AuditService } from '../../audit/services/audit.service.js';
+import { env } from '../../../config/env.js';
+import { blockPendingPasswordChange } from '../../../middlewares/auth.middleware.js';
 
 describe('Auth, RBAC & Audit Module Suite', () => {
   let createdUserId: string;
@@ -43,18 +45,18 @@ describe('Auth, RBAC & Audit Module Suite', () => {
 
     const user = await AuthService.registerUser({
       email: testEmail,
-      password: 'SenhaForte123!',
       roleNames: ['COLABORADOR'],
     });
 
     createdUserId = user.id;
     assert.ok(user.id, 'Usuário deve ser criado com ID');
-    assert.notStrictEqual(user.passwordHash, 'SenhaForte123!', 'Senha não deve ser salva em texto claro');
+    assert.notStrictEqual(user.passwordHash, env.DEFAULT_USER_PASSWORD, 'Senha não deve ser salva em texto claro');
+    assert.strictEqual(user.mustChangePassword, true, 'Novo usuário deve exigir troca de senha');
 
     // Login com credenciais válidas
     const loginResult = await AuthService.login({
       email: testEmail,
-      password: 'SenhaForte123!',
+      password: env.DEFAULT_USER_PASSWORD,
     });
 
     assert.ok(loginResult.accessToken, 'Deve retornar accessToken');
@@ -62,6 +64,22 @@ describe('Auth, RBAC & Audit Module Suite', () => {
     assert.strictEqual(loginResult.user.email, testEmail);
     assert.ok(loginResult.roles.includes('COLABORADOR'));
     assert.strictEqual(loginResult.permissions['colaboradores.visualizar'], 'SELF');
+    assert.strictEqual(loginResult.requiresPasswordChange, true);
+
+    const changed = await AuthService.changePassword(createdUserId, {
+      currentPassword: env.DEFAULT_USER_PASSWORD,
+      newPassword: 'SenhaForte123!',
+    });
+    assert.strictEqual(changed.requiresPasswordChange, false);
+
+    const updatedUser = await prisma.user.findUnique({ where: { id: createdUserId } });
+    assert.strictEqual(updatedUser?.mustChangePassword, false);
+
+    const finalLogin = await AuthService.login({
+      email: testEmail,
+      password: 'SenhaForte123!',
+    });
+    assert.strictEqual(finalLogin.requiresPasswordChange, false);
   });
 
   test('3. deve rejeitar login com senha incorreta ou usuário inexistente', async () => {
@@ -73,6 +91,16 @@ describe('Auth, RBAC & Audit Module Suite', () => {
         });
       },
       { statusCode: 401 }
+    );
+
+    await assert.rejects(
+      async () => {
+        await AuthService.changePassword(createdUserId, {
+          currentPassword: 'senha-incorreta',
+          newPassword: 'OutraSenha123!',
+        });
+      },
+      { statusCode: 400 }
     );
   });
 
@@ -87,6 +115,38 @@ describe('Auth, RBAC & Audit Module Suite', () => {
     const refreshed = await AuthService.refreshToken(tokens.refreshToken);
     assert.ok(refreshed.accessToken, 'Deve retornar novo access token');
     assert.ok(refreshed.refreshToken, 'Deve retornar novo refresh token');
+  });
+
+  test('4.1 deve bloquear uma sessão pendente fora da rota de troca de senha', async () => {
+    const user = await prisma.user.findUnique({ where: { id: createdUserId } });
+    assert.ok(user);
+
+    const pendingToken = AuthService.generateTokens(
+      { ...user, mustChangePassword: true },
+      ['COLABORADOR'],
+      { 'colaboradores.visualizar': 'SELF' }
+    ).accessToken;
+
+    const blocked = await new Promise<{ statusCode: number; body: any }>((resolve) => {
+      const req = {
+        path: '/dashboard/employee/summary',
+        headers: { authorization: `Bearer ${pendingToken}` },
+      } as any;
+      const res = {
+        status(statusCode: number) {
+          return {
+            json(body: any) {
+              resolve({ statusCode, body });
+            },
+          };
+        },
+      } as any;
+
+      blockPendingPasswordChange(req, res, () => resolve({ statusCode: 200, body: { next: true } }));
+    });
+
+    assert.strictEqual(blocked.statusCode, 403);
+    assert.strictEqual(blocked.body.code, 'PASSWORD_CHANGE_REQUIRED');
   });
 
   test('5. deve consolidar permissões e escopos em múltiplos papéis com hierarquia de precedência', async () => {

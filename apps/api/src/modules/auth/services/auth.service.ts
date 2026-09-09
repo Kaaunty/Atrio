@@ -4,13 +4,14 @@ import { PermissionScope } from '@prisma/client';
 import { prisma } from '../../../database/prisma.js';
 import { env } from '../../../config/env.js';
 import { RbacService } from '../../rbac/services/rbac.service.js';
-import { LoginInput, RegisterUserInput } from '../auth.dto.js';
+import { ChangePasswordInput, LoginInput, RegisterUserInput } from '../auth.dto.js';
 import { AuditService } from '../../audit/services/audit.service.js';
 
 export interface TokenPayload {
   sub: string;
   email: string;
   employeeId?: string | null;
+  mustChangePassword: boolean;
   roles: string[];
   permissions: Record<string, PermissionScope>;
 }
@@ -34,7 +35,7 @@ export class AuthService {
    * Gera Access Token e Refresh Token JWT
    */
   static generateTokens(
-    user: { id: string; email: string; employeeId?: string | null },
+    user: { id: string; email: string; employeeId?: string | null; mustChangePassword?: boolean },
     roles: string[],
     permissions: Record<string, PermissionScope>
   ) {
@@ -42,6 +43,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       employeeId: user.employeeId,
+      mustChangePassword: user.mustChangePassword ?? false,
       roles,
       permissions,
     };
@@ -133,11 +135,13 @@ export class AuthService {
         id: user.id,
         email: user.email,
         employeeId: user.employeeId,
+        mustChangePassword: user.mustChangePassword,
         lastLoginAt: now,
       },
       employee: user.employee,
       roles: roleNames,
       permissions,
+      requiresPasswordChange: user.mustChangePassword,
       ...tokens,
     };
   }
@@ -171,7 +175,7 @@ export class AuthService {
       const permissions = await RbacService.getUserPermissionsAndScopes(user.id);
       const tokens = this.generateTokens(user, roleNames, permissions);
 
-      return tokens;
+      return { ...tokens, requiresPasswordChange: user.mustChangePassword };
     } catch (err: any) {
       const error: any = new Error('Sessão expirada ou token inválido');
       error.statusCode = 401;
@@ -228,6 +232,7 @@ export class AuthService {
         email: user.email,
         employeeId: user.employeeId,
         active: user.active,
+        mustChangePassword: user.mustChangePassword,
         lastLoginAt: user.lastLoginAt,
         createdAt: user.createdAt,
       },
@@ -251,7 +256,7 @@ export class AuthService {
       throw error;
     }
 
-    const passwordHash = await this.hashPassword(data.password);
+    const passwordHash = await this.hashPassword(env.DEFAULT_USER_PASSWORD);
 
     return prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -259,6 +264,7 @@ export class AuthService {
           email: data.email.toLowerCase().trim(),
           passwordHash,
           employeeId: data.employeeId || null,
+          mustChangePassword: true,
         },
       });
 
@@ -280,6 +286,66 @@ export class AuthService {
   }
 
   /**
+   * Troca a senha temporária ou atual do usuário autenticado.
+   */
+  static async changePassword(
+    userId: string,
+    data: ChangePasswordInput,
+    meta?: { ipAddress?: string; userAgent?: string }
+  ) {
+    const user = await prisma.user.findFirst({
+      where: { id: userId, active: true, deletedAt: null },
+      include: { userRoles: { include: { role: true } } },
+    });
+
+    if (!user) {
+      const error: any = new Error('Usuário não encontrado ou inativo');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const currentPasswordValid = await this.comparePassword(data.currentPassword, user.passwordHash);
+    if (!currentPasswordValid) {
+      const error: any = new Error('Senha atual inválida');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (data.currentPassword === data.newPassword) {
+      const error: any = new Error('A nova senha deve ser diferente da senha atual');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const passwordHash = await this.hashPassword(data.newPassword);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, mustChangePassword: false },
+    });
+
+    await AuditService.log({
+      userId: user.id,
+      employeeId: user.employeeId,
+      action: 'PASSWORD_CHANGED',
+      entity: 'User',
+      recordId: user.id,
+      newValue: { changedAt: new Date() },
+      ipAddress: meta?.ipAddress,
+      userAgent: meta?.userAgent,
+    });
+
+    const roleNames = user.userRoles.map((ur) => ur.role.name);
+    const permissions = await RbacService.getUserPermissionsAndScopes(user.id);
+    const tokens = this.generateTokens(
+      { ...user, mustChangePassword: false },
+      roleNames,
+      permissions
+    );
+
+    return { ...tokens, requiresPasswordChange: false };
+  }
+
+  /**
    * Inicializa o usuário administrador padrão e perfis caso não existam
    */
   static async seedAdminUser() {
@@ -296,13 +362,14 @@ export class AuthService {
     const admin = existingAdmin
       ? await prisma.user.update({
           where: { id: existingAdmin.id },
-          data: { passwordHash: adminPasswordHash, active: true },
+          data: { passwordHash: adminPasswordHash, active: true, mustChangePassword: false },
         })
       : await prisma.user.create({
           data: {
             email: 'admin@atrio.com.br',
             passwordHash: adminPasswordHash,
             active: true,
+            mustChangePassword: false,
           },
         });
 
@@ -349,6 +416,7 @@ export class AuthService {
             data: {
               passwordHash,
               active: true,
+              mustChangePassword: false,
               ...(!existingUser.employeeId && availableEmployeeId ? { employeeId: availableEmployeeId } : {}),
             },
           })
@@ -358,6 +426,7 @@ export class AuthService {
               passwordHash,
               employeeId: availableEmployeeId,
               active: true,
+              mustChangePassword: false,
             },
           });
 

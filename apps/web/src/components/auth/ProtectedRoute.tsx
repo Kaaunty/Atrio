@@ -20,7 +20,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   minScope,
   allowedRoles,
 }) => {
-  const { isAuthenticated, loading, hasPermission, hasRole, roles } = useAuth();
+  const { isAuthenticated, loading, requiresPasswordChange, hasPermission, hasRole, roles } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -35,6 +35,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (requiresPasswordChange && location.pathname !== '/alterar-senha') {
+    return <Navigate to="/alterar-senha" replace />;
   }
 
   // Validação de Permissão Granular e Escopo
