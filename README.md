@@ -131,7 +131,7 @@ npm run db:up
 ```bash
 npm run db:migrate
 
-# Provisionamento explícito do administrador inicial
+# Opcional: executa manualmente o mesmo provisionamento idempotente do startup
 npm run db:seed
 ```
 

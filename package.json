@@ -14,6 +14,7 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:migrate": "npm run db:migrate --workspace=apps/api",
+    "db:seed": "npm run db:seed --workspace=apps/api",
     "db:generate": "npm run db:generate --workspace=apps/api"
   },
   "devDependencies": {

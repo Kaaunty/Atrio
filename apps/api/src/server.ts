@@ -1,11 +1,11 @@
 import { app } from './app.js';
 import { env } from './config/env.js';
-import { RbacService } from './modules/rbac/services/rbac.service.js';
+import { AuthService } from './modules/auth/services/auth.service.js';
 
 const PORT = env.PORT;
 
 async function start() {
-  await RbacService.seedPermissionsAndRoles();
+  await AuthService.provisionAdminUser();
 
   app.listen(PORT, () => {
     console.log(`🚀 Servidor RH Digital rodando na porta ${PORT}`);

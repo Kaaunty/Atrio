@@ -24,6 +24,6 @@ EXPOSE 3333
 
 ENV NODE_ENV=production
 
-# Aplica apenas as migrations antes de abrir a porta da API.
-# O primeiro administrador é provisionado separadamente com `npm run db:seed`.
+# Aplica as migrations; o bootstrap da API provisiona o administrador configurado
+# somente se ele ainda não existir no banco.
 CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx src/server.ts"]

@@ -354,24 +354,20 @@ export class AuthService {
     const adminRole = await prisma.role.findUnique({ where: { name: 'ADMIN' } });
     if (!adminRole) return;
 
-    const existingAdmin = await prisma.user.findFirst({
+    const existingAdmin = await prisma.user.findUnique({
       where: { email: env.ADMIN_EMAIL },
     });
 
-    const adminPasswordHash = await this.hashPassword(env.ADMIN_PASSWORD);
-    const admin = existingAdmin
-      ? await prisma.user.update({
-          where: { id: existingAdmin.id },
-          data: { passwordHash: adminPasswordHash, active: true, mustChangePassword: false },
-        })
-      : await prisma.user.create({
-          data: {
-            email: env.ADMIN_EMAIL,
-            passwordHash: adminPasswordHash,
-            active: true,
-            mustChangePassword: false,
-          },
-        });
+    const admin = existingAdmin ?? await prisma.user.upsert({
+      where: { email: env.ADMIN_EMAIL },
+      update: {},
+      create: {
+        email: env.ADMIN_EMAIL,
+        passwordHash: await this.hashPassword(env.ADMIN_PASSWORD),
+        active: true,
+        mustChangePassword: false,
+      },
+    });
 
     await prisma.userRole.upsert({
       where: {
