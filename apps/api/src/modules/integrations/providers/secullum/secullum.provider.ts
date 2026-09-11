@@ -21,17 +21,13 @@ export class SecullumProvider implements ITimeClockProvider {
       };
     }
     return {
-      success: true,
-      message: 'Comunicação com o Webservice Secullum autenticada com sucesso.',
-      details: {
-        model: 'Secullum Ponto Web Cloud',
-        status: 'CONNECTED',
-      },
+      success: false,
+      message: 'A comunicação Secullum ainda não possui um provedor operacional configurado.',
     };
   }
 
-  async fetchPunches(options: FetchPunchesOptions): Promise<RawPunchRecord[]> {
-    return [];
+  async fetchPunches(_options: FetchPunchesOptions): Promise<RawPunchRecord[]> {
+    throw new Error('A busca de marcações Secullum ainda não está implementada.');
   }
 
   parseAfdContent(content: string): RawPunchRecord[] {

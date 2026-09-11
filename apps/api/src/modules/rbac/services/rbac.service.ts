@@ -397,22 +397,14 @@ export class RbacService {
    * Sincroniza usuários sem colaborador buscando correspondência por e-mail no cadastro funcional
    */
   static async syncUserEmployees() {
-    const demoMappings: Record<string, string> = {
-      'rh@atrio.com.br': 'camila.ferreira@atrio.com.br',
-      'gestor@atrio.com.br': 'felipe.souza@atrio.com.br',
-      'colaborador@atrio.com.br': 'bruno.martins@atrio.com.br',
-      'admin@atrio.com.br': 'rodrigo.albuquerque@atrio.com.br',
-    };
-
     let syncedCount = 0;
     const usersWithoutEmployee = await prisma.user.findMany({
       where: { employeeId: null },
     });
 
     for (const user of usersWithoutEmployee) {
-      const targetEmployeeEmail = demoMappings[user.email] || user.email;
       const employee = await prisma.employee.findUnique({
-        where: { email: targetEmployeeEmail },
+        where: { email: user.email },
       });
 
       if (employee) {
@@ -462,4 +454,3 @@ export class RbacService {
     return this.listUsersWithRoles();
   }
 }
-

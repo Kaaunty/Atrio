@@ -4,10 +4,9 @@ import { AuthService } from '../src/modules/auth/services/auth.service.js';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seed de mock desabilitado.');
-  console.log('🔐 Garantindo existência do usuário Administrador e Roles...');
-  await AuthService.seedAdminUser();
-  console.log('✅ Inicialização de sistema concluída sem dados de mock.');
+  console.log('🔐 Provisionando o usuário administrador e os perfis do sistema...');
+  await AuthService.provisionAdminUser();
+  console.log('✅ Provisionamento concluído sem dados de demonstração.');
 }
 
 main()

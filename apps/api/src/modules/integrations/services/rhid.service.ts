@@ -447,8 +447,8 @@ export class RhidService {
             model: modelName,
             active: !dev.excluded,
             authCredentials: {
-              username: dev.user || 'admin',
-              password: dev.password || 'admin',
+              ...(dev.user ? { username: dev.user } : {}),
+              ...(dev.password ? { password: dev.password } : {}),
               deviceCode: dev.deviceCode,
               rhidDeviceId: dev.id,
             },
@@ -467,8 +467,8 @@ export class RhidService {
             active: !dev.excluded,
             unitId: null,
             authCredentials: {
-              username: dev.user || 'admin',
-              password: dev.password || 'admin',
+              ...(dev.user ? { username: dev.user } : {}),
+              ...(dev.password ? { password: dev.password } : {}),
               deviceCode: dev.deviceCode,
               rhidDeviceId: dev.id,
             },

@@ -105,7 +105,9 @@ export class ControlIdProvider implements ITimeClockProvider {
             targetHost: targetUrl,
             serialNumber: realSystemInfo.serial || serialNumber || 'Confirmado via API',
             model: realSystemInfo.model || model || 'Control iD iDFace',
-            firmwareVersion: realSystemInfo.version || realSystemInfo.firmware || 'v3.x Native',
+            ...(realSystemInfo.version || realSystemInfo.firmware
+              ? { firmwareVersion: realSystemInfo.version || realSystemInfo.firmware }
+              : {}),
             httpStatus: '200 OK (Autenticado)',
             latency: `${latencyMs}ms`,
             status: 'ONLINE (Autenticado & Operacional)',
@@ -141,11 +143,10 @@ export class ControlIdProvider implements ITimeClockProvider {
           targetHost: targetUrl,
           serialNumber: serialNumber || 'Confirmado via HTTP',
           model: model || 'Control iD',
-          firmwareVersion: 'Servidor Web Embarcado (lighttpd)',
           httpStatus: `${response.status} ${response.statusText}`,
           latency: `${latencyMs}ms`,
           status: 'ONLINE (Hardware Respondendo na Rede)',
-          serverHeader: response.headers.get('server') || 'lighttpd/1.4.51',
+          ...(response.headers.get('server') ? { serverHeader: response.headers.get('server') } : {}),
           dateTime: new Date().toISOString(),
         },
       };
@@ -208,8 +209,8 @@ export class ControlIdProvider implements ITimeClockProvider {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            login: device.authCredentials?.username || 'admin',
-            password: device.authCredentials?.password || 'admin',
+            login: device.authCredentials?.username,
+            password: device.authCredentials?.password,
           }),
         });
 

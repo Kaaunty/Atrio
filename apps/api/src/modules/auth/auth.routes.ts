@@ -11,9 +11,8 @@ router.post('/auth/login', AuthController.login);
 router.post('/auth/refresh-token', AuthController.refreshToken);
 router.get('/auth/me', AuthController.getMe);
 router.post('/auth/change-password', authenticate, AuthController.changePassword);
-// Apenas administradores podem criar contas ou inicializar usuários padrão.
-// O bootstrap do servidor chama seedAdminUser() diretamente, sem passar por esta rota.
+// Apenas administradores podem criar contas. O administrador inicial é
+// provisionado explicitamente pelo comando de seed com variáveis de ambiente.
 router.post('/auth/register', authenticate, requireRole('ADMIN'), AuthController.registerUser);
-router.post('/auth/seed', authenticate, requireRole('ADMIN'), AuthController.seed);
 
 export { router as authRoutes };

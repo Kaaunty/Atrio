@@ -19,49 +19,13 @@ const DEFAULT_CATALOG: DefaultIntegrationSeed[] = [
     name: 'Control iD (iDClass / iDFit / iDAccess / iDSecure)',
     category: IntegrationCategory.TIME_CLOCK,
     description: 'Integração completa com coletores de ponto Control iD via API HTTP, push Webhook e AFD.',
-    enabled: true, // Habilitado por padrão como solicitado
-    status: IntegrationStatus.ACTIVE,
+    enabled: false,
+    status: IntegrationStatus.INACTIVE,
     settings: {
       syncIntervalMinutes: 15,
-      autoSync: true,
+      autoSync: false,
       afdFormat: 'PORTARIA_1510_671',
       webhookEnabled: true,
-    },
-  },
-  {
-    key: 'dimep',
-    name: 'Dimep (PrintPoint III / Kairos / MiniPrint)',
-    category: IntegrationCategory.TIME_CLOCK,
-    description: 'Integração com relógios e webservices Dimep via nuvem Kairos ou AFD direto.',
-    enabled: false,
-    status: IntegrationStatus.INACTIVE,
-    settings: {
-      syncIntervalMinutes: 30,
-      autoSync: false,
-    },
-  },
-  {
-    key: 'secullum',
-    name: 'Secullum (Ponto Web Cloud)',
-    category: IntegrationCategory.TIME_CLOCK,
-    description: 'Sincronização com o portal Secullum Ponto Web e concentradores de ponto.',
-    enabled: false,
-    status: IntegrationStatus.INACTIVE,
-    settings: {
-      syncIntervalMinutes: 60,
-      autoSync: false,
-    },
-  },
-  {
-    key: 'ahgora',
-    name: 'Ahgora / Senior Ponto',
-    category: IntegrationCategory.TIME_CLOCK,
-    description: 'Conector com API Ahgora / Senior para importação de batidas e espelho.',
-    enabled: false,
-    status: IntegrationStatus.INACTIVE,
-    settings: {
-      syncIntervalMinutes: 60,
-      autoSync: false,
     },
   },
 ];

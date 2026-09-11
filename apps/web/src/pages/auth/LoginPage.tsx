@@ -8,9 +8,6 @@ import {
   EyeOff,
   AlertCircle,
   ArrowRight,
-  UserCheck,
-  Building2,
-  Users,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Card } from '../../components/ui/Card';
@@ -47,12 +44,6 @@ export const LoginPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickFill = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setError(null);
   };
 
   return (
@@ -134,70 +125,6 @@ export const LoginPage: React.FC = () => {
             </Button>
           </form>
 
-          {/* Atalhos Rápidos para Demonstração / Testes */}
-          <div className="pt-4 border-t border-slate-100 space-y-2.5">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">
-              Acesso Rápido para Demonstração (Demo)
-            </p>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin@atrio.com.br', 'Atrio@2026')}
-                className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/70 text-left transition-colors flex items-center gap-2 group"
-              >
-                <div className="w-6 h-6 rounded bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[10px] shrink-0">
-                  <Shield className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-slate-800 text-[11px] truncate">Admin Geral</p>
-                  <p className="text-[10px] text-slate-400">Escopo Total</p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('rh@atrio.com.br', 'Atrio@2026')}
-                className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/70 text-left transition-colors flex items-center gap-2 group"
-              >
-                <div className="w-6 h-6 rounded bg-teal-100 text-atrio-navy flex items-center justify-center font-bold text-[10px] shrink-0">
-                  <Building2 className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-slate-800 text-[11px] truncate">Operador RH</p>
-                  <p className="text-[10px] text-slate-400">Escopo Empresa</p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('gestor@atrio.com.br', 'Atrio@2026')}
-                className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/70 text-left transition-colors flex items-center gap-2 group"
-              >
-                <div className="w-6 h-6 rounded bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[10px] shrink-0">
-                  <Users className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-slate-800 text-[11px] truncate">Gestor Líder</p>
-                  <p className="text-[10px] text-slate-400">Escopo Equipe</p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('colaborador@atrio.com.br', 'Atrio@2026')}
-                className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/70 text-left transition-colors flex items-center gap-2 group"
-              >
-                <div className="w-6 h-6 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[10px] shrink-0">
-                  <UserCheck className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-slate-800 text-[11px] truncate">Colaborador</p>
-                  <p className="text-[10px] text-slate-400">Autosserviço</p>
-                </div>
-              </button>
-            </div>
-          </div>
         </Card>
 
         {/* Footer */}

@@ -113,7 +113,8 @@ Edite `apps/api/.env`:
 PORT=3333
 NODE_ENV=development
 DATABASE_URL="postgresql://postgres:postgrespassword@localhost:5432/atrio_rh?schema=public"
-JWT_SECRET="seu-segredo-jwt-aqui"
+JWT_SECRET="gere-um-segredo-aleatorio-com-pelo-menos-32-caracteres"
+ADMIN_EMAIL="admin@empresa.com.br"
 ADMIN_PASSWORD="senha-do-administrador"
 DEFAULT_USER_PASSWORD="senha-temporaria-dos-novos-usuarios"
 TIMEZONE="America/Sao_Paulo"
@@ -129,6 +130,9 @@ npm run db:up
 
 ```bash
 npm run db:migrate
+
+# Provisionamento explícito do administrador inicial
+npm run db:seed
 ```
 
 ### 6. Inicie o projeto

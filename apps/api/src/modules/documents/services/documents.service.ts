@@ -168,12 +168,12 @@ export class DocumentsService {
         documentId,
         employeeId,
         acknowledgedAt: new Date(),
-        ipAddress: ipAddress || '127.0.0.1',
+        ...(ipAddress ? { ipAddress } : {}),
         userAgent: userAgent || 'Navegador Web API',
       },
       update: {
         acknowledgedAt: new Date(),
-        ipAddress: ipAddress || '127.0.0.1',
+        ...(ipAddress ? { ipAddress } : {}),
         userAgent: userAgent || 'Navegador Web API',
       },
     });

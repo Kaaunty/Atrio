@@ -101,16 +101,4 @@ export class AuthController {
       next(error);
     }
   }
-
-  static async seed(req: Request, res: Response, next: NextFunction) {
-    try {
-      await AuthService.seedAdminUser();
-      return sendSuccess({
-        res,
-        message: 'Usuário administrador e perfis padrão inicializados com sucesso',
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
 }

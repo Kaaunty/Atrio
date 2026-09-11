@@ -29,6 +29,9 @@ export interface EmployeeSimple {
 }
 
 export const RhDocumentsPage: React.FC = () => {
+  const currentDate = new Date();
+  const currentMonth = String(currentDate.getMonth() + 1);
+  const currentYear = String(currentDate.getFullYear());
   const [activeTab, setActiveTab] = useState<'SINGLE' | 'BATCH' | 'REPORTS'>('SINGLE');
   const [docTypes, setDocTypes] = useState<DocumentTypeItem[]>([]);
   const [employees, setEmployees] = useState<EmployeeSimple[]>([]);
@@ -44,18 +47,18 @@ export const RhDocumentsPage: React.FC = () => {
   const [singleDescription, setSingleDescription] = useState<string>('');
   const [singleFileUrl, setSingleFileUrl] = useState<string>('');
   const [singleFileName, setSingleFileName] = useState<string>('');
-  const [singleMonth, setSingleMonth] = useState<string>('8');
-  const [singleYear, setSingleYear] = useState<string>('2026');
+  const [singleMonth, setSingleMonth] = useState<string>(currentMonth);
+  const [singleYear, setSingleYear] = useState<string>(currentYear);
+  const [singleFileSize, setSingleFileSize] = useState<string>('');
+  const [singleMimeType, setSingleMimeType] = useState<string>('');
   const [singleVisibility, setSingleVisibility] = useState<string>('PRIVATE_EMPLOYEE_RH');
   const [singleRequiresAck, setSingleRequiresAck] = useState<boolean>(false);
 
   // Tab 2: Upload em Lote
   const [batchTypeCode, setBatchTypeCode] = useState<string>('HOLERITE');
-  const [batchMonth, setBatchMonth] = useState<number>(8);
-  const [batchYear, setBatchYear] = useState<number>(2026);
-  const [batchRawInput, setBatchRawInput] = useState<string>(
-    'MAT-001, Holerite Agosto 2026, https://storage.atrio.com/batch/holerite_MAT-001.pdf, holerite_MAT-001.pdf\nMAT-002, Holerite Agosto 2026, https://storage.atrio.com/batch/holerite_MAT-002.pdf, holerite_MAT-002.pdf'
-  );
+  const [batchMonth, setBatchMonth] = useState<number>(Number(currentMonth));
+  const [batchYear, setBatchYear] = useState<number>(Number(currentYear));
+  const [batchRawInput, setBatchRawInput] = useState<string>('');
   const [batchResult, setBatchResult] = useState<any | null>(null);
 
   // Tab 3: Relatório de Leitura
@@ -93,8 +96,14 @@ export const RhDocumentsPage: React.FC = () => {
 
   const handleSingleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!singleTitle || !singleFileUrl || !singleFileName) {
-      setError('Preencha os campos obrigatórios (Título, URL e Nome do arquivo).');
+    if (!singleTitle || !singleFileUrl || !singleFileName || !singleFileSize || !singleMimeType) {
+      setError('Preencha título, URL, nome, tamanho e tipo MIME do arquivo.');
+      return;
+    }
+
+    const fileSize = Number(singleFileSize);
+    if (!Number.isInteger(fileSize) || fileSize <= 0) {
+      setError('O tamanho do arquivo deve ser informado em bytes e ser maior que zero.');
       return;
     }
 
@@ -116,8 +125,8 @@ export const RhDocumentsPage: React.FC = () => {
           description: singleDescription || null,
           fileUrl: singleFileUrl,
           fileName: singleFileName,
-          fileSize: 150000,
-          mimeType: 'application/pdf',
+          fileSize,
+          mimeType: singleMimeType.trim(),
           referenceMonth: singleMonth ? Number(singleMonth) : null,
           referenceYear: singleYear ? Number(singleYear) : null,
         });
@@ -130,8 +139,8 @@ export const RhDocumentsPage: React.FC = () => {
           description: singleDescription || null,
           fileUrl: singleFileUrl,
           fileName: singleFileName,
-          fileSize: 350000,
-          mimeType: 'application/pdf',
+          fileSize,
+          mimeType: singleMimeType.trim(),
           visibility: singleVisibility,
           requiresReadAcknowledgement: singleRequiresAck,
         });
@@ -143,6 +152,8 @@ export const RhDocumentsPage: React.FC = () => {
       setSingleDescription('');
       setSingleFileUrl('');
       setSingleFileName('');
+      setSingleFileSize('');
+      setSingleMimeType('');
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao enviar documento');
@@ -159,15 +170,26 @@ export const RhDocumentsPage: React.FC = () => {
 
       // Converte a caixa de texto em itens
       const lines = batchRawInput.split('\n').filter((l) => l.trim().length > 0);
+      if (lines.length === 0) {
+        setError('Informe ao menos um arquivo para processar o lote.');
+        return;
+      }
+
       const items = lines.map((line) => {
         const parts = line.split(',').map((p) => p.trim());
+        const fileSize = Number(parts[4]);
+
+        if (parts.length < 6 || !parts[0] || !parts[1] || !parts[2] || !parts[3] || !Number.isInteger(fileSize) || fileSize <= 0 || !parts[5]) {
+          throw new Error('Cada linha deve conter matrícula/CPF, título, URL, nome do arquivo, tamanho em bytes e tipo MIME.');
+        }
+
         return {
-          registrationOrCpf: parts[0] || '',
-          title: parts[1] || `Holerite ${batchMonth}/${batchYear}`,
-          fileUrl: parts[2] || 'https://storage.atrio.com/batch/arquivo.pdf',
-          fileName: parts[3] || `${parts[0] || 'doc'}.pdf`,
-          fileSize: 120000,
-          mimeType: 'application/pdf',
+          registrationOrCpf: parts[0],
+          title: parts[1],
+          fileUrl: parts[2],
+          fileName: parts[3],
+          fileSize,
+          mimeType: parts[5],
         };
       });
 
@@ -181,7 +203,7 @@ export const RhDocumentsPage: React.FC = () => {
       setBatchResult(res.data.data);
       setSuccessMsg(`Upload em lote processado: ${res.data.data.matched} arquivo(s) vinculados.`);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erro no processamento em lote');
+      setError(err.response?.data?.message || err.message || 'Erro no processamento em lote');
     } finally {
       setSubmitLoading(false);
     }
@@ -321,10 +343,27 @@ export const RhDocumentsPage: React.FC = () => {
 
               <Input
                 label="URL Segura do Arquivo (fileUrl) *"
-                placeholder="Ex: https://storage.atrio.com/docs/arquivo.pdf"
+                placeholder="Ex: https://storage.seu-dominio.com/docs/arquivo.pdf"
                 value={singleFileUrl}
                 onChange={(e) => setSingleFileUrl(e.target.value)}
               />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Tamanho do Arquivo em Bytes *"
+                  type="number"
+                  min={1}
+                  placeholder="Informe o tamanho real"
+                  value={singleFileSize}
+                  onChange={(e) => setSingleFileSize(e.target.value)}
+                />
+                <Input
+                  label="Tipo MIME *"
+                  placeholder="Ex: application/pdf"
+                  value={singleMimeType}
+                  onChange={(e) => setSingleMimeType(e.target.value)}
+                />
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Select
@@ -406,25 +445,29 @@ export const RhDocumentsPage: React.FC = () => {
                 onChange={(e) => setBatchMonth(Number(e.target.value))}
                 options={Array.from({ length: 12 }, (_, i) => ({
                   value: String(i + 1),
-                  label: `${i + 1} - ${new Date(2026, i, 1).toLocaleString('pt-BR', { month: 'long' })}`,
+                  label: `${i + 1} - ${new Date(Number(currentYear), i, 1).toLocaleString('pt-BR', { month: 'long' })}`,
                 }))}
               />
               <Select
                 label="Ano de Referência"
                 value={String(batchYear)}
                 onChange={(e) => setBatchYear(Number(e.target.value))}
-                options={[{ value: '2026', label: '2026' }, { value: '2025', label: '2025' }]}
+                options={Array.from({ length: 5 }, (_, index) => {
+                  const year = Number(currentYear) - index;
+                  return { value: String(year), label: String(year) };
+                })}
               />
             </div>
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-atrio-navy block">
-                Lista de Arquivos (Formato: Matrícula/CPF, Título, URL, NomeArquivo)
+                Lista de Arquivos (Formato: Matrícula/CPF, Título, URL, NomeArquivo, Tamanho em bytes, MIME)
               </label>
               <textarea
                 rows={6}
                 value={batchRawInput}
                 onChange={(e) => setBatchRawInput(e.target.value)}
+                placeholder="matricula, Holerite do mês, https://storage.empresa.com/arquivo.pdf, arquivo.pdf, 154000, application/pdf"
                 className="w-full font-mono text-xs p-3 rounded-lg border border-atrio-border bg-atrio-border-light/30 focus:ring-2 focus:ring-atrio-teal focus:outline-none"
               />
             </div>

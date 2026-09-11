@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   FileText,
   Plus,
-  Upload,
   CheckCircle2,
   AlertCircle,
   ShieldCheck,
@@ -87,9 +86,10 @@ export const SubmitCertificatePage: React.FC = () => {
       setSubmitting(true);
       setError(null);
 
-      const urlToUse = documentUrl.trim()
-        ? documentUrl
-        : `https://storage.atrio.com/atestados/cert_${Date.now()}.pdf`;
+      if (!documentUrl.trim()) {
+        setError('Informe a URL do documento armazenado antes de enviar o atestado.');
+        return;
+      }
 
       await api.post('/medical-certificates', {
         startDate,
@@ -100,7 +100,7 @@ export const SubmitCertificatePage: React.FC = () => {
         cidCode: cidCode.trim() ? cidCode.trim() : null,
         reasonCategory,
         notes: notes.trim() ? notes.trim() : null,
-        documentUrl: urlToUse,
+        documentUrl: documentUrl.trim(),
       });
 
       setSuccessMsg('Atestado enviado com sucesso! Ele foi encaminhado para a fila de validação do RH.');
@@ -438,27 +438,22 @@ export const SubmitCertificatePage: React.FC = () => {
                   />
                 </div>
 
-                {/* Simulador de Upload de Documento / Foto */}
+                {/* O arquivo precisa estar disponível no armazenamento configurado pela empresa. */}
                 <div>
                   <label className="block text-xs font-bold text-atrio-text-primary mb-1">
-                    Anexo do Atestado (Foto ou PDF) *
+                    URL Segura do Atestado (Foto ou PDF) *
                   </label>
-                  <div className="border-2 border-dashed border-slate-300 rounded-2xl p-4 text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer">
-                    <Upload className="w-8 h-8 text-atrio-teal mx-auto mb-2" />
-                    <p className="text-xs font-bold text-slate-700">
-                      Arraste e solte o arquivo do atestado aqui
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Formatos aceitos: JPG, PNG, PDF (Máx. 10MB)
-                    </p>
-                  </div>
                   <input
                     type="url"
-                    placeholder="Ou insira o link/URL da imagem escaneada (ex: https://...)"
+                    placeholder="https://storage.seu-dominio.com/atestados/arquivo.pdf"
                     value={documentUrl}
                     onChange={(e) => setDocumentUrl(e.target.value)}
+                    required
                     className="w-full px-3 py-2 bg-white border border-atrio-border rounded-xl text-xs mt-2 focus:outline-none focus:ring-2 focus:ring-atrio-teal"
                   />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Informe o endereço real do arquivo no armazenamento da empresa.
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-atrio-border">

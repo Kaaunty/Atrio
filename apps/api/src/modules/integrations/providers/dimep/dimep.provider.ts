@@ -21,17 +21,13 @@ export class DimepProvider implements ITimeClockProvider {
       };
     }
     return {
-      success: true,
-      message: 'Comunicação com o relógio Dimep simulada com sucesso.',
-      details: {
-        model: 'Dimep PrintPoint III',
-        status: 'ONLINE',
-      },
+      success: false,
+      message: 'A comunicação Dimep ainda não possui um provedor operacional configurado.',
     };
   }
 
-  async fetchPunches(options: FetchPunchesOptions): Promise<RawPunchRecord[]> {
-    return [];
+  async fetchPunches(_options: FetchPunchesOptions): Promise<RawPunchRecord[]> {
+    throw new Error('A busca de marcações Dimep ainda não está implementada.');
   }
 
   parseAfdContent(content: string): RawPunchRecord[] {

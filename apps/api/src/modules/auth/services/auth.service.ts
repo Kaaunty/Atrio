@@ -346,16 +346,16 @@ export class AuthService {
   }
 
   /**
-   * Inicializa o usuário administrador padrão e perfis caso não existam
+   * Provisiona o administrador informado na configuração e os perfis do sistema.
    */
-  static async seedAdminUser() {
+  static async provisionAdminUser() {
     await RbacService.seedPermissionsAndRoles();
 
     const adminRole = await prisma.role.findUnique({ where: { name: 'ADMIN' } });
     if (!adminRole) return;
 
     const existingAdmin = await prisma.user.findFirst({
-      where: { email: 'admin@atrio.com.br' },
+      where: { email: env.ADMIN_EMAIL },
     });
 
     const adminPasswordHash = await this.hashPassword(env.ADMIN_PASSWORD);
@@ -366,7 +366,7 @@ export class AuthService {
         })
       : await prisma.user.create({
           data: {
-            email: 'admin@atrio.com.br',
+            email: env.ADMIN_EMAIL,
             passwordHash: adminPasswordHash,
             active: true,
             mustChangePassword: false,
@@ -388,55 +388,9 @@ export class AuthService {
     });
 
     if (!existingAdmin) {
-      console.log('✅ Usuário administrador padrão criado: admin@atrio.com.br');
+      console.log(`✅ Usuário administrador criado: ${env.ADMIN_EMAIL}`);
     } else {
-      console.log('✅ Usuário administrador padrão confirmado: admin@atrio.com.br');
-    }
-
-    const demoUsers = [
-      { email: 'rh@atrio.com.br', roleName: 'RH', employeeEmail: 'camila.ferreira@atrio.com.br' },
-      { email: 'gestor@atrio.com.br', roleName: 'GESTOR', employeeEmail: 'felipe.souza@atrio.com.br' },
-      { email: 'colaborador@atrio.com.br', roleName: 'COLABORADOR', employeeEmail: 'bruno.martins@atrio.com.br' },
-    ];
-
-    for (const demo of demoUsers) {
-      const role = await prisma.role.findUnique({ where: { name: demo.roleName } });
-      if (!role) continue;
-
-      const existingUser = await prisma.user.findUnique({ where: { email: demo.email } });
-      const employee = await prisma.employee.findUnique({ where: { email: demo.employeeEmail } });
-      const employeeOwner = employee
-        ? await prisma.user.findUnique({ where: { employeeId: employee.id }, select: { id: true } })
-        : null;
-      const availableEmployeeId = employee && !employeeOwner ? employee.id : null;
-      const passwordHash = await this.hashPassword(env.ADMIN_PASSWORD);
-      const user = existingUser
-        ? await prisma.user.update({
-            where: { id: existingUser.id },
-            data: {
-              passwordHash,
-              active: true,
-              mustChangePassword: false,
-              ...(!existingUser.employeeId && availableEmployeeId ? { employeeId: availableEmployeeId } : {}),
-            },
-          })
-        : await prisma.user.create({
-            data: {
-              email: demo.email,
-              passwordHash,
-              employeeId: availableEmployeeId,
-              active: true,
-              mustChangePassword: false,
-            },
-          });
-
-      await prisma.userRole.upsert({
-        where: { userId_roleId: { userId: user.id, roleId: role.id } },
-        update: {},
-        create: { userId: user.id, roleId: role.id },
-      });
-
-      console.log(`✅ Usuário de demonstração confirmado: ${demo.email} (${demo.roleName})`);
+      console.log(`✅ Usuário administrador confirmado: ${env.ADMIN_EMAIL}`);
     }
   }
 }

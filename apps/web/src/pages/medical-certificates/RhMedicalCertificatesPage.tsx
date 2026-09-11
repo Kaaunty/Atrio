@@ -59,6 +59,7 @@ export const RhMedicalCertificatesPage: React.FC = () => {
   const [reviewNotes, setReviewNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [documentLoadError, setDocumentLoadError] = useState(false);
 
   // Zoom & Rotação no visualizador de documentos
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -97,6 +98,7 @@ export const RhMedicalCertificatesPage: React.FC = () => {
       setReviewNotes('');
       setZoomLevel(1);
       setRotationDegrees(0);
+      setDocumentLoadError(false);
 
       const res = await api.get(`/medical-certificates/rh/${certId}`);
       setSelectedCert(res.data.data);
@@ -423,16 +425,16 @@ export const RhMedicalCertificatesPage: React.FC = () => {
                           <ExternalLink className="w-4 h-4" /> Visualizar PDF em Nova Aba
                         </a>
                       </div>
+                    ) : documentLoadError ? (
+                      <p className="text-xs text-white text-center">
+                        Não foi possível carregar o documento armazenado.
+                      </p>
                     ) : (
                       <img
                         src={selectedCert.documentUrl}
                         alt="Atestado médico escaneado"
                         className="max-h-80 object-contain rounded shadow-lg bg-white"
-                        onError={(e) => {
-                          // Fallback se a imagem não carregar
-                          (e.target as any).src =
-                            'https://placehold.co/600x800/0f172a/00d2b4?text=Visualizador+de+Atestado+Medico';
-                        }}
+                        onError={() => setDocumentLoadError(true)}
                       />
                     )}
                   </div>

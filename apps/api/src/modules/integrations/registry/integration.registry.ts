@@ -1,7 +1,5 @@
 import { ITimeClockProvider } from '../interfaces/integration-provider.interface.js';
 import { ControlIdProvider } from '../providers/control-id/control-id.provider.js';
-import { DimepProvider } from '../providers/dimep/dimep.provider.js';
-import { SecullumProvider } from '../providers/secullum/secullum.provider.js';
 
 export class IntegrationRegistry {
   private static providers: Map<string, ITimeClockProvider> = new Map();
@@ -9,8 +7,6 @@ export class IntegrationRegistry {
   static {
     // Registra provedores padrão de fábrica
     this.register(new ControlIdProvider());
-    this.register(new DimepProvider());
-    this.register(new SecullumProvider());
   }
 
   /**

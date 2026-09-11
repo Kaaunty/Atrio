@@ -87,7 +87,7 @@ export class DocumentsController {
         });
       }
 
-      const ipAddress = req.ip || (req.headers['x-forwarded-for'] as string) || '127.0.0.1';
+      const ipAddress = req.ip || (req.headers['x-forwarded-for'] as string) || undefined;
       const userAgent = req.headers['user-agent'] || 'Web Portal Client';
 
       const receipt = await DocumentsService.acknowledgeDocument(

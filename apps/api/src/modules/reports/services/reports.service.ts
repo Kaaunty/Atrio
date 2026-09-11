@@ -372,8 +372,8 @@ export class ReportsService {
       doc.on('error', (err) => reject(err));
 
       // Cabeçalho da Empresa
-      doc.fillColor('#0F172A').fontSize(14).font('Helvetica-Bold').text(employee.company?.legalName || 'ÁTRIO TECNOLOGIA E SERVIÇOS S.A.');
-      doc.fontSize(9).font('Helvetica').text(`CNPJ: ${employee.company?.cnpj || '00.000.000/0001-00'}`);
+      doc.fillColor('#0F172A').fontSize(14).font('Helvetica-Bold').text(employee.company?.legalName || 'Empresa não informada');
+      doc.fontSize(9).font('Helvetica').text(`CNPJ: ${employee.company?.cnpj || 'Não informado'}`);
       doc.moveDown(0.5);
 
       doc.fillColor('#0D9488').fontSize(12).font('Helvetica-Bold').text(`ESPELHO MENSAL DE PONTO — MÊS DE REFERÊNCIA: ${dto.yearMonth}`);

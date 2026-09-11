@@ -4,16 +4,14 @@ import { IntegrationService } from '../services/integration.service.js';
 import { TimeClockSyncService } from '../services/time-clock-sync.service.js';
 
 describe('Integration Hub & Activation/Deactivation Toggle', () => {
-  it('deve listar integrações e conter Control iD, Dimep e Secullum no catálogo', async () => {
+  it('deve listar a integração Control iD operacional no catálogo', async () => {
     const list = await IntegrationService.list();
-    assert.ok(list.length >= 3);
+    assert.ok(list.length >= 1);
 
     const controlId = list.find((i) => i.key === 'control_id');
     assert.ok(controlId, 'Control iD deve existir no catálogo');
     assert.ok(controlId.hasProviderImplementation, 'Deve ter driver implementado');
 
-    const dimep = list.find((i) => i.key === 'dimep');
-    assert.ok(dimep, 'Dimep deve existir no catálogo');
   });
 
   it('deve permitir desativar uma integração e bloquear tentativas de sincronização', async () => {

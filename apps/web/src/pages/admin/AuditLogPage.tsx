@@ -261,7 +261,7 @@ export const AuditLogPage: React.FC = () => {
                     <td className="py-3.5 px-4 text-xs text-slate-500 font-mono">
                       <div className="flex items-center gap-1">
                         <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span>{log.ipAddress || '127.0.0.1'}</span>
+                        <span>{log.ipAddress || 'Não informado'}</span>
                       </div>
                     </td>
 
@@ -350,7 +350,7 @@ export const AuditLogPage: React.FC = () => {
                   Endereço IP
                 </span>
                 <span className="font-semibold text-slate-800 font-mono">
-                  {selectedLog.ipAddress || '127.0.0.1'}
+                  {selectedLog.ipAddress || 'Não informado'}
                 </span>
               </div>
 

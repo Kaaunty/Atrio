@@ -24,5 +24,6 @@ EXPOSE 3333
 
 ENV NODE_ENV=production
 
-# Aplica o schema antes do seed e de abrir a porta da API
+# Aplica apenas as migrations antes de abrir a porta da API.
+# O primeiro administrador é provisionado separadamente com `npm run db:seed`.
 CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx src/server.ts"]

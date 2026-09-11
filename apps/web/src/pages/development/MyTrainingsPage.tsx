@@ -104,7 +104,7 @@ export const MyTrainingsPage: React.FC = () => {
                   </label>
                   <Input
                     required
-                    placeholder="https://storage.atrio.com.br/certificados/meu_certificado.pdf"
+                    placeholder="https://storage.seu-dominio.com/certificados/arquivo.pdf"
                     value={certificateUrl}
                     onChange={(e) => setCertificateUrl(e.target.value)}
                   />
