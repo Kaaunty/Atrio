@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, ArrowRight, KeyRound, Lock, Shield } from 'lucide-react';
+import { AlertCircle, ArrowRight, KeyRound, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
@@ -47,13 +47,23 @@ export const ChangePasswordPage: React.FC = () => {
 
       <div className="w-full max-w-md relative z-10">
         <Card className="p-7 bg-white/95 backdrop-blur-md shadow-2xl border-white/20 rounded-2xl space-y-5">
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-atrio-navy to-atrio-teal text-white shadow-lg">
-              <Shield className="w-6 h-6" />
+          <div className="text-center space-y-3">
+            <div className="flex items-center justify-center gap-2.5">
+              <div className="w-10 h-10 flex items-center justify-center">
+                <img
+                  src="/logo-color.png"
+                  alt="Átrio Logo"
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/logo.png';
+                  }}
+                />
+              </div>
+              <span className="text-xl font-black tracking-tight text-atrio-navy">ÁTRIO</span>
             </div>
-            <h1 className="text-xl font-bold text-atrio-navy">Defina sua senha</h1>
+            <h1 className="text-xl font-bold text-slate-900">Defina sua senha</h1>
             <p className="text-xs text-slate-500">
-              Este é o primeiro acesso de <span className="font-semibold">{user?.email}</span>. Crie uma senha própria para continuar.
+              Este é o primeiro acesso de <span className="font-semibold text-slate-700">{user?.email}</span>. Crie uma senha própria para continuar.
             </p>
           </div>
 
