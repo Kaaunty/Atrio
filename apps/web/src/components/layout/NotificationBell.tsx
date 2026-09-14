@@ -191,10 +191,16 @@ export const NotificationBell: React.FC = () => {
           </div>
 
           {/* Rodapé do Menu */}
-          <div className="p-2 bg-atrio-border-light text-center border-t border-atrio-border">
-            <span className="text-[10px] font-semibold text-atrio-text-secondary">
-              Alertas multicanal em tempo real
-            </span>
+          <div className="p-2.5 bg-slate-50 text-center border-t border-atrio-border">
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                navigate('/notificacoes');
+              }}
+              className="text-xs font-bold text-atrio-navy hover:text-atrio-teal transition-colors"
+            >
+              Ver todas as notificações →
+            </button>
           </div>
         </div>
       )}

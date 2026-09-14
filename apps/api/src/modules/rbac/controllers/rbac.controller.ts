@@ -150,5 +150,17 @@ export class RbacController {
       next(error);
     }
   }
+
+  static async deleteUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.params.id as string;
+      const currentUserId = req.user?.id;
+      const result = await RbacService.deleteUser(userId, currentUserId);
+      return sendSuccess({ res, message: result.message });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
+
 

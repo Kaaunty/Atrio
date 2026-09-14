@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { authenticate, requireRole } from '../../middlewares/auth.middleware.js';
 import { MedicalCertificatesController } from './controllers/medical-certificates.controller.js';
+import { uploadMedicalCertificateMiddleware } from '../../config/upload.js';
 
 const router = Router();
 
 // ─── Rotas do Colaborador ─────────────────────────────────────────────────────
+router.post('/medical-certificates/upload', authenticate, uploadMedicalCertificateMiddleware.single('file'), MedicalCertificatesController.uploadCertificateDocument);
 router.post('/medical-certificates', authenticate, MedicalCertificatesController.submitCertificate);
 router.get('/medical-certificates/me', authenticate, MedicalCertificatesController.getEmployeeCertificates);
 

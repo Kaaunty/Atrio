@@ -81,6 +81,36 @@ export class AnnouncementsController {
     }
   }
 
+  static async uploadCoverImage(req: AuthRequest, res: Response) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: 'Nenhuma imagem enviada. Selecione uma imagem (JPG, PNG ou WEBP).',
+        });
+      }
+
+      const fileUrl = `/uploads/announcements/${req.file.filename}`;
+
+      return res.status(201).json({
+        success: true,
+        message: 'Capa do comunicado enviada com sucesso.',
+        data: {
+          fileUrl,
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          size: req.file.size,
+          mimetype: req.file.mimetype,
+        },
+      });
+    } catch (err: any) {
+      return res.status(400).json({
+        success: false,
+        error: err.message || 'Erro ao realizar upload da capa do comunicado.',
+      });
+    }
+  }
+
   static async getMetrics(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;

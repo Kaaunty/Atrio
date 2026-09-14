@@ -13,6 +13,7 @@ import {
   CheckSquare,
 } from 'lucide-react';
 import { api } from '../../services/api';
+import { resolveFileUrl } from '../../utils/fileUrl';
 
 interface AnnouncementDetail {
   id: string;
@@ -103,7 +104,7 @@ export const AnnouncementDetailPage: React.FC = () => {
             {announcement.coverImageUrl && (
               <div className="-mx-6 -mt-6 sm:-mx-8 sm:-mt-8 mb-4 h-64 sm:h-80 overflow-hidden">
                 <img
-                  src={announcement.coverImageUrl}
+                  src={resolveFileUrl(announcement.coverImageUrl)}
                   alt={announcement.title}
                   className="w-full h-full object-cover"
                 />

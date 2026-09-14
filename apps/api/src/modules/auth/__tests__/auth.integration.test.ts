@@ -218,4 +218,26 @@ describe('Auth, RBAC & Audit Module Suite', () => {
     assert.strictEqual(result.items[0].action, 'UPDATE');
     assert.strictEqual(result.items[0].entity, 'Employee');
   });
+
+  test('8. deve excluir usuário do sistema desvinculando papéis e liberando o colaborador', async () => {
+    const userToDel = await AuthService.registerUser({
+      email: `todelete.${Date.now()}@atrio.com.br`,
+      roleNames: ['COLABORADOR'],
+    });
+
+    assert.ok(userToDel.id);
+
+    // Listagem deve conter o usuário ativo
+    let userList = await RbacService.listUsersWithRoles();
+    assert.ok(userList.some((u) => u.id === userToDel.id));
+
+    // Exclusão do usuário
+    const delResult = await RbacService.deleteUser(userToDel.id);
+    assert.ok(delResult.success);
+
+    // Listagem não deve mais conter o usuário excluído
+    userList = await RbacService.listUsersWithRoles();
+    assert.ok(!userList.some((u) => u.id === userToDel.id));
+  });
 });
+

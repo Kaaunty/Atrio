@@ -356,6 +356,7 @@ export class RbacService {
    */
   static async listUsersWithRoles() {
     const users = await prisma.user.findMany({
+      where: { deletedAt: null },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -399,7 +400,7 @@ export class RbacService {
   static async syncUserEmployees() {
     let syncedCount = 0;
     const usersWithoutEmployee = await prisma.user.findMany({
-      where: { employeeId: null },
+      where: { employeeId: null, deletedAt: null },
     });
 
     for (const user of usersWithoutEmployee) {
@@ -429,7 +430,7 @@ export class RbacService {
    * Atualiza ou remove o vínculo de colaborador de um usuário
    */
   static async updateUserEmployee(userId: string, employeeId: string | null) {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({ where: { id: userId, deletedAt: null } });
     if (!user) {
       throw new Error('Usuário não encontrado');
     }
@@ -452,5 +453,49 @@ export class RbacService {
     });
 
     return this.listUsersWithRoles();
+  }
+
+  /**
+   * Exclui uma conta de usuário do sistema
+   */
+  static async deleteUser(userId: string, currentUserId?: string) {
+    if (currentUserId && currentUserId === userId) {
+      const error: any = new Error('Você não pode excluir sua própria conta de usuário.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const user = await prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+    });
+
+    if (!user) {
+      const error: any = new Error('Usuário não encontrado');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const now = new Date();
+    const deletedEmail = `${user.email}#deleted#${Date.now()}`;
+
+    await prisma.$transaction(async (tx) => {
+      // Remove papéis associados
+      await tx.userRole.deleteMany({
+        where: { userId },
+      });
+
+      // Soft-delete e desvincula do colaborador
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          deletedAt: now,
+          active: false,
+          employeeId: null,
+          email: deletedEmail,
+        },
+      });
+    });
+
+    return { success: true, message: `Usuário ${user.email} excluído com sucesso.` };
   }
 }

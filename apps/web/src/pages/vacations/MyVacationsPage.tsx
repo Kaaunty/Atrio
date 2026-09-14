@@ -151,7 +151,7 @@ export const MyVacationsPage: React.FC = () => {
             </div>
             <div>
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Dias Gozados
+                Dias Utilizados
               </span>
               <p className="text-2xl font-black text-slate-800">
                 {summary?.totalDaysTaken || 0} <span className="text-xs font-normal text-slate-400">dias</span>
@@ -196,7 +196,7 @@ export const MyVacationsPage: React.FC = () => {
                   <th className="py-2.5 px-3">Período Aquisitivo</th>
                   <th className="py-2.5 px-3">Limite Concessivo</th>
                   <th className="py-2.5 px-3 text-center">Direito</th>
-                  <th className="py-2.5 px-3 text-center">Gozados</th>
+                  <th className="py-2.5 px-3 text-center">Utilizados</th>
                   <th className="py-2.5 px-3 text-center">Agendados</th>
                   <th className="py-2.5 px-3 text-center">Disponível</th>
                   <th className="py-2.5 px-3">Status</th>
@@ -230,7 +230,7 @@ export const MyVacationsPage: React.FC = () => {
               Histórico de Solicitações de Férias
             </h3>
             <p className="text-xs text-atrio-text-secondary">
-              Acompanhe as datas programadas, opções de abono e pareceres da chefia e RH.
+              Acompanhe as datas programadas e pareceres da chefia e RH.
             </p>
           </div>
 
@@ -250,7 +250,7 @@ export const MyVacationsPage: React.FC = () => {
                           {formatDate(req.startDate)} a {formatDate(req.endDate)}
                         </strong>
                         <Badge variant="teal" size="sm">
-                          {req.daysCount} dias de gozo
+                          {req.daysCount} dias de férias
                         </Badge>
                         {req.sellDaysCount > 0 && (
                           <Badge variant="neutral" size="sm">

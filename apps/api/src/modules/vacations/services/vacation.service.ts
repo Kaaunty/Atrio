@@ -1,4 +1,4 @@
-﻿import { prisma } from '../../../database/prisma.js';
+import { prisma } from '../../../database/prisma.js';
 import { CreateVacationRequestInput } from '../vacations.dto.js';
 
 export class VacationService {
@@ -39,6 +39,19 @@ export class VacationService {
       start = new Date(start);
       start.setFullYear(start.getFullYear() + 1);
       if (start.getFullYear() > currentYear + 1) break;
+    }
+
+    // Remove períodos órfãos antigos (sem solicitações associadas) que não fazem mais parte do cronograma de admissão
+    const validVestingStartTimes = new Set(periodsToEnsure.map(p => p.vestingStart.getTime()));
+    const allExistingPeriods = await prisma.vacationPeriod.findMany({
+      where: { employeeId },
+      include: { requests: true },
+    });
+
+    for (const exp of allExistingPeriods) {
+      if (!validVestingStartTimes.has(new Date(exp.vestingStartDate).getTime()) && exp.requests.length === 0) {
+        await prisma.vacationPeriod.delete({ where: { id: exp.id } });
+      }
     }
 
     for (const p of periodsToEnsure) {

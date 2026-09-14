@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { resolveFileUrl } from '../../utils/fileUrl';
 
 interface AnnouncementFeedItem {
   id: string;
@@ -145,7 +146,7 @@ export const AnnouncementsPage: React.FC = () => {
                 {ann.coverImageUrl && (
                   <div className="-mx-6 -mt-6 mb-2 h-36 overflow-hidden">
                     <img
-                      src={ann.coverImageUrl}
+                      src={resolveFileUrl(ann.coverImageUrl)}
                       alt={ann.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />

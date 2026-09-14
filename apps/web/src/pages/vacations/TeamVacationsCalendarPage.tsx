@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   CheckCircle2, 
@@ -210,7 +210,7 @@ export const TeamVacationsCalendarPage: React.FC = () => {
                       <span>
                         Período: <strong className="text-atrio-navy">{formatDate(req.startDate)} a {formatDate(req.endDate)}</strong>
                       </span>
-                      <span>({req.daysCount} dias de gozo)</span>
+                      <span>({req.daysCount} dias de férias)</span>
                       {req.sellDaysCount > 0 && <span>+ {req.sellDaysCount} dias abono</span>}
                       {req.advanceThirteenth && <span className="text-indigo-600 font-bold">• Adiantamento 13º</span>}
                     </div>

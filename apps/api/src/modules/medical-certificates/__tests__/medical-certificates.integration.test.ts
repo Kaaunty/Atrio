@@ -213,11 +213,11 @@ describe('Gestão de Atestados Médicos & Afastamentos Integration Flow', () => 
     });
 
     assert.ok(leavesManagerView.length >= 1);
-    const item = leavesManagerView[0];
+    const item = leavesManagerView[0] as any;
     assert.equal(item.displayReason, 'Ausência por Saúde Justificada (Homologada RH)');
     // Garante que o gestor NÃO possui acesso a anexo, CRM ou CID
-    assert.equal((item as any).documentUrl, undefined);
-    assert.equal((item as any).cidCode, undefined);
-    assert.equal((item as any).crmNumber, undefined);
+    assert.equal(item.documentUrl, undefined);
+    assert.equal(item.cidCode, undefined);
+    assert.equal(item.crmNumber, undefined);
   });
 });

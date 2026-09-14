@@ -157,6 +157,12 @@ export const adminService = {
     return res.data.data;
   },
 
+  async deleteUser(userId: string): Promise<{ success: boolean; message: string }> {
+    const res = await api.delete<ApiResponse<{ success: boolean; message: string }>>(`/admin/users/${userId}`);
+    return res.data.data;
+  },
+
+
 
   // Auditoria
   async getAuditLogs(params?: {

@@ -9,6 +9,10 @@ import {
   DollarSign,
   AlertCircle,
   Loader2,
+  Search,
+  ChevronDown,
+  Check,
+  X,
 } from 'lucide-react';
 import { fetchAddressByCep, formatCep } from '../../services/viaCepService';
 import {
@@ -96,6 +100,11 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
   const [positions, setPositions] = useState<Position[]>([]);
   const [potentialManagers, setPotentialManagers] = useState<Employee[]>([]);
 
+  // Pesquisa de Gestor
+  const [managerSearch, setManagerSearch] = useState('');
+  const [isManagerDropdownOpen, setIsManagerDropdownOpen] = useState(false);
+  const [managerLoading, setManagerLoading] = useState(false);
+
   // Formulário
   const [form, setForm] = useState({
     name: '',
@@ -172,6 +181,30 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
 
     loadOptions();
   }, [isOpen, employee]);
+
+  // Busca de gestores dinâmica no backend conforme digitação (com debounce)
+  useEffect(() => {
+    if (!isOpen || !isManagerDropdownOpen) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        setManagerLoading(true);
+        const res = await employeeService.getEmployees({
+          search: managerSearch.trim() || undefined,
+          pageSize: 50,
+          status: 'ATIVO',
+        });
+        const list = (res.data || []).filter((e) => !employee || e.id !== employee.id);
+        setPotentialManagers(list);
+      } catch (err) {
+        console.error('Erro ao pesquisar gestores no backend:', err);
+      } finally {
+        setManagerLoading(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [managerSearch, isOpen, isManagerDropdownOpen, employee]);
 
   // Carrega unidades quando a empresa selecionada muda
   useEffect(() => {
@@ -274,6 +307,8 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       });
     }
     setError(null);
+    setManagerSearch('');
+    setIsManagerDropdownOpen(false);
     setActiveTab('personal');
   }, [employee, isOpen]);
 
@@ -526,20 +561,154 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
               ]}
             />
 
-            <div className="sm:col-span-2">
-              <Select
-                label="Gestor Imediato (Líder Direto)"
-                value={form.managerId}
-                onChange={(e) => setForm({ ...form, managerId: e.target.value })}
-                options={[
-                  { value: '', label: 'Nenhum (Reporta à Diretoria Geral / Sem Gestor)' },
-                  ...potentialManagers.map((m) => ({
-                    value: m.id,
-                    label: `${m.name} — ${m.position?.title || 'Colaborador'} (Matrícula: ${m.registrationNumber})`,
-                  })),
-                ]}
-                helperText="O sistema valida automaticamente e impede ciclos de subordinação ou auto-gestão"
-              />
+            <div className="sm:col-span-2 relative">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Gestor Imediato (Líder Direto)
+              </label>
+
+              {/* Seletor com busca */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsManagerDropdownOpen(!isManagerDropdownOpen)}
+                  className="w-full bg-white border border-atrio-border rounded-lg px-3 py-2 text-left text-sm flex items-center justify-between hover:border-atrio-teal/50 focus:outline-none focus:ring-2 focus:ring-atrio-teal/30 focus:border-atrio-teal transition-all"
+                >
+                  <span className="truncate">
+                    {(() => {
+                      if (!form.managerId) {
+                        return <span className="text-slate-500">Nenhum (Reporta à Diretoria Geral / Sem Gestor)</span>;
+                      }
+                      const selectedMgr = potentialManagers.find((m) => m.id === form.managerId);
+                      if (selectedMgr) {
+                        return (
+                          <span className="text-slate-900 font-medium">
+                            {selectedMgr.name}{' '}
+                            <span className="text-xs text-slate-500 font-normal">
+                              — {selectedMgr.position?.title || 'Colaborador'} ({selectedMgr.registrationNumber})
+                            </span>
+                          </span>
+                        );
+                      }
+                      return <span className="text-slate-500">Selecione o gestor...</span>;
+                    })()}
+                  </span>
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    {form.managerId && (
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setForm({ ...form, managerId: '' });
+                        }}
+                        className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors"
+                        title="Limpar gestor"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </span>
+                    )}
+                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isManagerDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+
+                {/* Dropdown com Campo de Pesquisa */}
+                {isManagerDropdownOpen && (
+                  <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in duration-100">
+                    <div className="p-2 border-b border-slate-100 bg-slate-50/70">
+                      <div className="relative">
+                        {managerLoading ? (
+                          <Loader2 className="w-3.5 h-3.5 text-atrio-teal absolute left-2.5 top-1/2 -translate-y-1/2 animate-spin" />
+                        ) : (
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        )}
+                        <input
+                          type="text"
+                          value={managerSearch}
+                          onChange={(e) => setManagerSearch(e.target.value)}
+                          placeholder="Pesquisar gestor por nome, cargo ou matrícula..."
+                          autoFocus
+                          className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-atrio-teal/30 focus:border-atrio-teal placeholder:text-slate-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto divide-y divide-slate-50 p-1">
+                      {/* Opção Sem Gestor */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm({ ...form, managerId: '' });
+                          setIsManagerDropdownOpen(false);
+                          setManagerSearch('');
+                        }}
+                        className={`w-full px-3 py-2 text-left text-xs rounded-lg flex items-center justify-between transition-colors ${
+                          !form.managerId ? 'bg-teal-50 text-atrio-teal font-bold' : 'hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <span>Nenhum (Reporta à Diretoria Geral / Sem Gestor)</span>
+                        {!form.managerId && <Check className="w-3.5 h-3.5 text-atrio-teal shrink-0" />}
+                      </button>
+
+                      {/* Lista filtrada de gestores */}
+                      {(() => {
+                        const filtered = potentialManagers.filter((m) => {
+                          const query = managerSearch.toLowerCase().trim();
+                          if (!query) return true;
+                          const name = m.name?.toLowerCase() || '';
+                          const pos = m.position?.title?.toLowerCase() || '';
+                          const reg = m.registrationNumber?.toLowerCase() || '';
+                          const dept = m.department?.name?.toLowerCase() || '';
+                          return name.includes(query) || pos.includes(query) || reg.includes(query) || dept.includes(query);
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="py-4 text-center text-xs text-slate-400">
+                              Nenhum gestor encontrado com "{managerSearch}".
+                            </div>
+                          );
+                        }
+
+                        return filtered.map((m) => {
+                          const isSelected = form.managerId === m.id;
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => {
+                                setForm({ ...form, managerId: m.id });
+                                setIsManagerDropdownOpen(false);
+                                setManagerSearch('');
+                              }}
+                              className={`w-full px-3 py-2 text-left text-xs rounded-lg flex items-center justify-between transition-colors ${
+                                isSelected ? 'bg-teal-50 text-teal-900 font-bold' : 'hover:bg-slate-50 text-slate-800'
+                              }`}
+                            >
+                              <div className="min-w-0 pr-2">
+                                <div className="font-semibold text-slate-800 truncate">{m.name}</div>
+                                <div className="text-[11px] text-slate-500 flex items-center gap-1.5 truncate">
+                                  <span>{m.position?.title || 'Colaborador'}</span>
+                                  <span>•</span>
+                                  <span className="font-mono">Matrícula: {m.registrationNumber}</span>
+                                  {m.department?.name && (
+                                    <>
+                                      <span>•</span>
+                                      <span>{m.department.name}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              {isSelected && <Check className="w-4 h-4 text-atrio-teal shrink-0" />}
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-xs text-slate-500 mt-1">
+                O sistema valida automaticamente e impede ciclos de subordinação ou auto-gestão
+              </p>
             </div>
 
             <Input

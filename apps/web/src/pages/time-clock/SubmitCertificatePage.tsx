@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FileText,
   Plus,
@@ -7,6 +7,10 @@ import {
   ShieldCheck,
   FileCheck,
   Info,
+  UploadCloud,
+  Trash2,
+  ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { Card } from '../../components/ui/Card';
@@ -14,6 +18,8 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { api } from '../../services/api';
+import { resolveFileUrl } from '../../utils/fileUrl';
+import { compressImage } from '../../utils/imageCompression';
 
 interface CertificateItem {
   id: string;
@@ -61,8 +67,14 @@ export const SubmitCertificatePage: React.FC = () => {
   const [cidCode, setCidCode] = useState('');
   const [reasonCategory, setReasonCategory] = useState('DOENCA_ATE_15D');
   const [notes, setNotes] = useState('');
-  const [documentUrl, setDocumentUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Estado do Arquivo / Upload
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchCertificates = async () => {
     try {
@@ -80,17 +92,117 @@ export const SubmitCertificatePage: React.FC = () => {
     fetchCertificates();
   }, []);
 
+  const handleFileSelect = async (file: File) => {
+    setError(null);
+    const maxSizeBytes = 15 * 1024 * 1024; // 15MB
+    if (file.size > maxSizeBytes) {
+      setError('O tamanho do arquivo excede o limite máximo permitido de 15MB.');
+      return;
+    }
+
+    const validTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'image/heic',
+      'image/heif',
+      'application/pdf',
+    ];
+
+    if (!validTypes.includes(file.type.toLowerCase()) && !file.name.toLowerCase().endsWith('.pdf')) {
+      setError('Formato inválido. Por favor, envie uma foto (JPG, PNG, WEBP) ou documento PDF.');
+      return;
+    }
+
+    // Otimização automática e silenciosa para imagens
+    if (file.type.startsWith('image/')) {
+      try {
+        setIsCompressing(true);
+        const result = await compressImage(file, {
+          maxWidth: 2048,
+          maxHeight: 2048,
+          quality: 0.82,
+        });
+
+        setSelectedFile(result.file);
+        setFilePreview(result.previewUrl);
+      } catch (compressionErr) {
+        console.warn('Erro ao otimizar imagem, utilizando arquivo original:', compressionErr);
+        setSelectedFile(file);
+        setFilePreview(URL.createObjectURL(file));
+      } finally {
+        setIsCompressing(false);
+      }
+    } else {
+      // PDF
+      setSelectedFile(file);
+      setFilePreview(null);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    if (filePreview) {
+      URL.revokeObjectURL(filePreview);
+    }
+    setSelectedFile(null);
+    setFilePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setSubmitting(true);
       setError(null);
 
-      if (!documentUrl.trim()) {
-        setError('Informe a URL do documento armazenado antes de enviar o atestado.');
+      if (!selectedFile) {
+        setError('Por favor, anexe o arquivo (foto ou PDF) do atestado médico para prosseguir.');
         return;
       }
 
+      // 1. Upload do Arquivo para o backend com volume permanente
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const uploadRes = await api.post('/medical-certificates/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const uploadedUrl = uploadRes.data?.data?.fileUrl;
+      if (!uploadedUrl) {
+        throw new Error('Falha ao obter URL do arquivo enviado.');
+      }
+
+      // 2. Registro do Atestado Médico
       await api.post('/medical-certificates', {
         startDate,
         daysCount: Number(daysCount),
@@ -100,10 +212,10 @@ export const SubmitCertificatePage: React.FC = () => {
         cidCode: cidCode.trim() ? cidCode.trim() : null,
         reasonCategory,
         notes: notes.trim() ? notes.trim() : null,
-        documentUrl: documentUrl.trim(),
+        documentUrl: uploadedUrl,
       });
 
-      setSuccessMsg('Atestado enviado com sucesso! Ele foi encaminhado para a fila de validação do RH.');
+      setSuccessMsg('Atestado enviado com sucesso! O arquivo foi armazenado de forma segura e encaminhado ao RH.');
       fetchCertificates();
 
       setTimeout(() => {
@@ -112,7 +224,7 @@ export const SubmitCertificatePage: React.FC = () => {
         resetForm();
       }, 1800);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erro ao enviar atestado médico');
+      setError(err.response?.data?.message || err.message || 'Erro ao enviar atestado médico');
     } finally {
       setSubmitting(false);
     }
@@ -127,7 +239,7 @@ export const SubmitCertificatePage: React.FC = () => {
     setCidCode('');
     setReasonCategory('DOENCA_ATE_15D');
     setNotes('');
-    setDocumentUrl('');
+    handleRemoveFile();
     setError(null);
   };
 
@@ -165,13 +277,13 @@ export const SubmitCertificatePage: React.FC = () => {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold text-atrio-teal mb-3">
                 <ShieldCheck className="w-4 h-4 shrink-0" />
-                <span>Proteção LGPD • Comunicação Direta com o RH</span>
+                <span>Proteção LGPD • Armazenamento Permanente e Seguro</span>
               </div>
               <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight leading-tight">
-                Envio Seguro de Atestados Médicos
+                Envio de Atestados Médicos
               </h1>
               <p className="text-slate-300 text-xs sm:text-sm mt-1.5 max-w-2xl leading-relaxed">
-                Envie a foto ou documento do seu atestado para justificativa de faltas ou consultas. O envio é recebido diretamente pela equipe de RH / Saúde Ocupacional.
+                Envie a foto ou documento em PDF do seu atestado para justificativa e abono de faltas. Seus dados médicos ficam protegidos e com acesso restrito à equipe de RH.
               </p>
             </div>
 
@@ -200,7 +312,7 @@ export const SubmitCertificatePage: React.FC = () => {
               Privacidade e Proteção de Dados Médicos (LGPD)
             </p>
             <p className="text-slate-600 leading-relaxed">
-              Conforme o Artigo 11 da LGPD, os documentos de saúde anexados nesta plataforma são de acesso restrito ao Recursos Humanos e Medicina do Trabalho. O seu gestor imediato visualizará apenas o período da ausência para planejamento de escala.
+              Conforme o Artigo 11 da LGPD, os arquivos e imagens anexados são de acesso exclusivo ao Recursos Humanos e Medicina do Trabalho. O seu gestor imediato visualizará apenas o período da ausência para planejamento de escala da equipe.
             </p>
           </div>
         </div>
@@ -244,6 +356,7 @@ export const SubmitCertificatePage: React.FC = () => {
                     <th className="py-3 px-4">Categoria / Motivo</th>
                     <th className="py-3 px-4">Médico / CRM</th>
                     <th className="py-3 px-4">Emissão</th>
+                    <th className="py-3 px-4">Comprovante</th>
                     <th className="py-3 px-4">Status RH</th>
                     <th className="py-3 px-4">Observações do RH</th>
                   </tr>
@@ -274,6 +387,22 @@ export const SubmitCertificatePage: React.FC = () => {
                       </td>
                       <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap">
                         {formatDate(cert.issueDate)}
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {cert.documentUrl ? (
+                          <a
+                            href={resolveFileUrl(cert.documentUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-[11px] transition-colors"
+                            title="Visualizar documento anexo"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5 text-atrio-teal" />
+                            <span>Ver Anexo</span>
+                          </a>
+                        ) : (
+                          <span className="text-slate-400">Sem anexo</span>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         {getStatusBadge(cert.status)}
@@ -438,21 +567,105 @@ export const SubmitCertificatePage: React.FC = () => {
                   />
                 </div>
 
-                {/* O arquivo precisa estar disponível no armazenamento configurado pela empresa. */}
-                <div>
-                  <label className="block text-xs font-bold text-atrio-text-primary mb-1">
-                    URL Segura do Atestado (Foto ou PDF) *
+                {/* Upload de Arquivo / Imagem / PDF */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-atrio-text-primary">
+                    Foto ou PDF do Atestado Médico *
                   </label>
+
                   <input
-                    type="url"
-                    placeholder="https://storage.seu-dominio.com/atestados/arquivo.pdf"
-                    value={documentUrl}
-                    onChange={(e) => setDocumentUrl(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-white border border-atrio-border rounded-xl text-xs mt-2 focus:outline-none focus:ring-2 focus:ring-atrio-teal"
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/jpg,image/heic,application/pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleFileSelect(e.target.files[0]);
+                      }
+                    }}
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Informe o endereço real do arquivo no armazenamento da empresa.
+
+                  {!selectedFile ? (
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                        isDragging
+                          ? 'border-atrio-teal bg-teal-50/50 scale-[0.99]'
+                          : 'border-slate-300 hover:border-atrio-teal hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="w-12 h-12 bg-atrio-teal/10 text-atrio-teal rounded-2xl flex items-center justify-center mx-auto mb-3">
+                        <UploadCloud className="w-6 h-6" />
+                      </div>
+                      <p className="text-xs font-bold text-slate-800">
+                        Clique para selecionar ou arraste o arquivo aqui
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Formatos aceitos: JPG, PNG, WEBP ou PDF (Tamanho máx: 15MB)
+                      </p>
+                    </div>
+                  ) : isCompressing ? (
+                    <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-600">
+                      <Loader2 className="w-6 h-6 animate-spin text-atrio-teal" />
+                      <p className="text-xs font-bold">Processando documento...</p>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {filePreview ? (
+                          <img
+                            src={filePreview}
+                            alt="Prévia do atestado"
+                            className="w-14 h-14 object-cover rounded-xl border border-slate-200 shrink-0 bg-white"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-xl flex flex-col items-center justify-center shrink-0">
+                            <FileText className="w-6 h-6" />
+                            <span className="text-[9px] font-bold mt-0.5 uppercase">PDF</span>
+                          </div>
+                        )}
+
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 truncate" title={selectedFile.name}>
+                            {selectedFile.name}
+                          </p>
+                          
+                          <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                            {formatFileSize(selectedFile.size)}
+                          </p>
+
+                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-semibold mt-0.5">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Arquivo pronto para envio
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-xs h-8 px-2.5"
+                        >
+                          Alterar
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveFile}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          title="Remover arquivo"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-[11px] text-slate-400">
+                    O arquivo é armazenado de forma permanente no servidor e vinculado ao seu cadastro.
                   </p>
                 </div>
 
@@ -470,9 +683,11 @@ export const SubmitCertificatePage: React.FC = () => {
                     variant="primary"
                     size="sm"
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || isCompressing}
+                    className="flex items-center gap-2"
                   >
-                    {submitting ? 'Enviando Documento...' : 'Enviar Atestado ao RH'}
+                    {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {submitting ? 'Enviando Atestado...' : 'Enviar Atestado ao RH'}
                   </Button>
                 </div>
               </>

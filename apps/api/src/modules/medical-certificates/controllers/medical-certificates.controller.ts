@@ -10,6 +10,39 @@ import { LeavesOfAbsenceService } from '../services/leaves-of-absence.service.js
 
 export class MedicalCertificatesController {
   /**
+   * Colaborador: Faz upload de arquivo do atestado (imagem ou PDF)
+   */
+  static async uploadCertificateDocument(req: Request, res: Response) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nenhum arquivo enviado. Selecione uma imagem (JPG, PNG, WEBP) ou documento PDF.',
+        });
+      }
+
+      const fileUrl = `/uploads/medical-certificates/${req.file.filename}`;
+
+      return res.status(201).json({
+        success: true,
+        message: 'Arquivo do atestado enviado com sucesso',
+        data: {
+          fileUrl,
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          size: req.file.size,
+          mimetype: req.file.mimetype,
+        },
+      });
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'Erro ao realizar upload do arquivo',
+      });
+    }
+  }
+
+  /**
    * Colaborador: Envia um novo atestado
    */
   static async submitCertificate(req: Request, res: Response) {

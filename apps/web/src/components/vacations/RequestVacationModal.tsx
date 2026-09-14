@@ -1,8 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   AlertCircle, 
-  Info,
-  DollarSign
+  Info
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -21,15 +20,14 @@ export const RequestVacationModal: React.FC<RequestVacationModalProps> = ({
   onSuccess,
   periods,
 }) => {
-  const availablePeriods = periods.filter(
-    (p) => p.daysRemaining > 0 && ['ADQUIRIDO', 'EM_AQUISICAO', 'VENCIDO'].includes(p.status)
-  );
+  // Filtra apenas períodos com direito já adquirido ou vencido (CLT) e ordena cronologicamente
+  const availablePeriods = periods
+    .filter((p) => p.daysRemaining > 0 && ['ADQUIRIDO', 'VENCIDO'].includes(p.status))
+    .sort((a, b) => new Date(a.vestingStartDate).getTime() - new Date(b.vestingStartDate).getTime());
 
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [sellDaysCount, setSellDaysCount] = useState<number>(0);
-  const [advanceThirteenth, setAdvanceThirteenth] = useState(false);
   const [notes, setNotes] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
@@ -40,16 +38,16 @@ export const RequestVacationModal: React.FC<RequestVacationModalProps> = ({
     if (isOpen) {
       if (availablePeriods.length > 0) {
         setSelectedPeriodId(availablePeriods[0].id);
+      } else {
+        setSelectedPeriodId('');
       }
       setStartDate('');
       setEndDate('');
-      setSellDaysCount(0);
-      setAdvanceThirteenth(false);
       setNotes('');
       setError(null);
       setCltWarning(null);
     }
-  }, [isOpen]);
+  }, [isOpen, periods]);
 
   const selectedPeriod = periods.find((p) => p.id === selectedPeriodId);
 
@@ -64,9 +62,17 @@ export const RequestVacationModal: React.FC<RequestVacationModalProps> = ({
     }
   }
 
+  // Data mínima: hoje (não permite solicitar com data retroativa)
+  const todayStr = new Date().toISOString().split('T')[0];
+
   useEffect(() => {
     if (!startDate || !endDate) {
       setCltWarning(null);
+      return;
+    }
+
+    if (startDate < todayStr) {
+      setCltWarning('A data de início das férias não pode ser anterior à data de hoje.');
       return;
     }
 
@@ -82,17 +88,23 @@ export const RequestVacationModal: React.FC<RequestVacationModalProps> = ({
       return;
     }
 
-    if (selectedPeriod && calculatedDays + sellDaysCount > selectedPeriod.daysRemaining) {
-      setCltWarning(`O total solicitado (${calculatedDays + sellDaysCount} dias) ultrapassa o saldo disponível do período (${selectedPeriod.daysRemaining} dias).`);
+    if (selectedPeriod && calculatedDays > selectedPeriod.daysRemaining) {
+      setCltWarning(`O total solicitado (${calculatedDays} dias) ultrapassa o saldo disponível do período (${selectedPeriod.daysRemaining} dias).`);
       return;
     }
 
     setCltWarning(null);
-  }, [startDate, endDate, sellDaysCount, selectedPeriodId]);
+  }, [startDate, endDate, calculatedDays, selectedPeriodId, todayStr]);
 
+  // Submissão do formulário
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPeriodId || !startDate || !endDate) return;
+
+    if (startDate < todayStr) {
+      setError('A data de início não pode ser anterior a hoje.');
+      return;
+    }
 
     if (cltWarning) {
       setError(cltWarning);
@@ -107,8 +119,8 @@ export const RequestVacationModal: React.FC<RequestVacationModalProps> = ({
         vacationPeriodId: selectedPeriodId,
         startDate,
         endDate,
-        sellDaysCount: Number(sellDaysCount),
-        advanceThirteenth,
+        sellDaysCount: 0,
+        advanceThirteenth: false,
         notes: notes.trim() ? notes : null,
       });
 
@@ -131,7 +143,7 @@ export const RequestVacationModal: React.FC<RequestVacationModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Solicitar Programação de Férias"
-      subtitle="Selecione o período aquisitivo, as datas desejadas e opções de abono pecuniário"
+      subtitle="Selecione o período aquisitivo e as datas desejadas para descanso"
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -177,6 +189,7 @@ export const RequestVacationModal: React.FC<RequestVacationModalProps> = ({
             <input
               type="date"
               value={startDate}
+              min={todayStr}
               onChange={(e) => setStartDate(e.target.value)}
               required
               className="w-full px-3 py-2 bg-white border border-atrio-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-atrio-teal"
@@ -193,6 +206,7 @@ export const RequestVacationModal: React.FC<RequestVacationModalProps> = ({
             <input
               type="date"
               value={endDate}
+              min={startDate || todayStr}
               onChange={(e) => setEndDate(e.target.value)}
               required
               className="w-full px-3 py-2 bg-white border border-atrio-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-atrio-teal"
@@ -202,37 +216,6 @@ export const RequestVacationModal: React.FC<RequestVacationModalProps> = ({
                 Total de dias de descanso: {calculatedDays} dias corridos
               </span>
             )}
-          </div>
-        </div>
-
-        {/* Abono Pecuniário e 13º Salário */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
-          <div>
-            <label className="block text-xs font-bold text-atrio-text-primary mb-1 flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-              Abono Pecuniário ("Venda de Férias")
-            </label>
-            <select
-              value={sellDaysCount}
-              onChange={(e) => setSellDaysCount(Number(e.target.value))}
-              className="w-full px-3 py-2 bg-white border border-atrio-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-atrio-teal"
-            >
-              <option value={0}>Nenhum abono (0 dias)</option>
-              <option value={5}>5 dias de abono</option>
-              <option value={10}>10 dias de abono (Máx. 1/3)</option>
-            </select>
-          </div>
-
-          <div className="flex items-center pt-5">
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
-              <input
-                type="checkbox"
-                checked={advanceThirteenth}
-                onChange={(e) => setAdvanceThirteenth(e.target.checked)}
-                className="w-4 h-4 text-atrio-teal rounded border-slate-300 focus:ring-atrio-teal"
-              />
-              <span>Solicitar adiantamento da 1ª parcela do 13º Salário</span>
-            </label>
           </div>
         </div>
 

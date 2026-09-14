@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Shield,
   Plus,
@@ -25,6 +25,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { Select } from '../../components/ui/Select';
+import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import {
   adminService,
@@ -37,7 +38,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { employeeService, Employee } from '../../services/employeeService';
 
 export const AccessControlPage: React.FC = () => {
-  const { hasRole } = useAuth();
+  const { hasRole, user: currentUser } = useAuth();
   const isSystemAdmin = hasRole('ADMIN');
   const [activeTab, setActiveTab] = useState<'roles' | 'users'>('roles');
   const [roles, setRoles] = useState<Role[]>([]);
@@ -61,6 +62,10 @@ export const AccessControlPage: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
 
+  // Modal de Exclusão de Usuário
+  const [deleteUserConfirmOpen, setDeleteUserConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserWithRoles | null>(null);
+
   // Modal de Atribuição de Usuário
   const [isUserRoleModalOpen, setIsUserRoleModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
@@ -68,7 +73,6 @@ export const AccessControlPage: React.FC = () => {
   const [userRoleIds, setUserRoleIds] = useState<string[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [syncing, setSyncing] = useState(false);
-
 
   // Modal de Criação de Usuário (exclusivo ADMIN)
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
@@ -80,20 +84,55 @@ export const AccessControlPage: React.FC = () => {
   });
 
   const [modalLoading, setModalLoading] = useState(false);
+  const [searchingEmployees, setSearchingEmployees] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const fetchEmployeesSafe = useCallback(async () => {
+    try {
+      const res = await employeeService.getEmployees({ pageSize: 100 });
+      return res.data || [];
+    } catch (err) {
+      console.error('Erro ao carregar colaboradores:', err);
+      return [];
+    }
+  }, []);
+
+  const handleSearchEmployees = useCallback(async (term: string) => {
+    try {
+      setSearchingEmployees(true);
+      if (!term || !term.trim()) {
+        const initialList = await fetchEmployeesSafe();
+        setEmployees(initialList);
+        return;
+      }
+
+      const res = await employeeService.getEmployees({
+        search: term.trim(),
+        pageSize: 100,
+      });
+
+      setEmployees(res.data || []);
+    } catch (err) {
+      console.error('Erro ao buscar colaboradores pelo endpoint:', err);
+    } finally {
+      setSearchingEmployees(false);
+    }
+  }, [fetchEmployeesSafe]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [rolesData, permsData, usersData] = await Promise.all([
+      const [rolesData, permsData, usersData, empList] = await Promise.all([
         adminService.getRoles(),
         adminService.getPermissions(),
         adminService.getUsersWithRoles(),
+        fetchEmployeesSafe(),
       ]);
       setRoles(rolesData || []);
       setPermissions(permsData || []);
       setUsers(usersData || []);
+      setEmployees(empList || []);
     } catch (err) {
       console.error('Erro ao carregar dados do RBAC:', err);
     } finally {
@@ -259,15 +298,9 @@ export const AccessControlPage: React.FC = () => {
     setError(null);
 
     if (employees.length === 0) {
-      try {
-        const empData = await employeeService.getEmployees({ pageSize: 200 });
-        setEmployees(empData.data || []);
-      } catch (err) {
-        console.error('Erro ao carregar lista de colaboradores:', err);
-      }
+      const empData = await fetchEmployeesSafe();
+      setEmployees(empData);
     }
-
-
 
     setIsUserRoleModalOpen(true);
   };
@@ -304,19 +337,49 @@ export const AccessControlPage: React.FC = () => {
     }
   };
 
+  const handleOpenDeleteUser = (user: UserWithRoles) => {
+    setUserToDelete(user);
+    setDeleteUserConfirmOpen(true);
+  };
+
+  const handleConfirmDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    try {
+      setModalLoading(true);
+      setError(null);
+      await adminService.deleteUser(userToDelete.id);
+      showNotification(`Usuário "${userToDelete.email}" excluído com sucesso.`);
+      setDeleteUserConfirmOpen(false);
+      setUserToDelete(null);
+      if (selectedUser?.id === userToDelete.id) {
+        setIsUserRoleModalOpen(false);
+        setSelectedUser(null);
+      }
+      await loadData();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Erro ao excluir usuário.');
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   const handleOpenCreateUser = async () => {
     setError(null);
     setCreateUserForm({ email: '', employeeId: '', roleName: '' });
     setIsCreateUserModalOpen(true);
 
-    try {
-      const response = await employeeService.getEmployees({ pageSize: 100, status: 'ATIVO' });
-      setEmployees(response.data || []);
-    } catch (err) {
-      console.error('Erro ao carregar colaboradores para o novo usuário:', err);
-      setError('Não foi possível carregar a lista de colaboradores.');
-    }
+    const empData = await fetchEmployeesSafe();
+    setEmployees(empData);
+  };
+
+  const handleSelectEmployeeForCreate = (empId: string) => {
+    const selectedEmp = employees.find((e) => e.id === empId);
+    setCreateUserForm((prev) => ({
+      ...prev,
+      employeeId: empId,
+      email: prev.email || selectedEmp?.email || '',
+    }));
   };
 
   const handleSubmitCreateUser = async (e: React.FormEvent) => {
@@ -663,7 +726,7 @@ export const AccessControlPage: React.FC = () => {
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
                         <Button
                           variant="secondary"
                           size="sm"
@@ -672,6 +735,19 @@ export const AccessControlPage: React.FC = () => {
                         >
                           Gerenciar Perfis
                         </Button>
+
+                        {isSystemAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={user.id === currentUser?.id ? 'Não é possível excluir a sua própria conta' : 'Excluir Usuário'}
+                            disabled={user.id === currentUser?.id}
+                            onClick={() => handleOpenDeleteUser(user)}
+                            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 disabled:opacity-30"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -722,18 +798,25 @@ export const AccessControlPage: React.FC = () => {
             ]}
           />
 
-          <Select
+          <SearchableSelect
             label="Vincular ao colaborador"
-            helperText="Opcional. O vínculo associa a conta ao cadastro funcional."
+            helperText="Opcional. Selecione ou pesquise o cadastro funcional para associar."
+            placeholder="Selecione um colaborador (opcional)..."
+            searchPlaceholder="Pesquisar por nome, e-mail, matrícula ou CPF..."
+            emptyMessage="Nenhum colaborador encontrado"
             value={createUserForm.employeeId}
-            onChange={(e) => setCreateUserForm({ ...createUserForm, employeeId: e.target.value })}
+            onChange={handleSelectEmployeeForCreate}
+            onSearchChange={handleSearchEmployees}
+            loading={searchingEmployees}
             options={[
-              { value: '', label: 'Sem vínculo neste momento' },
+              { value: '', label: 'Sem vínculo neste momento', subLabel: 'Conta avulsa de sistema' },
               ...employees
                 .filter((employee) => !users.some((user) => user.employee?.id === employee.id))
                 .map((employee) => ({
                   value: employee.id,
-                  label: `${employee.name} — ${employee.email}`,
+                  label: employee.name,
+                  subLabel: `${employee.email} • Matrícula: ${employee.registrationNumber || 'Sem mat.'}${employee.department?.name ? ` • ${employee.department.name}` : ''}${employee.position?.title ? ` (${employee.position.title})` : ''}`,
+                  badge: employee.status,
                 })),
             ]}
           />
@@ -946,24 +1029,39 @@ export const AccessControlPage: React.FC = () => {
                 <p className="text-xs text-slate-500 mt-0.5">{selectedUser.email}</p>
               </div>
 
-              <Select
+              <SearchableSelect
                 label="Vincular / Alterar Colaborador"
-                helperText="Selecione o cadastro funcional para associar a esta conta de usuário."
+                helperText="Selecione ou pesquise o cadastro funcional para associar a esta conta de usuário."
+                placeholder="Selecione o colaborador para associar..."
+                searchPlaceholder="Pesquisar por nome, e-mail, matrícula ou CPF..."
+                emptyMessage="Nenhum colaborador encontrado"
                 value={selectedEmployeeId}
-                onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                onChange={(val) => setSelectedEmployeeId(val)}
+                onSearchChange={handleSearchEmployees}
+                loading={searchingEmployees}
+                selectedOptionFallback={
+                  selectedUser.employee
+                    ? {
+                        value: selectedUser.employee.id,
+                        label: selectedUser.employee.name,
+                        subLabel: `Matrícula: ${selectedUser.employee.registrationNumber || 'Sem mat.'}${selectedUser.employee.department?.name ? ` • ${selectedUser.employee.department.name}` : ''}`,
+                      }
+                    : undefined
+                }
                 options={[
-                  { value: '', label: 'Sem vínculo (Usuário Sem Colaborador)' },
+                  { value: '', label: 'Sem vínculo (Usuário Sem Colaborador)', subLabel: 'Remover vínculo funcional' },
                   ...employees
                     .filter((emp) => emp.id === selectedUser?.employee?.id || !users.some((u) => u.employee?.id === emp.id))
                     .map((emp) => ({
                       value: emp.id,
-                      label: `${emp.name} — ${emp.email} (${emp.registrationNumber || 'Sem mat.'})`,
+                      label: emp.name,
+                      subLabel: `${emp.email} • Matrícula: ${emp.registrationNumber || 'Sem mat.'}${emp.department?.name ? ` • ${emp.department.name}` : ''}${emp.position?.title ? ` (${emp.position.title})` : ''}`,
+                      badge: emp.status,
                     })),
                 ]}
               />
             </div>
           )}
-
 
           <div className="space-y-2 pt-2">
             <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
@@ -1004,18 +1102,38 @@ export const AccessControlPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-atrio-border">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsUserRoleModalOpen(false)}
-              disabled={modalLoading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" variant="primary" disabled={modalLoading}>
-              {modalLoading ? 'Salvando...' : 'Atualizar Perfis'}
-            </Button>
+          <div className="flex items-center justify-between gap-2 pt-4 border-t border-atrio-border">
+            {isSystemAdmin && selectedUser && selectedUser.id !== currentUser?.id ? (
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                icon={<Trash2 className="w-4 h-4" />}
+                onClick={() => {
+                  setIsUserRoleModalOpen(false);
+                  handleOpenDeleteUser(selectedUser);
+                }}
+                disabled={modalLoading}
+              >
+                Excluir Usuário
+              </Button>
+            ) : (
+              <div />
+            )}
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setIsUserRoleModalOpen(false)}
+                disabled={modalLoading}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" variant="primary" disabled={modalLoading}>
+                {modalLoading ? 'Salvando...' : 'Atualizar Perfis'}
+              </Button>
+            </div>
           </div>
         </form>
       </Modal>
@@ -1028,6 +1146,17 @@ export const AccessControlPage: React.FC = () => {
         title="Confirmar Exclusão de Perfil"
         description={`Tem certeza que deseja excluir o perfil "${roleToDelete?.name}"? Esta ação removerá as atribuições dos usuários vinculados.`}
         confirmText="Excluir Perfil"
+        variant="danger"
+      />
+
+      {/* Modal de Confirmação de Exclusão de Usuário */}
+      <ConfirmModal
+        isOpen={deleteUserConfirmOpen}
+        onClose={() => setDeleteUserConfirmOpen(false)}
+        onConfirm={handleConfirmDeleteUser}
+        title="Confirmar Exclusão de Usuário"
+        description={`Tem certeza que deseja excluir o usuário "${userToDelete?.email}"? Se este usuário estiver vinculado a um colaborador (${userToDelete?.employee?.name || 'sem colaborador vinculado'}), o colaborador será desassociado e permanecerá intacto no cadastro funcional.`}
+        confirmText="Excluir Usuário"
         variant="danger"
       />
     </AppLayout>

@@ -19,6 +19,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { api } from '../../services/api';
+import { resolveFileUrl } from '../../utils/fileUrl';
 
 interface RhCertificateItem {
   id: string;
@@ -393,7 +394,7 @@ export const RhMedicalCertificatesPage: React.FC = () => {
                       <RotateCw className="w-4 h-4" />
                     </button>
                     <a
-                      href={selectedCert.documentUrl}
+                      href={resolveFileUrl(selectedCert.documentUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors ml-1"
@@ -412,12 +413,12 @@ export const RhMedicalCertificatesPage: React.FC = () => {
                       transform: `scale(${zoomLevel}) rotate(${rotationDegrees}deg)`,
                     }}
                   >
-                    {selectedCert.documentUrl.endsWith('.pdf') ? (
+                    {selectedCert.documentUrl.toLowerCase().endsWith('.pdf') || selectedCert.documentUrl.toLowerCase().includes('.pdf') ? (
                       <div className="text-center text-white space-y-2">
                         <FileText className="w-16 h-16 text-atrio-teal mx-auto" />
                         <p className="text-xs font-bold">Documento no formato PDF</p>
                         <a
-                          href={selectedCert.documentUrl}
+                          href={resolveFileUrl(selectedCert.documentUrl)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-atrio-teal text-atrio-navy-dark font-bold text-xs rounded-xl shadow hover:bg-atrio-teal-dark transition-colors"
@@ -431,7 +432,7 @@ export const RhMedicalCertificatesPage: React.FC = () => {
                       </p>
                     ) : (
                       <img
-                        src={selectedCert.documentUrl}
+                        src={resolveFileUrl(selectedCert.documentUrl)}
                         alt="Atestado médico escaneado"
                         className="max-h-80 object-contain rounded shadow-lg bg-white"
                         onError={() => setDocumentLoadError(true)}

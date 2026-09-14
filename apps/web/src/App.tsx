@@ -40,6 +40,7 @@ import { MyTrainingsPage } from './pages/development/MyTrainingsPage';
 import { RhTrainingsPage } from './pages/development/RhTrainingsPage';
 import { FeedbacksPage } from './pages/development/FeedbacksPage';
 import { DevelopmentPlanPage } from './pages/development/DevelopmentPlanPage';
+import { NotificationsPage } from './pages/notifications/NotificationsPage';
 
 export const App: React.FC = () => {
   return (
@@ -111,6 +112,14 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute requiredPermission="ferias.visualizar" minScope="SELF">
                 <MyVacationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notificacoes"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
               </ProtectedRoute>
             }
           />

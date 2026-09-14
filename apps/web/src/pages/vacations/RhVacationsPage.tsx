@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   AlertTriangle, 
@@ -250,8 +250,8 @@ export const RhVacationsPage: React.FC = () => {
                           {formatDate(req.startDate)} a {formatDate(req.endDate)}
                         </strong>
                       </span>
-                      <span>({req.daysCount} dias de gozo)</span>
-                      {req.sellDaysCount > 0 && <span>+ {req.sellDaysCount} dias de abono pecuniário</span>}
+                      <span>({req.daysCount} dias de férias)</span>
+                      {req.sellDaysCount > 0 && <span>+ {req.sellDaysCount} dias de abono</span>}
                       {req.advanceThirteenth && <span className="text-indigo-600 font-bold">• 13º Adiantado</span>}
                     </div>
 

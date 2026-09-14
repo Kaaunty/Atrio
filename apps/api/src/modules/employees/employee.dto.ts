@@ -154,7 +154,7 @@ export const queryEmployeeSchema = z.object({
   status: employeeStatusEnum.optional(),
   contractType: contractTypeEnum.optional(),
   page: z.coerce.number().int().positive().optional().default(1),
-  pageSize: z.coerce.number().int().positive().max(100).optional().default(20),
+  pageSize: z.coerce.number().int().positive().max(1000).optional().default(20),
 });
 
 export type CreateEmployeeInput = z.input<typeof createEmployeeSchema>;

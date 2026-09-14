@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ensureAuthenticated, checkRole } from '../../middlewares/auth.middleware';
 import { AnnouncementsController } from './controllers/announcements.controller';
+import { uploadAnnouncementCoverMiddleware } from '../../config/upload';
 
 const router = Router();
 
@@ -11,6 +12,7 @@ router.get('/announcements/:id', AnnouncementsController.getDetail);
 router.post('/announcements/:id/acknowledge', AnnouncementsController.acknowledge);
 
 // Gestão de Comunicados (RH / Admin)
+router.post('/rh/announcements/upload', checkRole('ADMIN', 'RH'), uploadAnnouncementCoverMiddleware.single('file'), AnnouncementsController.uploadCoverImage);
 router.post('/rh/announcements', checkRole('ADMIN', 'RH'), AnnouncementsController.create);
 router.get('/rh/announcements/:id/metrics', checkRole('ADMIN', 'RH'), AnnouncementsController.getMetrics);
 
