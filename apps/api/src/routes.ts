@@ -18,6 +18,9 @@ import { benefitsRoutes } from './modules/benefits/benefits.routes.js';
 import { announcementsRoutes } from './modules/announcements/announcements.routes.js';
 import { lifecycleRoutes } from './modules/lifecycle/lifecycle.routes.js';
 import { developmentRoutes } from './modules/development/development.routes.js';
+import { qlpRoutes } from './modules/qlp/qlp.routes.js';
+import { workplaceSafetyRoutes } from './modules/workplace-safety/workplace-safety.routes.js';
+import { recruitmentRoutes } from './modules/recruitment/recruitment.routes.js';
 import { blockPendingPasswordChange } from './middlewares/auth.middleware.js';
 
 const router = Router();
@@ -41,6 +44,9 @@ router.use('/', benefitsRoutes);
 router.use('/', announcementsRoutes);
 router.use('/', lifecycleRoutes);
 router.use('/', developmentRoutes);
+router.use('/', qlpRoutes);
+router.use('/', workplaceSafetyRoutes);
+router.use('/', recruitmentRoutes);
 router.use('/notifications', notificationsRoutes);
 router.use('/reports', reportsRoutes);
 

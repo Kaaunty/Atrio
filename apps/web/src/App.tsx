@@ -41,6 +41,21 @@ import { RhTrainingsPage } from './pages/development/RhTrainingsPage';
 import { FeedbacksPage } from './pages/development/FeedbacksPage';
 import { DevelopmentPlanPage } from './pages/development/DevelopmentPlanPage';
 import { NotificationsPage } from './pages/notifications/NotificationsPage';
+import { QlpDashboardPage } from './pages/qlp/QlpDashboardPage';
+import { QlpParametersPage } from './pages/qlp/QlpParametersPage';
+import { QlpRequestsPage } from './pages/qlp/QlpRequestsPage';
+import { RecruitmentDashboardPage } from './pages/recruitment/RecruitmentDashboardPage';
+import { JobOpeningsPage } from './pages/recruitment/JobOpeningsPage';
+import { CandidatesPage } from './pages/recruitment/CandidatesPage';
+import { ApplicationPipelinePage } from './pages/recruitment/ApplicationPipelinePage';
+import { InterviewSchedulePage } from './pages/recruitment/InterviewSchedulePage';
+import { SafetyDashboardPage } from './pages/workplace-safety/SafetyDashboardPage';
+import { PpeManagementPage } from './pages/workplace-safety/PpeManagementPage';
+import { AccidentsPage } from './pages/workplace-safety/AccidentsPage';
+import { InspectionsPage } from './pages/workplace-safety/InspectionsPage';
+import { CipaPage } from './pages/workplace-safety/CipaPage';
+import { SafetyActivitiesPage } from './pages/workplace-safety/SafetyActivitiesPage';
+import { SafetyDocumentsPage } from './pages/workplace-safety/SafetyDocumentsPage';
 
 export const App: React.FC = () => {
   return (
@@ -324,6 +339,132 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute requiredPermission="colaboradores.visualizar" minScope="TEAM">
                 <EmployeeDetailPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Rotas de QLP — Quadro de Lotação de Pessoal */}
+          <Route
+            path="/qlp"
+            element={
+              <ProtectedRoute requiredPermission="qlp.visualizar" minScope="SELF">
+                <QlpDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/qlp/parametros"
+            element={
+              <ProtectedRoute requiredPermission="qlp.gerenciar" minScope="COMPANY">
+                <QlpParametersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/qlp/solicitacoes"
+            element={
+              <ProtectedRoute requiredPermission="qlp.visualizar" minScope="SELF">
+                <QlpRequestsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Rotas de Recrutamento e Seleção */}
+          <Route
+            path="/recruitment/dashboard"
+            element={
+              <ProtectedRoute requiredPermission="recrutamento.visualizar" minScope="SELF">
+                <RecruitmentDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recruitment/openings"
+            element={
+              <ProtectedRoute requiredPermission="recrutamento.visualizar" minScope="SELF">
+                <JobOpeningsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recruitment/candidates"
+            element={
+              <ProtectedRoute requiredPermission="recrutamento.visualizar" minScope="SELF">
+                <CandidatesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recruitment/pipeline"
+            element={
+              <ProtectedRoute requiredPermission="recrutamento.visualizar" minScope="SELF">
+                <ApplicationPipelinePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recruitment/interviews"
+            element={
+              <ProtectedRoute requiredPermission="recrutamento.visualizar" minScope="SELF">
+                <InterviewSchedulePage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Rotas de Segurança do Trabalho */}
+          <Route
+            path="/seguranca-trabalho/dashboard"
+            element={
+              <ProtectedRoute requiredPermission="seguranca-trabalho.visualizar" minScope="SELF">
+                <SafetyDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/seguranca-trabalho/epis"
+            element={
+              <ProtectedRoute requiredPermission="seguranca-trabalho.visualizar" minScope="SELF">
+                <PpeManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/seguranca-trabalho/acidentes"
+            element={
+              <ProtectedRoute requiredPermission="seguranca-trabalho.visualizar" minScope="SELF">
+                <AccidentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/seguranca-trabalho/inspecoes"
+            element={
+              <ProtectedRoute requiredPermission="seguranca-trabalho.visualizar" minScope="SELF">
+                <InspectionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/seguranca-trabalho/cipa"
+            element={
+              <ProtectedRoute requiredPermission="seguranca-trabalho.visualizar" minScope="SELF">
+                <CipaPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/seguranca-trabalho/atividades"
+            element={
+              <ProtectedRoute requiredPermission="seguranca-trabalho.visualizar" minScope="SELF">
+                <SafetyActivitiesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/seguranca-trabalho/documentos"
+            element={
+              <ProtectedRoute requiredPermission="seguranca-trabalho.visualizar" minScope="SELF">
+                <SafetyDocumentsPage />
               </ProtectedRoute>
             }
           />

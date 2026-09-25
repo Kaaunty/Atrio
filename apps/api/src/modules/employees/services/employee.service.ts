@@ -9,6 +9,25 @@ import {
 import { HierarchyService } from './hierarchy.service.js';
 
 export class EmployeeService {
+  static async findIdsByAccentInsensitiveSearch(search: string) {
+    const pattern = `%${search.trim()}%`;
+    const cpfPattern = `%${cleanCPF(search)}%`;
+    const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM "employees"
+      WHERE "deleted_at" IS NULL
+        AND (
+          unaccent(lower("name")) LIKE unaccent(lower(${pattern}))
+          OR unaccent(lower("email")) LIKE unaccent(lower(${pattern}))
+          OR unaccent(lower("registration_number")) LIKE unaccent(lower(${pattern}))
+          OR unaccent(lower("code")) LIKE unaccent(lower(${pattern}))
+          OR "cpf" LIKE ${pattern}
+          OR (length(${cleanCPF(search)}) >= 3 AND "cpf" LIKE ${cpfPattern})
+        )
+    `;
+    return rows.map((row) => row.id);
+  }
+
   /**
    * Listagem paginada com múltiplos filtros e contagens
    */
@@ -42,18 +61,8 @@ export class EmployeeService {
 
     if (search) {
       const cleanSearch = search.trim();
-      const cleanedCpfSearch = cleanCPF(cleanSearch);
-
-      where.OR = [
-        { name: { contains: cleanSearch, mode: 'insensitive' } },
-        { email: { contains: cleanSearch, mode: 'insensitive' } },
-        { registrationNumber: { contains: cleanSearch, mode: 'insensitive' } },
-        { code: { contains: cleanSearch, mode: 'insensitive' } },
-      ];
-
-      if (cleanedCpfSearch.length >= 3) {
-        where.OR.push({ cpf: { contains: cleanedCpfSearch } });
-      }
+      const matchingEmployeeIds = await EmployeeService.findIdsByAccentInsensitiveSearch(cleanSearch);
+      where.id = { in: matchingEmployeeIds };
     }
 
     const [total, employees] = await Promise.all([

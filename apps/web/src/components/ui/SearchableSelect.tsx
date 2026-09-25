@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Search, ChevronDown, Check, X, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { normalizeSearchText } from '../../utils/searchText';
 
 export interface SearchableOption {
   value: string;
@@ -155,7 +156,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
     const timer = setTimeout(() => {
       lastSearchRef.current = searchTerm;
-      onSearchChangeRef.current?.(searchTerm);
+      onSearchChangeRef.current?.(normalizeSearchText(searchTerm));
     }, 300);
 
     return () => clearTimeout(timer);
@@ -166,11 +167,11 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const filteredOptions = onSearchChange
     ? options
     : options.filter((opt) => {
-        const term = searchTerm.toLowerCase().trim();
+        const term = normalizeSearchText(searchTerm);
         if (!term) return true;
-        const matchLabel = opt.label.toLowerCase().includes(term);
-        const matchSubLabel = opt.subLabel ? opt.subLabel.toLowerCase().includes(term) : false;
-        const matchBadge = opt.badge ? opt.badge.toLowerCase().includes(term) : false;
+        const matchLabel = normalizeSearchText(opt.label).includes(term);
+        const matchSubLabel = opt.subLabel ? normalizeSearchText(opt.subLabel).includes(term) : false;
+        const matchBadge = opt.badge ? normalizeSearchText(opt.badge).includes(term) : false;
         return matchLabel || matchSubLabel || matchBadge;
       });
 

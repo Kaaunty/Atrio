@@ -193,6 +193,72 @@ export const SYSTEM_PERMISSIONS: PermissionDefinition[] = [
     module: 'ADMIN',
     description: 'Permite inspecionar logs de auditoria e histórico de alterações do sistema.',
   },
+
+  // Módulo: QLP — Quadro de Lotação de Pessoal
+  {
+    code: 'qlp.visualizar',
+    name: 'Visualizar Quadro de Lotação de Pessoal',
+    module: 'QLP',
+    description: 'Permite consultar o painel de lotação por setor, função e turno.',
+  },
+  {
+    code: 'qlp.gerenciar',
+    name: 'Gerenciar Parâmetros de Lotação',
+    module: 'QLP',
+    description: 'Permite criar e alterar os parâmetros de dimensionamento (mínimo, ideal, máximo) por setor/função/turno.',
+  },
+  {
+    code: 'qlp.solicitar',
+    name: 'Solicitar Reposição/Ampliação de Quadro',
+    module: 'QLP',
+    description: 'Permite abrir solicitações de reposição, cobertura de afastamento ou ampliação de quadro.',
+  },
+  {
+    code: 'qlp.aprovar',
+    name: 'Aprovar Solicitações de Quadro',
+    module: 'QLP',
+    description: 'Permite analisar e aprovar/rejeitar solicitações de movimentação de quadro.',
+  },
+
+  // Módulo: Segurança do Trabalho
+  {
+    code: 'seguranca-trabalho.visualizar',
+    name: 'Visualizar Segurança do Trabalho',
+    module: 'SEGURANCA_TRABALHO',
+    description: 'Permite consultar EPIs, acidentes, inspeções, CIPA, atividades e documentos de SST.',
+  },
+  {
+    code: 'seguranca-trabalho.gerenciar',
+    name: 'Gerenciar Segurança do Trabalho',
+    module: 'SEGURANCA_TRABALHO',
+    description: 'Permite cadastrar e administrar EPIs, acidentes, inspeções, CIPA, atividades e documentos de SST.',
+  },
+
+  // Módulo: Recrutamento e Seleção
+  {
+    code: 'recrutamento.visualizar',
+    name: 'Visualizar Recrutamento e Seleção',
+    module: 'RECRUTAMENTO',
+    description: 'Permite consultar vagas, candidatos e o pipeline de processos seletivos.',
+  },
+  {
+    code: 'recrutamento.solicitar',
+    name: 'Solicitar Abertura de Vaga',
+    module: 'RECRUTAMENTO',
+    description: 'Permite ao gestor solicitar a abertura de uma vaga para sua equipe.',
+  },
+  {
+    code: 'recrutamento.gerenciar',
+    name: 'Gerenciar Processos Seletivos',
+    module: 'RECRUTAMENTO',
+    description: 'Permite administrar vagas, candidatos, pipeline e entrevistas.',
+  },
+  {
+    code: 'recrutamento.aprovar',
+    name: 'Aprovar Solicitações de Vaga',
+    module: 'RECRUTAMENTO',
+    description: 'Permite analisar e aprovar/rejeitar solicitações de abertura de vaga.',
+  },
 ];
 
 export interface DefaultRoleConfig {
@@ -235,6 +301,11 @@ export const DEFAULT_SYSTEM_ROLES: DefaultRoleConfig[] = [
       { code: 'solicitacoes.abrir', scope: 'SELF' },
       { code: 'solicitacoes.aprovar', scope: 'TEAM' },
       { code: 'documentos.visualizar', scope: 'SELF' },
+      { code: 'qlp.visualizar', scope: 'TEAM' },
+      { code: 'qlp.solicitar', scope: 'TEAM' },
+      { code: 'seguranca-trabalho.visualizar', scope: 'TEAM' },
+      { code: 'recrutamento.visualizar', scope: 'TEAM' },
+      { code: 'recrutamento.solicitar', scope: 'TEAM' },
     ],
   },
   {

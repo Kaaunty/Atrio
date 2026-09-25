@@ -9,9 +9,10 @@ export const BASE_UPLOADS_DIR = process.env.UPLOADS_DIR
 
 export const MEDICAL_CERTIFICATES_UPLOADS_DIR = path.join(BASE_UPLOADS_DIR, 'medical-certificates');
 export const ANNOUNCEMENTS_UPLOADS_DIR = path.join(BASE_UPLOADS_DIR, 'announcements');
+export const SAFETY_DOCUMENTS_UPLOADS_DIR = path.join(BASE_UPLOADS_DIR, 'safety-documents');
 
 // Garante que os diretórios existam
-[BASE_UPLOADS_DIR, MEDICAL_CERTIFICATES_UPLOADS_DIR, ANNOUNCEMENTS_UPLOADS_DIR].forEach((dir) => {
+[BASE_UPLOADS_DIR, MEDICAL_CERTIFICATES_UPLOADS_DIR, ANNOUNCEMENTS_UPLOADS_DIR, SAFETY_DOCUMENTS_UPLOADS_DIR].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -111,5 +112,50 @@ export const uploadAnnouncementCoverMiddleware = multer({
   fileFilter: imageFileFilter,
   limits: {
     fileSize: 15 * 1024 * 1024, // 15MB
+  },
+});
+
+// Storage para documentos de Segurança do Trabalho (PGR, PCMSO, LTCAT etc.)
+const safetyDocumentStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    if (!fs.existsSync(SAFETY_DOCUMENTS_UPLOADS_DIR)) {
+      fs.mkdirSync(SAFETY_DOCUMENTS_UPLOADS_DIR, { recursive: true });
+    }
+    cb(null, SAFETY_DOCUMENTS_UPLOADS_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
+    const safeBaseName = path
+      .basename(file.originalname, ext)
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .substring(0, 40);
+    cb(null, `${safeBaseName || 'documento-sst'}-${uniqueSuffix}${ext}`);
+  },
+});
+
+const safetyDocumentFileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
+  const allowedMimeTypes = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'image/jpeg',
+    'image/png',
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype.toLowerCase())) {
+    cb(null, true);
+  } else {
+    cb(new Error('Formato inválido. Envie PDF, Word, Excel ou imagem JPG/PNG.'));
+  }
+};
+
+export const uploadSafetyDocumentMiddleware = multer({
+  storage: safetyDocumentStorage,
+  fileFilter: safetyDocumentFileFilter,
+  limits: {
+    fileSize: 30 * 1024 * 1024,
   },
 });

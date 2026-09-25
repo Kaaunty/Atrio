@@ -1,4 +1,5 @@
 import { prisma } from '../../../database/prisma.js';
+import { EmployeeService } from '../../employees/services/employee.service.js';
 
 export class DashboardService {
   /**
@@ -489,16 +490,12 @@ export class DashboardService {
     }
 
     const q = query.trim();
+    const matchingEmployeeIds = await EmployeeService.findIdsByAccentInsensitiveSearch(q);
 
     const [employees, departments, requests] = await Promise.all([
       prisma.employee.findMany({
         where: {
-          OR: [
-            { name: { contains: q, mode: 'insensitive' } },
-            { registrationNumber: { contains: q, mode: 'insensitive' } },
-            { cpf: { contains: q, mode: 'insensitive' } },
-            { email: { contains: q, mode: 'insensitive' } },
-          ],
+          id: { in: matchingEmployeeIds },
           deletedAt: null,
         },
         select: {

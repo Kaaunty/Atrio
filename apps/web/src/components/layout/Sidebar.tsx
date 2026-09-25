@@ -22,6 +22,11 @@ import {
   UserPlus,
   Compass,
   X,
+  LayoutGrid,
+  Briefcase,
+  ClipboardList,
+  CalendarClock,
+  HardHat,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PermissionScope } from '../../services/authService';
@@ -29,6 +34,7 @@ import { PermissionScope } from '../../services/authService';
 interface NavItem {
   label: string;
   to: string;
+  end?: boolean;
   icon: React.ReactNode;
   badge?: string;
   permission?: {
@@ -195,11 +201,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
           icon: <Calendar className="w-5 h-5" />, 
           permission: { code: 'ferias.aprovar', minScope: 'TEAM' } 
         },
-        { 
-          label: 'Ausências da Equipe', 
-          to: '/gestao/equipe/ausencias', 
-          icon: <Users className="w-5 h-5" />, 
-          permission: { code: 'afastamentos.visualizar', minScope: 'TEAM' } 
+        {
+          label: 'Ausências da Equipe',
+          to: '/gestao/equipe/ausencias',
+          icon: <Users className="w-5 h-5" />,
+          permission: { code: 'afastamentos.visualizar', minScope: 'TEAM' }
+        },
+        {
+          label: 'Quadro de Lotação (QLP)',
+          to: '/qlp',
+          end: true,
+          icon: <LayoutGrid className="w-5 h-5" />,
+          permission: { code: 'qlp.visualizar', minScope: 'SELF' }
+        },
+        {
+          label: 'Solicitações de Quadro',
+          to: '/qlp/solicitacoes',
+          icon: <LayoutGrid className="w-5 h-5" />,
+          permission: { code: 'qlp.visualizar', minScope: 'SELF' }
         },
       ],
     },
@@ -242,11 +261,99 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
           icon: <UserPlus className="w-5 h-5" />, 
           allowedRoles: ['ADMIN', 'RH', 'GESTOR'] 
         },
-        { 
-          label: 'Gestão de Treinamentos RH', 
-          to: '/rh/treinamentos', 
-          icon: <GraduationCap className="w-5 h-5" />, 
-          allowedRoles: ['ADMIN', 'RH'] 
+        {
+          label: 'Gestão de Treinamentos RH',
+          to: '/rh/treinamentos',
+          icon: <GraduationCap className="w-5 h-5" />,
+          allowedRoles: ['ADMIN', 'RH']
+        },
+        {
+          label: 'Parâmetros de Dimensionamento (QLP)',
+          to: '/qlp/parametros',
+          icon: <LayoutGrid className="w-5 h-5" />,
+          allowedRoles: ['ADMIN', 'RH']
+        },
+      ],
+    },
+    {
+      title: 'RECRUTAMENTO & SELEÇÃO',
+      items: [
+        {
+          label: 'Painel de Recrutamento',
+          to: '/recruitment/dashboard',
+          icon: <Briefcase className="w-5 h-5" />,
+          permission: { code: 'recrutamento.visualizar', minScope: 'SELF' }
+        },
+        {
+          label: 'Vagas e Solicitações',
+          to: '/recruitment/openings',
+          icon: <Briefcase className="w-5 h-5" />,
+          permission: { code: 'recrutamento.visualizar', minScope: 'SELF' }
+        },
+        {
+          label: 'Candidatos',
+          to: '/recruitment/candidates',
+          icon: <Users className="w-5 h-5" />,
+          permission: { code: 'recrutamento.visualizar', minScope: 'SELF' }
+        },
+        {
+          label: 'Pipeline de Seleção',
+          to: '/recruitment/pipeline',
+          icon: <ClipboardList className="w-5 h-5" />,
+          permission: { code: 'recrutamento.visualizar', minScope: 'SELF' }
+        },
+        {
+          label: 'Agenda de Entrevistas',
+          to: '/recruitment/interviews',
+          icon: <CalendarClock className="w-5 h-5" />,
+          permission: { code: 'recrutamento.visualizar', minScope: 'SELF' }
+        },
+      ],
+    },
+    {
+      title: 'SEGURANÇA DO TRABALHO',
+      items: [
+        {
+          label: 'Painel de Segurança',
+          to: '/seguranca-trabalho/dashboard',
+          icon: <HardHat className="w-5 h-5" />,
+          permission: { code: 'seguranca-trabalho.visualizar', minScope: 'SELF' }
+        },
+        {
+          label: 'EPIs',
+          to: '/seguranca-trabalho/epis',
+          icon: <ShieldCheck className="w-5 h-5" />,
+          permission: { code: 'seguranca-trabalho.visualizar', minScope: 'SELF' }
+        },
+        {
+          label: 'Acidentes e Incidentes',
+          to: '/seguranca-trabalho/acidentes',
+          icon: <ShieldAlert className="w-5 h-5" />,
+          permission: { code: 'seguranca-trabalho.visualizar', minScope: 'SELF' }
+        },
+        {
+          label: 'Inspeções',
+          to: '/seguranca-trabalho/inspecoes',
+          icon: <CheckSquare className="w-5 h-5" />,
+          permission: { code: 'seguranca-trabalho.visualizar', minScope: 'SELF' }
+        },
+        {
+          label: 'CIPA',
+          to: '/seguranca-trabalho/cipa',
+          icon: <Users className="w-5 h-5" />,
+          permission: { code: 'seguranca-trabalho.visualizar', minScope: 'SELF' }
+        },
+        {
+          label: 'SIPATMA/DDS',
+          to: '/seguranca-trabalho/atividades',
+          icon: <Megaphone className="w-5 h-5" />,
+          permission: { code: 'seguranca-trabalho.visualizar', minScope: 'SELF' }
+        },
+        {
+          label: 'Documentos de SST',
+          to: '/seguranca-trabalho/documentos',
+          icon: <FileText className="w-5 h-5" />,
+          permission: { code: 'seguranca-trabalho.visualizar', minScope: 'SELF' }
         },
       ],
     },
@@ -387,6 +494,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
               <NavLink
                 key={iIdx}
                 to={item.to}
+                end={item.end}
                 onClick={() => {
                   if (isMobile && onCloseMobile) {
                     onCloseMobile();

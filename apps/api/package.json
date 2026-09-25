@@ -11,7 +11,8 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:seed:qlp": "tsx prisma/seed-qlp.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",

@@ -47,6 +47,10 @@ model User {
   assignedLifecycleTasks LifecycleTask[]   @relation("TaskAssignee")
   completedLifecycleTasks LifecycleTask[]  @relation("TaskCompleter")
   authoredFeedbacks   Feedback[]           @relation("FeedbackAuthor")
+  workforceRequestsCreated  WorkforceRequest[] @relation("WorkforceRequestRequester")
+  workforceRequestsApproved WorkforceRequest[] @relation("WorkforceRequestApprover")
+  jobRequisitionsCreated    JobRequisition[]   @relation("JobRequisitionRequester")
+  jobRequisitionsApproved   JobRequisition[]   @relation("JobRequisitionApprover")
 
   @@map("users")
 }
@@ -187,6 +191,12 @@ model Department {
   employees Employee[]
   documents EmployeeDocument[]
   checklistTemplates ChecklistTemplate[]
+  workforceParameters WorkforceParameter[]
+  workforceRequests   WorkforceRequest[]
+  jobRequisitions     JobRequisition[]
+  workplaceAccidents  WorkplaceAccident[]
+  safetyInspections   SafetyInspection[]
+  safetyActivities    SafetyActivity[]
 
   @@index([companyId])
   @@index([parentId])
@@ -207,6 +217,9 @@ model Position {
 
   department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   employees  Employee[]
+  workforceParameters WorkforceParameter[]
+  workforceRequests   WorkforceRequest[]
+  jobRequisitions     JobRequisition[]
 
   @@index([departmentId])
   @@map("positions")
@@ -243,6 +256,19 @@ enum TimelineEventType {
   OUTRO
 }
 
+enum LaborClassification {
+  DIRETA
+  INDIRETA
+}
+
+enum ShiftType {
+  MANHA
+  TARDE
+  NOITE
+  INTEGRAL
+  ADMINISTRATIVO
+}
+
 model Employee {
   id                 String         @id @default(uuid())
   code               String?        // Código interno / crachá
@@ -270,6 +296,10 @@ model Employee {
   workScheduleId  String?        @map("work_schedule_id")
   status          EmployeeStatus @default(ATIVO)
   terminationDate DateTime?      @map("termination_date")
+
+  // QLP — classificação de mão de obra e turno (Módulo 07)
+  laborClassification LaborClassification? @map("labor_classification")
+  shiftType           ShiftType?           @map("shift_type")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -307,6 +337,10 @@ model Employee {
   receivedFeedbacks        Feedback[]            @relation("FeedbackReceiver")
   developmentPlans         DevelopmentPlan[]     @relation("EmployeePlans")
   mentoredPlans            DevelopmentPlan[]     @relation("MentorPlans")
+  ppeDeliveries              PpeDelivery[]
+  workplaceAccidentsInvolved WorkplaceAccident[]
+  cipaMemberships            CipaMember[]
+  safetyActivityParticipations SafetyActivityParticipant[]
 
   @@unique([companyId, registrationNumber])
   @@index([companyId])
@@ -1434,6 +1468,426 @@ model DevelopmentPlanGoal {
   @@index([developmentPlanId])
   @@index([status])
   @@map("development_plan_goals")
+}
+
+// -----------------------------------------------------------------------------
+// QLP — QUADRO DE LOTAÇÃO DE PESSOAL (ETAPA 07)
+// -----------------------------------------------------------------------------
+
+enum WorkforceRequestType {
+  REPOSICAO
+  COBERTURA_AFASTAMENTO
+  AMPLIACAO
+}
+
+enum WorkforceRequestStatus {
+  PENDENTE
+  APROVADO
+  REJEITADO
+  ENCAMINHADO_RECRUTAMENTO
+}
+
+model WorkforceParameter {
+  id                   String                @id @default(uuid())
+  departmentId         String                @map("department_id")
+  positionId           String?               @map("position_id")
+  shiftType            ShiftType?            @map("shift_type")
+  laborClassification  LaborClassification  @default(DIRETA) @map("labor_classification")
+  minQuantity          Int                   @map("min_quantity")
+  plannedQuantity      Int                   @map("planned_quantity")
+  maxQuantity          Int                   @map("max_quantity")
+  allowedContractTypes Json                  @map("allowed_contract_types") // ContractType[] serializado, ex: ["CLT","APRENDIZ"]
+  effectiveFrom        DateTime              @map("effective_from") @db.Date
+  effectiveTo          DateTime?             @map("effective_to") @db.Date
+  active               Boolean               @default(true)
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  position   Position?  @relation(fields: [positionId], references: [id], onDelete: SetNull)
+
+  @@index([departmentId])
+  @@index([positionId])
+  @@index([active])
+  @@map("workforce_parameters")
+}
+
+model WorkforceRequest {
+  id             String                  @id @default(uuid())
+  departmentId   String                  @map("department_id")
+  positionId     String?                 @map("position_id")
+  shiftType      ShiftType?              @map("shift_type")
+  requestType    WorkforceRequestType    @map("request_type")
+  quantity       Int
+  justification  String                  @db.Text
+  status         WorkforceRequestStatus  @default(PENDENTE)
+  requestedById  String                  @map("requested_by_id")
+  approvedById   String?                 @map("approved_by_id")
+  decisionNote   String?                 @map("decision_note") @db.Text
+  createdAt      DateTime                @default(now()) @map("created_at")
+  updatedAt      DateTime                @updatedAt @map("updated_at")
+
+  department  Department       @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  position    Position?        @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  requestedBy User             @relation("WorkforceRequestRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  approvedBy  User?            @relation("WorkforceRequestApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  jobRequisitions JobRequisition[]
+
+  @@index([departmentId])
+  @@index([status])
+  @@map("workforce_requests")
+}
+
+// -----------------------------------------------------------------------------
+// SEGURANÇA DO TRABALHO (ETAPA 09)
+// -----------------------------------------------------------------------------
+
+enum PpeMovementType {
+  ENTREGA
+  SUBSTITUICAO
+  DEVOLUCAO
+}
+
+enum SafetyEventType {
+  ACIDENTE
+  INCIDENTE
+  QUASE_ACIDENTE
+}
+
+enum SafetyEventStatus {
+  ABERTO
+  EM_INVESTIGACAO
+  CONCLUIDO
+}
+
+enum CipaMemberRole {
+  REPRESENTANTE_EMPREGADOR
+  REPRESENTANTE_EMPREGADO
+}
+
+enum SafetyActivityType {
+  SIPATMA
+  DDS
+}
+
+enum SafetyDocumentType {
+  PGR
+  PCMSO
+  LTCAT
+  OUTRO
+}
+
+enum CorrectiveActionSource {
+  ACCIDENT
+  INSPECTION
+}
+
+enum CorrectiveActionStatus {
+  PENDENTE
+  EM_ANDAMENTO
+  CONCLUIDA
+}
+
+model Ppe {
+  id        String    @id @default(uuid())
+  name      String
+  ca        String    @map("ca") // Certificado de Aprovação
+  category  String
+  stockQuantity Int   @default(0) @map("stock_quantity")
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  deliveries PpeDelivery[]
+
+  @@map("ppes")
+}
+
+model PpeDelivery {
+  id           String          @id @default(uuid())
+  ppeId        String          @map("ppe_id")
+  employeeId   String          @map("employee_id")
+  movementType PpeMovementType @map("movement_type")
+  quantity     Int             @default(1)
+  deliveryDate DateTime        @default(now()) @map("delivery_date") @db.Date
+  returnDate   DateTime?       @map("return_date") @db.Date
+  reason       String?         @db.Text
+  signatureConfirmed Boolean   @default(false) @map("signature_confirmed")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  ppe      Ppe      @relation(fields: [ppeId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([ppeId])
+  @@index([employeeId])
+  @@map("ppe_deliveries")
+}
+
+model WorkplaceAccident {
+  id                 String            @id @default(uuid())
+  departmentId       String?           @map("department_id")
+  employeeId         String?           @map("employee_id")
+  type               SafetyEventType
+  occurredAt         DateTime          @map("occurred_at")
+  description        String            @db.Text
+  investigation      String?           @db.Text
+  correctiveActionsSummary String?     @map("corrective_actions_summary") @db.Text
+  catNumber          String?           @map("cat_number")
+  catIssuedAt        DateTime?         @map("cat_issued_at") @db.Date
+  status             SafetyEventStatus @default(ABERTO)
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  employee   Employee?   @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  correctiveActions CorrectiveAction[]
+
+  @@index([departmentId])
+  @@index([employeeId])
+  @@index([status])
+  @@map("workplace_accidents")
+}
+
+model SafetyInspection {
+  id                String    @id @default(uuid())
+  departmentId      String?   @map("department_id")
+  inspectorId       String    @map("inspector_id")
+  inspectionDate    DateTime  @map("inspection_date") @db.Date
+  checklist         Json // [{ item, status, observation }]
+  irregularitiesFound String? @map("irregularities_found") @db.Text
+  responsibleId     String?   @map("responsible_id")
+  status            SafetyEventStatus @default(ABERTO)
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  correctiveActions CorrectiveAction[]
+
+  @@index([departmentId])
+  @@index([status])
+  @@map("safety_inspections")
+}
+
+model CipaMember {
+  id         String         @id @default(uuid())
+  employeeId String         @map("employee_id")
+  role       CipaMemberRole
+  termStart  DateTime       @map("term_start") @db.Date
+  termEnd    DateTime       @map("term_end") @db.Date
+  active     Boolean        @default(true)
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([active])
+  @@map("cipa_members")
+}
+
+model CipaMeeting {
+  id             String   @id @default(uuid())
+  meetingDate    DateTime @map("meeting_date") @db.Date
+  minutes        String   @db.Text // Ata da reunião
+  pendingActions Json?    @map("pending_actions") // [{ description, responsible, dueDate, done }]
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("cipa_meetings")
+}
+
+model SafetyActivity {
+  id           String             @id @default(uuid())
+  type         SafetyActivityType
+  title        String
+  departmentId String?            @map("department_id")
+  activityDate DateTime           @map("activity_date") @db.Date
+  topics       String?            @db.Text
+  responsibleId String?           @map("responsible_id")
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  department   Department?                  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  participants SafetyActivityParticipant[]
+
+  @@index([departmentId])
+  @@map("safety_activities")
+}
+
+model SafetyActivityParticipant {
+  id               String   @id @default(uuid())
+  safetyActivityId String   @map("safety_activity_id")
+  employeeId       String   @map("employee_id")
+  attended         Boolean  @default(true)
+
+  safetyActivity SafetyActivity @relation(fields: [safetyActivityId], references: [id], onDelete: Cascade)
+  employee       Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([safetyActivityId, employeeId])
+  @@index([employeeId])
+  @@map("safety_activity_participants")
+}
+
+model SafetyDocument {
+  id         String             @id @default(uuid())
+  type       SafetyDocumentType
+  title      String
+  fileUrl    String             @map("file_url")
+  issueDate  DateTime           @map("issue_date") @db.Date
+  expiryDate DateTime?          @map("expiry_date") @db.Date
+  active     Boolean            @default(true)
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @updatedAt @map("updated_at")
+
+  @@index([type])
+  @@map("safety_documents")
+}
+
+model CorrectiveAction {
+  id           String                  @id @default(uuid())
+  sourceType   CorrectiveActionSource  @map("source_type")
+  accidentId   String?                 @map("accident_id")
+  inspectionId String?                 @map("inspection_id")
+  description  String                  @db.Text
+  responsibleId String?                @map("responsible_id")
+  dueDate      DateTime                @map("due_date") @db.Date
+  status       CorrectiveActionStatus  @default(PENDENTE)
+  completedAt  DateTime?               @map("completed_at")
+  createdAt    DateTime                @default(now()) @map("created_at")
+  updatedAt    DateTime                @updatedAt @map("updated_at")
+
+  accident   WorkplaceAccident? @relation(fields: [accidentId], references: [id], onDelete: Cascade)
+  inspection SafetyInspection?  @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  @@index([accidentId])
+  @@index([inspectionId])
+  @@index([status])
+  @@map("corrective_actions")
+}
+
+// -----------------------------------------------------------------------------
+// RECRUTAMENTO E SELEÇÃO (ETAPA 10)
+// -----------------------------------------------------------------------------
+
+enum JobRequisitionStatus {
+  PENDENTE
+  APROVADA
+  REJEITADA
+}
+
+enum JobOpeningStatus {
+  ABERTA
+  EM_ANDAMENTO
+  ENCERRADA
+  CANCELADA
+}
+
+enum ApplicationStage {
+  TRIAGEM
+  ENTREVISTA
+  AVALIACAO
+  PARECER
+  APROVADO
+  REPROVADO
+}
+
+model JobRequisition {
+  id                String                @id @default(uuid())
+  departmentId      String                @map("department_id")
+  positionId        String?               @map("position_id")
+  shiftType         ShiftType?            @map("shift_type")
+  requestedQuantity Int                   @map("requested_quantity")
+  contractType      ContractType          @default(CLT) @map("contract_type")
+  justification     String                @db.Text
+  status            JobRequisitionStatus  @default(PENDENTE)
+  requestedById     String                @map("requested_by_id")
+  approvedById      String?               @map("approved_by_id")
+  workforceRequestId String?              @map("workforce_request_id")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+
+  department      Department        @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  position        Position?         @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  requestedBy     User              @relation("JobRequisitionRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  approvedBy      User?             @relation("JobRequisitionApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  workforceRequest WorkforceRequest? @relation(fields: [workforceRequestId], references: [id], onDelete: SetNull)
+  jobOpenings      JobOpening[]
+
+  @@index([departmentId])
+  @@index([status])
+  @@map("job_requisitions")
+}
+
+model JobOpening {
+  id               String           @id @default(uuid())
+  jobRequisitionId String?          @map("job_requisition_id")
+  title            String
+  requirements     String           @db.Text
+  activities       String?          @db.Text
+  conditions       String?          @db.Text
+  deadline         DateTime?        @db.Date
+  status           JobOpeningStatus @default(ABERTA)
+  isInternal       Boolean          @default(false) @map("is_internal")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  jobRequisition JobRequisition? @relation(fields: [jobRequisitionId], references: [id], onDelete: SetNull)
+  applications   Application[]
+
+  @@index([jobRequisitionId])
+  @@index([status])
+  @@map("job_openings")
+}
+
+model Candidate {
+  id         String   @id @default(uuid())
+  name       String
+  email      String
+  phone      String?
+  resumeUrl  String?  @map("resume_url")
+  education  String?  @db.Text
+  experience String?  @db.Text
+  source     String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  applications Application[]
+
+  @@index([email])
+  @@map("candidates")
+}
+
+model Application {
+  id           String           @id @default(uuid())
+  jobOpeningId String           @map("job_opening_id")
+  candidateId  String           @map("candidate_id")
+  stage        ApplicationStage @default(TRIAGEM)
+  notes        String?          @db.Text
+  appliedAt    DateTime         @default(now()) @map("applied_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  jobOpening JobOpening          @relation(fields: [jobOpeningId], references: [id], onDelete: Cascade)
+  candidate  Candidate           @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  interviews InterviewSchedule[]
+
+  @@unique([jobOpeningId, candidateId])
+  @@index([jobOpeningId])
+  @@index([candidateId])
+  @@index([stage])
+  @@map("applications")
+}
+
+model InterviewSchedule {
+  id            String   @id @default(uuid())
+  applicationId String   @map("application_id")
+  scheduledAt   DateTime @map("scheduled_at")
+  interviewers  Json? // [{ employeeId, name }]
+  location      String?
+  feedback      String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("interview_schedules")
 }
 
 
