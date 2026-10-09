@@ -139,13 +139,13 @@ export const RhidEmployeeSyncTab: React.FC<RhidEmployeeSyncTabProps> = ({ onOpen
     setSelectedKeys(next);
   };
 
-  const handleImportFromRhid = async (allOnly = false) => {
+  const handleImportFromRhid = async (allOnly = false, explicitPersonIds?: number[]) => {
     try {
       setSyncing(true);
       setActionMessage(null);
 
-      let personIdsToImport: number[] | undefined = undefined;
-      if (!allOnly && selectedKeys.size > 0 && data) {
+      let personIdsToImport: number[] | undefined = explicitPersonIds;
+      if (!personIdsToImport && !allOnly && selectedKeys.size > 0 && data) {
         const selectedRhidIds = data.items
           .filter((i) => selectedKeys.has(i.key) && i.rhidId)
           .map((i) => i.rhidId as number);
@@ -580,8 +580,7 @@ export const RhidEmployeeSyncTab: React.FC<RhidEmployeeSyncTabProps> = ({ onOpen
                         {item.status === 'RHID_ONLY' ? (
                           <button
                             onClick={() => {
-                              setSelectedKeys(new Set([item.key]));
-                              handleImportFromRhid();
+                              handleImportFromRhid(false, [item.rhidId!]);
                             }}
                             className="text-indigo-600 hover:text-indigo-800 font-bold hover:underline text-xs"
                           >
