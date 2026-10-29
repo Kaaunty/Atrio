@@ -1,11 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { EmployeeService } from '../services/employee.service.js';
+import { EmployeeImportService } from '../services/employee-import.service.js';
 import {
   createEmployeeSchema,
   createTimelineEventSchema,
   queryEmployeeSchema,
   updateEmployeeSchema,
 } from '../employee.dto.js';
+import {
+  confirmImportBodySchema,
+  previewImportQuerySchema,
+} from '../employee-import.dto.js';
 import { sendSuccess } from '../../../shared/response.js';
 
 export class EmployeeController {
@@ -139,6 +144,60 @@ export class EmployeeController {
         statusCode: 201,
         message: 'Evento adicionado à timeline com sucesso',
         data: event,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Preview (Dry-Run) da importação da planilha Excel
+   */
+  static async importPreview(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.file) {
+        const error: any = new Error('Nenhum arquivo enviado. Envie uma planilha Excel no campo "file".');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      // Valida companyId, emailDomain e updateExisting via body ou query
+      const params = previewImportQuerySchema.parse({
+        companyId: req.body.companyId || req.query.companyId,
+        emailDomain: req.body.emailDomain || req.query.emailDomain,
+        updateExisting: req.body.updateExisting ?? req.query.updateExisting,
+      });
+
+      const previewData = await EmployeeImportService.preview(
+        req.file.buffer,
+        params.companyId,
+        params.emailDomain,
+        params.updateExisting
+      );
+
+      return sendSuccess({
+        res,
+        message: 'Prévia de importação processada com sucesso',
+        data: previewData,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Confirmação da importação em 2 etapas
+   */
+  static async importConfirm(req: Request, res: Response, next: NextFunction) {
+    try {
+      const body = confirmImportBodySchema.parse(req.body);
+      const result = await EmployeeImportService.confirm(body);
+
+      return sendSuccess({
+        res,
+        statusCode: 201,
+        message: `${result.totalCreated} colaboradores criados e ${result.totalUpdated} atualizados com sucesso!`,
+        data: result,
       });
     } catch (error) {
       next(error);

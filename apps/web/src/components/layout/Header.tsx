@@ -1,5 +1,7 @@
 import React from 'react';
-import { Search, Menu } from 'lucide-react';
+import { Search, Menu, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { Badge } from '../ui/Badge';
 import { NotificationBell } from './NotificationBell';
 
@@ -16,6 +18,15 @@ export const Header: React.FC<HeaderProps> = ({
   apiStatus = 'ok',
   onToggleSidebar,
 }) => {
+  const { logout, user, employee } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const displayName = employee?.name || user?.email || 'Usuário';
   return (
     <header className="h-16 bg-atrio-surface border-b border-atrio-border px-3.5 sm:px-6 flex items-center justify-between sticky top-0 z-20 gap-3">
       {/* Botão Hambúrguer Mobile + Título */}
@@ -72,6 +83,17 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Notificações Assíncronas In-app */}
         <NotificationBell />
+
+        {/* Botão de Sair no Topo (Header) */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors shrink-0 shadow-sm"
+          title={`Encerrar Sessão (${displayName})`}
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span>Sair</span>
+        </button>
       </div>
     </header>
   );

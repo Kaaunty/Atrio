@@ -536,7 +536,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
       </nav>
 
       {/* Rodapé da Sidebar: Usuário Logado & Logout (Sempre Fixo no Fim) */}
-      <div className="p-3.5 border-t border-slate-800/80 bg-[#04162e] flex items-center justify-between gap-3 shrink-0">
+      <div className="p-3.5 border-t border-slate-800/80 bg-[#04162e] flex items-center justify-between gap-3 shrink-0 mt-auto">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-full bg-atrio-teal-dark text-white flex items-center justify-center font-bold text-xs border border-atrio-teal/30 shrink-0">
             {initials}
@@ -550,10 +550,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
         <button
           type="button"
           onClick={handleLogout}
-          className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-white/5 rounded-lg transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors shrink-0 border border-slate-700/60"
           title="Encerrar Sessão"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-4 h-4 text-rose-400" />
+          <span>Sair</span>
         </button>
       </div>
     </>
@@ -562,7 +563,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onCloseMob
   return (
     <>
       {/* Sidebar Desktop Fixa */}
-      <aside className="hidden lg:flex w-64 bg-atrio-navy-dark h-full flex-col shrink-0 border-r border-slate-800 text-slate-300 select-none z-30">
+      <aside className="hidden lg:flex w-64 bg-atrio-navy-dark h-screen max-h-screen flex-col shrink-0 border-r border-slate-800 text-slate-300 select-none z-30 print:hidden overflow-hidden">
         {renderSidebarContent(false)}
       </aside>
 

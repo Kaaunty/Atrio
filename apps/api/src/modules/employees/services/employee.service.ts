@@ -11,21 +11,41 @@ import { HierarchyService } from './hierarchy.service.js';
 export class EmployeeService {
   static async findIdsByAccentInsensitiveSearch(search: string) {
     const pattern = `%${search.trim()}%`;
-    const cpfPattern = `%${cleanCPF(search)}%`;
-    const rows = await prisma.$queryRaw<Array<{ id: string }>>`
-      SELECT id
-      FROM "employees"
-      WHERE "deleted_at" IS NULL
-        AND (
-          unaccent(lower("name")) LIKE unaccent(lower(${pattern}))
-          OR unaccent(lower("email")) LIKE unaccent(lower(${pattern}))
-          OR unaccent(lower("registration_number")) LIKE unaccent(lower(${pattern}))
-          OR unaccent(lower("code")) LIKE unaccent(lower(${pattern}))
-          OR "cpf" LIKE ${pattern}
-          OR (length(${cleanCPF(search)}) >= 3 AND "cpf" LIKE ${cpfPattern})
-        )
-    `;
-    return rows.map((row) => row.id);
+    const cleanedDigits = cleanCPF(search);
+    const cpfPattern = `%${cleanedDigits}%`;
+
+    try {
+      const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id
+        FROM "employees"
+        WHERE "deleted_at" IS NULL
+          AND (
+            unaccent(lower("name")) LIKE unaccent(lower(${pattern}))
+            OR unaccent(lower("email")) LIKE unaccent(lower(${pattern}))
+            OR unaccent(lower("registration_number")) LIKE unaccent(lower(${pattern}))
+            OR unaccent(lower("code")) LIKE unaccent(lower(${pattern}))
+            OR "cpf" LIKE ${pattern}
+            OR (length(${cleanedDigits}) >= 3 AND "cpf" LIKE ${cpfPattern})
+          )
+      `;
+      return rows.map((row) => row.id);
+    } catch {
+      // Fallback gracioso caso a extensão unaccent não esteja disponível
+      const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id
+        FROM "employees"
+        WHERE "deleted_at" IS NULL
+          AND (
+            lower("name") LIKE lower(${pattern})
+            OR lower("email") LIKE lower(${pattern})
+            OR lower("registration_number") LIKE lower(${pattern})
+            OR lower("code") LIKE lower(${pattern})
+            OR "cpf" LIKE ${pattern}
+            OR (length(${cleanedDigits}) >= 3 AND "cpf" LIKE ${cpfPattern})
+          )
+      `;
+      return rows.map((row) => row.id);
+    }
   }
 
   /**

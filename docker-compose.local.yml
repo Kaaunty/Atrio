@@ -2,6 +2,8 @@ services:
   api:
     network_mode: host
     networks: !reset []
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@${DB_HOST:-192.168.50.150}:${DB_PORT:-5432}/${POSTGRES_DB:-atrio_rh}
 
 networks:
   coolify:

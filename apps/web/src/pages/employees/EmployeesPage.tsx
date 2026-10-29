@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
+  Upload,
 } from 'lucide-react';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { Card } from '../../components/ui/Card';
@@ -22,6 +23,7 @@ import { Select } from '../../components/ui/Select';
 import { Badge } from '../../components/ui/Badge';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { EmployeeModal } from '../../components/employees/EmployeeModal';
+import { EmployeeImportModal } from '../../components/employees/EmployeeImportModal';
 import {
   Employee,
   EmployeeStatus,
@@ -71,6 +73,7 @@ export const EmployeesPage: React.FC = () => {
 
   // Modais
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
@@ -130,12 +133,11 @@ export const EmployeesPage: React.FC = () => {
     }
   };
 
-  // Carrega estatísticas gerais via endpoint otimizado de agregação no backend
+  // Carrega estatísticas gerais via endpoint otimizado de agregação no backend (visao geral da empresa/sistema)
   const loadStats = async () => {
     try {
       const data = await employeeService.getEmployeeStats({
         companyId: companyId || undefined,
-        departmentId: departmentId || undefined,
       });
 
       setStats({
@@ -155,7 +157,7 @@ export const EmployeesPage: React.FC = () => {
 
   useEffect(() => {
     loadStats();
-  }, [companyId, departmentId]);
+  }, [companyId]);
 
   const handleClearFilters = () => {
     setSearch('');
@@ -290,6 +292,15 @@ export const EmployeesPage: React.FC = () => {
                 Limpar Filtros
               </Button>
             )}
+
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setIsImportModalOpen(true)}
+              icon={<Upload className="w-4 h-4" />}
+            >
+              Importar Planilha
+            </Button>
 
             <Button
               variant="primary"
@@ -572,6 +583,18 @@ export const EmployeesPage: React.FC = () => {
           loadStats();
         }}
         employee={selectedEmployee}
+      />
+
+      {/* Modal de Importação de Planilha Excel */}
+      <EmployeeImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        companies={companies}
+        initialCompanyId={companyId}
+        onSuccess={(_count) => {
+          loadEmployees(1);
+          loadStats();
+        }}
       />
 
       {/* Modal de Confirmação de Desligamento */}

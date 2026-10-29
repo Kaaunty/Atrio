@@ -27,9 +27,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   return (
     <div className="h-screen w-full flex bg-atrio-bg text-atrio-text-primary overflow-hidden print:block print:h-auto print:overflow-visible print:bg-white">
       {/* Sidebar (Desktop fixa / Mobile drawer) */}
-      <div className="print:hidden">
-        <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
-      </div>
+      <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
 
       {/* Conteúdo Principal com Scroll Independente */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto overflow-x-hidden print:block print:h-auto print:overflow-visible">
