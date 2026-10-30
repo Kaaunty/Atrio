@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { prisma } from '../../../database/prisma.js';
 import { cleanCPF, isValidCPF } from '../../../shared/utils/cpf.js';
 import { EmployeeService } from './employee.service.js';
+import { VacationService } from '../../vacations/services/vacation.service.js';
 import {
   ConfirmImportInput,
   ImportConfirmResult,
@@ -723,6 +724,9 @@ export class EmployeeImportService {
         department: emp.department,
         managerId: resolvedManagerId,
       });
+
+      // Garante a geração e atualização dos períodos aquisitivos de férias do colaborador
+      await VacationService.ensurePeriodsForEmployee(emp.id);
     }
 
     return {

@@ -214,7 +214,18 @@ export const MyVacationsPage: React.FC = () => {
                     <td className="py-2.5 px-3 text-center font-bold text-slate-700">{p.daysEntitled}d</td>
                     <td className="py-2.5 px-3 text-center text-slate-500">{p.daysTaken}d</td>
                     <td className="py-2.5 px-3 text-center text-amber-600 font-semibold">{p.daysScheduled}d</td>
-                    <td className="py-2.5 px-3 text-center font-bold text-emerald-600">{p.daysRemaining}d</td>
+                    <td className="py-2.5 px-3 text-center font-bold text-emerald-600">
+                      {p.status === 'EM_AQUISICAO' && p.accruedDays !== undefined ? (
+                        <div className="flex flex-col items-center">
+                          <span className="text-teal-700">{p.accruedDays}d prop.</span>
+                          <span className="text-[10px] font-normal text-slate-400">
+                            ({p.monthsWorked || 0}/12 avos • {p.daysRemaining}d ciclo)
+                          </span>
+                        </div>
+                      ) : (
+                        `${p.daysRemaining}d`
+                      )}
+                    </td>
                     <td className="py-2.5 px-3">{getStatusBadge(p.status)}</td>
                   </tr>
                 ))}

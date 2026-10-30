@@ -1,10 +1,15 @@
-﻿import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import {
   createVacationRequestSchema,
+  queryRhPeriodsSchema,
   queryTeamCalendarSchema,
   reviewVacationSchema,
+  scheduleVacationRhSchema,
+  updateVacationPeriodRhSchema,
 } from '../vacations.dto.js';
 import { VacationService } from '../services/vacation.service.js';
+import { VacationImportService } from '../services/vacation-import.service.js';
+import { prisma } from '../../../database/prisma.js';
 
 export class VacationController {
   static async getMe(req: Request, res: Response, next: NextFunction) {
@@ -59,7 +64,7 @@ export class VacationController {
         return res.status(400).json({ success: false, message: 'Não autorizado' });
       }
 
-      const updated = await VacationService.cancel(id, employeeId, actorUserId);
+      const updated = await VacationService.cancel(String(id), employeeId, actorUserId);
       return res.json({
         success: true,
         message: 'Solicitação de férias cancelada com sucesso',
@@ -114,7 +119,7 @@ export class VacationController {
 
       const data = reviewVacationSchema.parse(req.body);
       const updated = await VacationService.managerApprove(
-        id,
+        String(id),
         managerEmployeeId,
         actorUserId,
         data.notes
@@ -142,7 +147,7 @@ export class VacationController {
 
       const data = reviewVacationSchema.parse(req.body);
       const updated = await VacationService.managerReject(
-        id,
+        String(id),
         managerEmployeeId,
         actorUserId,
         data.notes
@@ -177,7 +182,7 @@ export class VacationController {
       }
 
       const data = reviewVacationSchema.parse(req.body);
-      const updated = await VacationService.rhApprove(id, rhUserId, data.notes);
+      const updated = await VacationService.rhApprove(String(id), rhUserId, data.notes);
 
       return res.json({
         success: true,
@@ -199,7 +204,7 @@ export class VacationController {
       }
 
       const data = reviewVacationSchema.parse(req.body);
-      const updated = await VacationService.rhReject(id, rhUserId, data.notes);
+      const updated = await VacationService.rhReject(String(id), rhUserId, data.notes);
 
       return res.json({
         success: true,
@@ -213,8 +218,115 @@ export class VacationController {
 
   static async getExpiringAlerts(req: Request, res: Response, next: NextFunction) {
     try {
-      const alerts = await VacationService.getExpiringAlerts();
+      const companyId = typeof req.query.companyId === 'string' ? req.query.companyId : undefined;
+      const alerts = await VacationService.getExpiringAlerts(companyId);
       return res.json({ success: true, data: alerts });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getRhPeriods(req: Request, res: Response, next: NextFunction) {
+    try {
+      const query = queryRhPeriodsSchema.parse(req.query);
+      const result = await VacationService.listRhPeriods(query);
+      return res.json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async syncRhPeriods(req: Request, res: Response, next: NextFunction) {
+    try {
+      const companyId = typeof req.body?.companyId === 'string' ? req.body.companyId : undefined;
+      const syncedCount = await VacationService.syncCompanyPeriods(companyId, true);
+      return res.json({
+        success: true,
+        message: `Períodos aquisitivos e concessivos sincronizados para ${syncedCount} colaborador(es).`,
+        data: { syncedCount },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async scheduleRh(req: Request, res: Response, next: NextFunction) {
+    try {
+      const rhUserId = req.user?.id;
+      if (!rhUserId) {
+        return res.status(401).json({ success: false, message: 'Não autenticado' });
+      }
+
+      const data = scheduleVacationRhSchema.parse(req.body);
+      const created = await VacationService.scheduleByRh(rhUserId, data);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Férias programadas e registradas com sucesso!',
+        data: created,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async updatePeriodRh(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const rhUserId = req.user?.id;
+      if (!rhUserId) {
+        return res.status(401).json({ success: false, message: 'Não autenticado' });
+      }
+
+      const data = updateVacationPeriodRhSchema.parse(req.body);
+      const updated = await VacationService.updatePeriodByRh(String(id), rhUserId, data);
+
+      return res.json({
+        success: true,
+        message: 'Período aquisitivo e saldo atualizados com sucesso!',
+        data: updated,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async importRhExcel(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.file || !req.file.buffer) {
+        return res.status(400).json({
+          success: false,
+          message: 'Arquivo Excel (.xlsx) é obrigatório para importação',
+        });
+      }
+
+      let companyId = req.body?.companyId || req.query?.companyId;
+      if (!companyId) {
+        const defaultCompany = await prisma.company.findFirst({
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'asc' },
+        });
+        companyId = defaultCompany?.id;
+      }
+
+      if (!companyId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nenhuma empresa encontrada para vincular a importação',
+        });
+      }
+
+      const result = await VacationImportService.importFromExcel(
+        req.file.buffer,
+        String(companyId),
+        req.user?.id
+      );
+
+      return res.json({
+        success: true,
+        message: `Importação concluída: ${result.totalRowsProcessed} períodos processados (${result.periodsCreated} criados, ${result.periodsUpdated} atualizados).`,
+        data: result,
+      });
     } catch (err) {
       next(err);
     }

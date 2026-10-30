@@ -1,8 +1,10 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
+import multer from 'multer';
 import { authenticate, requireRole } from '../../middlewares/auth.middleware.js';
 import { VacationController } from './controllers/vacation.controller.js';
 
 const router = Router();
+const uploadMemory = multer({ storage: multer.memoryStorage() });
 
 // ==========================================
 // AUTOSSERVIÇO DE FÉRIAS (COLABORADOR)
@@ -20,8 +22,19 @@ router.post('/vacations/requests/:id/manager-approve', authenticate, VacationCon
 router.post('/vacations/requests/:id/manager-reject', authenticate, VacationController.managerReject);
 
 // ==========================================
-// CENTRAL DE HOMOLOGAÇÃO & ALERTAS (RH)
+// CENTRAL DE CONTROLE, HOMOLOGAÇÃO & ALERTAS (RH)
 // ==========================================
+router.get('/vacations/rh/periods', authenticate, requireRole('ADMIN', 'RH'), VacationController.getRhPeriods);
+router.post('/vacations/rh/sync', authenticate, requireRole('ADMIN', 'RH'), VacationController.syncRhPeriods);
+router.post('/vacations/rh/schedule', authenticate, requireRole('ADMIN', 'RH'), VacationController.scheduleRh);
+router.patch('/vacations/rh/periods/:id', authenticate, requireRole('ADMIN', 'RH'), VacationController.updatePeriodRh);
+router.post(
+  '/vacations/rh/import',
+  authenticate,
+  requireRole('ADMIN', 'RH'),
+  uploadMemory.single('file'),
+  VacationController.importRhExcel
+);
 router.get('/vacations/rh/pending', authenticate, requireRole('ADMIN', 'RH'), VacationController.getRhPending);
 router.post('/vacations/requests/:id/rh-approve', authenticate, requireRole('ADMIN', 'RH'), VacationController.rhApprove);
 router.post('/vacations/requests/:id/rh-reject', authenticate, requireRole('ADMIN', 'RH'), VacationController.rhReject);

@@ -7,6 +7,7 @@ import {
   UpdateEmployeeInput,
 } from '../employee.dto.js';
 import { HierarchyService } from './hierarchy.service.js';
+import { VacationService } from '../../vacations/services/vacation.service.js';
 
 export class EmployeeService {
   static async findIdsByAccentInsensitiveSearch(search: string) {
@@ -330,6 +331,9 @@ export class EmployeeService {
       return employee;
     });
 
+    // Gera automaticamente os períodos aquisitivos e concessivos de férias a partir da admissão
+    await VacationService.ensurePeriodsForEmployee(result.id);
+
     return result;
   }
 
@@ -606,6 +610,11 @@ export class EmployeeService {
 
       return emp;
     });
+
+    // Sincroniza períodos aquisitivos de férias se o colaborador estiver ativo
+    if (updated.status !== 'DESLIGADO') {
+      await VacationService.ensurePeriodsForEmployee(updated.id);
+    }
 
     return updated;
   }

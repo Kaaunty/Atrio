@@ -1,4 +1,4 @@
-﻿import { describe, it, before, after } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { prisma } from '../../../database/prisma.js';
 import { VacationService } from '../services/vacation.service.js';
@@ -236,5 +236,35 @@ describe('Vacation Management & CLT Rules Integration Flow', () => {
 
     const periodAfter = await prisma.vacationPeriod.findUnique({ where: { id: period.id } });
     assert.equal(periodAfter?.daysRemaining, saldoAntes);
+  });
+
+  it('deve calcular dinamicamente os dias proporcionais (accruedDays) e preservar saldos customizados no ensurePeriodsForEmployee', async () => {
+    // 1. Verifica cálculo proporcional de 11 avos (27.5 dias)
+    const prop = VacationService.calculateProportionalDays(
+      new Date('2025-11-07T00:00:00Z'),
+      new Date('2026-11-06T00:00:00Z'),
+      30,
+      0,
+      0,
+      30,
+      new Date('2026-10-30T00:00:00Z')
+    );
+    assert.equal(prop.monthsWorked, 11);
+    assert.equal(prop.accruedDays, 27.5);
+
+    // 2. Ajusta saldo pelo RH (ex: 16 dias cedidos e 14 restantes) e verifica se ensurePeriodsForEmployee preserva
+    const summary = await VacationService.getEmployeeSummary(gestorEmployeeId);
+    const period = summary.periods[0];
+    await VacationService.updatePeriodByRh(period.id, rhUserId, {
+      daysEntitled: 30,
+      daysTaken: 16,
+      daysRemaining: 14,
+    });
+
+    const refreshed = await VacationService.ensurePeriodsForEmployee(gestorEmployeeId);
+    const target = refreshed.find((p) => p.id === period.id);
+    assert.ok(target);
+    assert.equal(target.daysTaken, 16);
+    assert.equal(target.daysRemaining, 14);
   });
 });
