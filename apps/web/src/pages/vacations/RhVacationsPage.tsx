@@ -667,13 +667,13 @@ export const RhVacationsPage: React.FC = () => {
               <table className="w-full table-fixed text-left text-sm text-atrio-text-primary">
                 <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-atrio-border">
                   <tr>
-                    <th className="py-3 px-4 w-[26%]">Colaborador</th>
-                    <th className="py-3 px-3 w-[19%]">Setor & Liderança</th>
+                    <th className="py-3 px-4 w-[24%]">Colaborador</th>
+                    <th className="py-3 px-3 w-[18%]">Setor & Liderança</th>
                     <th className="py-3 px-3 w-[14%]">Período Aquisitivo</th>
-                    <th className="py-3 px-3 w-[12%]">Limite Concessivo</th>
-                    <th className="py-3 px-3 w-[11%]">Saldo</th>
+                    <th className="py-3 px-3 w-[13%]">Limite Concessivo</th>
+                    <th className="py-3 px-3 w-[10%]">Saldo</th>
                     <th className="py-3 px-3 w-[11%]">Status</th>
-                    <th className="py-3 px-4 w-[7%] text-right">Ações</th>
+                    <th className="py-3 px-4 w-[10%] text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-atrio-border">
@@ -840,27 +840,27 @@ export const RhVacationsPage: React.FC = () => {
                             </div>
                           </td>
 
-                          {/* Ações (Alinhadas como no Quadro de Colaboradores) */}
-                          <td className="py-3 px-4 text-right whitespace-nowrap">
-                            <div className="inline-flex items-center justify-end gap-0.5">
+                          {/* Ações */}
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
                               {p.daysRemaining > 0 && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
+                                <button
+                                  type="button"
                                   title="Programar Férias"
                                   onClick={() => handleOpenSchedule(p)}
+                                  className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-atrio-teal-dark hover:bg-teal-50 border border-transparent hover:border-teal-200/70 transition-colors cursor-pointer shrink-0"
                                 >
-                                  <CalendarPlus className="w-4 h-4 text-atrio-teal-dark" />
-                                </Button>
+                                  <CalendarPlus className="w-4 h-4" />
+                                </button>
                               )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
+                              <button
+                                type="button"
                                 title="Ajustar Saldo ou Datas"
                                 onClick={() => handleOpenEditPeriod(p)}
+                                className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-slate-500 hover:text-atrio-navy hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-colors cursor-pointer shrink-0"
                               >
-                                <Edit2 className="w-4 h-4 text-slate-500" />
-                              </Button>
+                                <Edit2 className="w-4 h-4" />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -944,13 +944,13 @@ export const RhVacationsPage: React.FC = () => {
                 <table className="w-full table-fixed text-left text-sm text-atrio-text-primary">
                   <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-atrio-border">
                     <tr>
-                      <th className="py-3 px-4 w-[28%]">Colaborador</th>
-                      <th className="py-3 px-3 w-[20%]">Setor & Liderança</th>
-                      <th className="py-3 px-3 w-[15%]">Período Aquisitivo</th>
+                      <th className="py-3 px-4 w-[26%]">Colaborador</th>
+                      <th className="py-3 px-3 w-[19%]">Setor & Liderança</th>
+                      <th className="py-3 px-3 w-[14%]">Período Aquisitivo</th>
                       <th className="py-3 px-3 w-[13%]">Limite Concessivo</th>
                       <th className="py-3 px-3 w-[10%]">Saldo</th>
-                      <th className="py-3 px-3 w-[8%]">Urgência</th>
-                      <th className="py-3 px-4 w-[6%] text-right">Ação</th>
+                      <th className="py-3 px-3 w-[10%]">Urgência</th>
+                      <th className="py-3 px-4 w-[8%] text-right">Ação</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-atrio-border">
@@ -1009,14 +1009,16 @@ export const RhVacationsPage: React.FC = () => {
                           {getUrgencyBadge(alt.urgencyLevel, alt.daysUntilDeadline, alt.status)}
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title="Programar Férias"
-                            onClick={() => handleOpenSchedule(alt)}
-                          >
-                            <CalendarPlus className="w-4 h-4 text-atrio-teal-dark" />
-                          </Button>
+                          <div className="flex items-center justify-end">
+                            <button
+                              type="button"
+                              title="Programar Férias"
+                              onClick={() => handleOpenSchedule(alt)}
+                              className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-atrio-teal-dark hover:bg-teal-50 border border-transparent hover:border-teal-200/70 transition-colors cursor-pointer shrink-0"
+                            >
+                              <CalendarPlus className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
