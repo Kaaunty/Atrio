@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  ShieldCheck,
   AlertTriangle,
   CheckCircle2,
   XCircle,
@@ -375,23 +374,34 @@ export const RhVacationsPage: React.FC = () => {
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   };
 
+  const getInitials = (name?: string) => {
+    if (!name) return 'CL';
+    return name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
+  };
+
   const getUrgencyBadge = (urgency: string, daysUntil: number, status?: string) => {
     if (status === 'CONCLUIDO') {
       return <Badge variant="neutral" size="sm">Quitado</Badge>;
     }
     if (status === 'EM_AQUISICAO') {
-      return <Badge variant="teal" size="sm">Em Aquisição</Badge>;
+      return <Badge variant="teal" size="sm" dot>Em Aquisição</Badge>;
     }
     if (urgency === 'VENCIDO') {
-      return <Badge variant="danger" size="sm" dot>Vencido ({Math.abs(daysUntil)}d atrás)</Badge>;
+      return <Badge variant="danger" size="sm" dot>Vencido</Badge>;
     }
     if (urgency === 'CRITICO') {
-      return <Badge variant="danger" size="sm" dot>Crítico (Vence em {daysUntil}d)</Badge>;
+      return <Badge variant="danger" size="sm" dot>Crítico ({daysUntil}d)</Badge>;
     }
     if (urgency === 'ALERTA') {
-      return <Badge variant="warning" size="sm" dot>Alerta (Vence em {daysUntil}d)</Badge>;
+      return <Badge variant="warning" size="sm" dot>Alerta ({daysUntil}d)</Badge>;
     }
-    return <Badge variant="success" size="sm">No Prazo ({daysUntil}d)</Badge>;
+    return <Badge variant="success" size="sm" dot>Adquirido</Badge>;
   };
 
   const getPeriodStatusBadge = (status: string) => {
@@ -425,28 +435,133 @@ export const RhVacationsPage: React.FC = () => {
   };
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
-        {/* Cabeçalho */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <AppLayout
+      title="Controle de Férias (RH)"
+      subtitle="Acompanhamento automático de períodos aquisitivos, limites concessivos, saldos proporcionais e programação de férias"
+    >
+      {/* Cards de Indicadores */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <Card
+          className="p-4 flex items-center gap-3.5 bg-white border-atrio-border cursor-pointer hover:border-emerald-300 transition-colors"
+          onClick={() => {
+            setActiveTab('PERIODS');
+            setStatusFilter('ADQUIRIDO');
+          }}
+        >
+          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0 border border-emerald-100">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold text-atrio-text-primary tracking-tight flex items-center gap-2.5">
-              <ShieldCheck className="w-6 h-6 text-atrio-teal" />
-              Controle de Férias (RH)
-            </h1>
-            <p className="text-sm text-atrio-text-secondary mt-1">
-              Acompanhamento automático de períodos aquisitivos, limites concessivos, saldos proporcionais e programação de férias.
-            </p>
+            <p className="text-xs text-slate-500 font-medium">Períodos Adquiridos</p>
+            <h4 className="text-xl font-bold text-emerald-700">
+              {periodsSummary.acquiredOpenCount}{' '}
+              <span className="text-xs font-normal text-slate-400">com saldo</span>
+            </h4>
+          </div>
+        </Card>
+
+        <Card
+          className="p-4 flex items-center gap-3.5 bg-white border-atrio-border cursor-pointer hover:border-teal-300 transition-colors"
+          onClick={() => {
+            setActiveTab('PERIODS');
+            setStatusFilter('EM_AQUISICAO');
+          }}
+        >
+          <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold shrink-0 border border-teal-100">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 font-medium">Em Aquisição</p>
+            <h4 className="text-xl font-bold text-teal-700">
+              {periodsSummary.inAcquisitionCount}{' '}
+              <span className="text-xs font-normal text-slate-400">ciclos ativos</span>
+            </h4>
+          </div>
+        </Card>
+
+        <Card
+          className="p-4 flex items-center gap-3.5 bg-white border-atrio-border cursor-pointer hover:border-rose-300 transition-colors"
+          onClick={() => setActiveTab('ALERTS')}
+        >
+          <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-700 flex items-center justify-center font-bold shrink-0 border border-rose-100">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 font-medium">Próximos do Vencimento</p>
+            <h4 className="text-xl font-bold text-rose-600">
+              {alerts.length}{' '}
+              <span className="text-xs font-normal text-slate-400">alertas (≤ 90d)</span>
+            </h4>
+          </div>
+        </Card>
+
+        <Card
+          className="p-4 flex items-center gap-3.5 bg-white border-atrio-border cursor-pointer hover:border-amber-300 transition-colors"
+          onClick={() => setActiveTab('PENDING')}
+        >
+          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold shrink-0 border border-amber-100">
+            <Clock className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 font-medium">Fila de Homologação</p>
+            <h4 className="text-xl font-bold text-amber-700">
+              {pendingRequests.length}{' '}
+              <span className="text-xs font-normal text-slate-400">solicitações</span>
+            </h4>
+          </div>
+        </Card>
+      </div>
+
+      {/* Card Principal */}
+      <Card className="p-5 space-y-5 bg-white border-atrio-border">
+        {/* Abas + Botões de Ação no Topo */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setActiveTab('PERIODS')}
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                activeTab === 'PERIODS'
+                  ? 'bg-atrio-navy text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Controle de Períodos e Saldos ({periodsSummary.totalPeriods})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('ALERTS')}
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'ALERTS'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Alertas de Vencimento ({alerts.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('PENDING')}
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'PENDING'
+                  ? 'bg-atrio-navy text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Fila de Homologação ({pendingRequests.length})
+            </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <Button
               variant="secondary"
               size="sm"
               icon={<Sparkles className={`w-4 h-4 text-atrio-teal ${syncing ? 'animate-spin' : ''}`} />}
               onClick={handleSyncAll}
               disabled={syncing || loading}
-              title="Recalcula automaticamente os períodos aquisitivos e concessivos a partir da data de admissão de todos os colaboradores"
+              title="Recalcula automaticamente os períodos aquisitivos e concessivos a partir da data de admissão"
             >
               {syncing ? 'Sincronizando...' : 'Sincronizar Períodos'}
             </Button>
@@ -462,7 +577,7 @@ export const RhVacationsPage: React.FC = () => {
                 setIsImportOpen(true);
               }}
             >
-              Importar Planilha (.xlsx)
+              Importar Planilha
             </Button>
 
             <Button
@@ -477,133 +592,9 @@ export const RhVacationsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Cards de Indicadores */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card
-            padding="md"
-            className="flex items-center gap-4 border-l-4 border-l-emerald-500 cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => {
-              setActiveTab('PERIODS');
-              setStatusFilter('ADQUIRIDO');
-            }}
-          >
-            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Períodos Adquiridos
-              </span>
-              <p className="text-2xl font-black text-slate-800">
-                {periodsSummary.acquiredOpenCount}{' '}
-                <span className="text-xs font-normal text-slate-400">com saldo</span>
-              </p>
-            </div>
-          </Card>
-
-          <Card
-            padding="md"
-            className="flex items-center gap-4 border-l-4 border-l-teal-500 cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => {
-              setActiveTab('PERIODS');
-              setStatusFilter('EM_AQUISICAO');
-            }}
-          >
-            <div className="w-11 h-11 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-              <Calendar className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Em Aquisição
-              </span>
-              <p className="text-2xl font-black text-slate-800">
-                {periodsSummary.inAcquisitionCount}{' '}
-                <span className="text-xs font-normal text-slate-400">ciclos ativos</span>
-              </p>
-            </div>
-          </Card>
-
-          <Card
-            padding="md"
-            className="flex items-center gap-4 border-l-4 border-l-rose-500 cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setActiveTab('ALERTS')}
-          >
-            <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Próximos do Vencimento
-              </span>
-              <p className="text-2xl font-black text-rose-600">
-                {alerts.length}{' '}
-                <span className="text-xs font-normal text-slate-400">alertas (≤ 90d)</span>
-              </p>
-            </div>
-          </Card>
-
-          <Card
-            padding="md"
-            className="flex items-center gap-4 border-l-4 border-l-amber-500 cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setActiveTab('PENDING')}
-          >
-            <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Fila de Homologação
-              </span>
-              <p className="text-2xl font-black text-slate-800">
-                {pendingRequests.length}{' '}
-                <span className="text-xs font-normal text-slate-400">solicitações</span>
-              </p>
-            </div>
-          </Card>
-        </div>
-
-        {/* Abas de Navegação */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200">
-          <button
-            type="button"
-            onClick={() => setActiveTab('PERIODS')}
-            className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'PERIODS'
-                ? 'border-atrio-teal text-atrio-teal'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Controle Geral de Períodos e Saldos ({periodsSummary.totalPeriods})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('ALERTS')}
-            className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
-              activeTab === 'ALERTS'
-                ? 'border-rose-500 text-rose-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Alertas de Vencimento ({alerts.length})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('PENDING')}
-            className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
-              activeTab === 'PENDING'
-                ? 'border-atrio-teal text-atrio-teal'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Fila de Homologação ({pendingRequests.length})
-          </button>
-        </div>
-
         {/* ABA 1: CONTROLE GERAL DE PERÍODOS E SALDOS */}
         {activeTab === 'PERIODS' && (
-          <Card padding="md" className="space-y-4">
+          <div className="space-y-4">
             {/* Barra de Busca e Filtros */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="flex-1 max-w-md">
@@ -627,7 +618,7 @@ export const RhVacationsPage: React.FC = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-3 bg-slate-50/70 rounded-xl border border-slate-100 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-3.5 bg-slate-50/70 rounded-xl border border-slate-100 text-xs">
               <Select
                 value={departmentId}
                 onChange={(e) => setDepartmentId(e.target.value)}
@@ -671,31 +662,35 @@ export const RhVacationsPage: React.FC = () => {
               />
             </div>
 
-            {/* Tabela Centralizada de Períodos Aquisitivos e Concessivos (Sem overflow-x) */}
-            <div className="w-full overflow-hidden rounded-lg border border-slate-200">
-              <table className="w-full table-fixed text-left text-xs border-collapse">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+            {/* Tabela Centralizada no padrão visual Atrio (Sem overflow-x) */}
+            <div className="w-full overflow-hidden rounded-lg border border-atrio-border">
+              <table className="w-full table-fixed text-left text-sm text-atrio-text-primary">
+                <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-atrio-border">
                   <tr>
-                    <th className="py-3 px-3 w-[22%]">Colaborador</th>
-                    <th className="py-3 px-2.5 w-[18%]">Setor / Líder</th>
-                    <th className="py-3 px-2.5 w-[13%]">Período Aquisitivo</th>
-                    <th className="py-3 px-2.5 w-[10%]">Limite Gozo</th>
-                    <th className="py-3 px-2.5 w-[12%] text-center">Saldo / Cedidos</th>
-                    <th className="py-3 px-2.5 w-[14%]">Status & Situação</th>
-                    <th className="py-3 px-3 w-[11%] text-right">Ações</th>
+                    <th className="py-3 px-4 w-[26%]">Colaborador</th>
+                    <th className="py-3 px-3 w-[19%]">Setor & Liderança</th>
+                    <th className="py-3 px-3 w-[14%]">Período Aquisitivo</th>
+                    <th className="py-3 px-3 w-[12%]">Limite Concessivo</th>
+                    <th className="py-3 px-3 w-[11%]">Saldo</th>
+                    <th className="py-3 px-3 w-[11%]">Status</th>
+                    <th className="py-3 px-4 w-[7%] text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-atrio-border">
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-400">
+                      <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
                         Carregando controle de férias...
                       </td>
                     </tr>
                   ) : periods.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-400">
-                        Nenhum período aquisitivo encontrado para os filtros selecionados.
+                      <td colSpan={7} className="py-12 text-center text-slate-500">
+                        <Calendar className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                        <p className="font-medium text-sm">Nenhum período aquisitivo encontrado</p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Ajuste os filtros acima para localizar os períodos desejados.
+                        </p>
                       </td>
                     </tr>
                   ) : (
@@ -705,111 +700,167 @@ export const RhVacationsPage: React.FC = () => {
                       const contractCode = p.employee?.code || p.employee?.registrationNumber || '-';
 
                       return (
-                        <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="py-2.5 px-3 align-middle">
-                            <strong
-                              className="text-slate-800 font-bold block truncate"
-                              title={p.employee?.name}
-                            >
-                              {p.employee?.name}
-                            </strong>
-                            <span className="text-[10px] text-slate-400 font-mono block truncate">
-                              Contrato: <strong className="text-slate-600">{contractCode}</strong> • Adm:{' '}
-                              {formatDate(p.employee?.admissionDate)}
-                            </span>
-                          </td>
-
-                          <td className="py-2.5 px-2.5 align-middle">
-                            <span
-                              className="text-slate-700 font-semibold block truncate"
-                              title={p.employee?.department?.name || 'NÃO IDENTIFICADO'}
-                            >
-                              {p.employee?.department?.name || 'NÃO IDENTIFICADO'}
-                            </span>
-                            <span
-                              className="text-[10px] text-slate-500 block truncate"
-                              title={p.employee?.manager?.name || 'Diretoria / Sem líder'}
-                            >
-                              Líder: {p.employee?.manager?.name || 'Diretoria / Sem líder'}
-                            </span>
-                          </td>
-
-                          <td className="py-2.5 px-2.5 font-mono text-[11px] text-slate-700 align-middle leading-tight">
-                            <span className="block">{formatDate(p.vestingStartDate)}</span>
-                            <span className="block text-[10px] text-slate-400">
-                              até {formatDate(p.vestingEndDate)}
-                            </span>
-                          </td>
-
-                          <td className="py-2.5 px-2.5 font-mono font-bold text-[11px] text-slate-800 align-middle">
-                            {formatDate(p.deadlineDate)}
-                          </td>
-
-                          <td className="py-2.5 px-2.5 text-center align-middle">
-                            {isAcquisition ? (
-                              <div className="flex flex-col items-center leading-tight">
-                                <span className="font-bold text-teal-700">
-                                  {p.accruedDays}d prop.
-                                </span>
-                                <span className="text-[10px] text-slate-400">
-                                  {p.monthsWorked}/12 avos • Ced: {p.daysTaken}d
-                                </span>
+                        <tr
+                          key={p.id}
+                          className="hover:bg-slate-50/60 transition-colors group"
+                        >
+                          {/* Colaborador com Avatar de Iniciais */}
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 text-[11px] shrink-0 group-hover:border-atrio-teal transition-colors">
+                                {getInitials(p.employee?.name)}
                               </div>
-                            ) : (
-                              <div className="flex flex-col items-center leading-tight">
-                                <span
-                                  className={`font-black text-sm ${
-                                    p.daysRemaining > 0 ? 'text-emerald-600' : 'text-slate-400'
+                              <div className="min-w-0">
+                                <p
+                                  className="font-semibold text-xs text-atrio-navy group-hover:text-atrio-teal-dark transition-colors truncate"
+                                  title={p.employee?.name}
+                                >
+                                  {p.employee?.name}
+                                </p>
+                                <p className="text-[11px] text-slate-400 font-mono truncate">
+                                  Mat: {contractCode} • Adm: {formatDate(p.employee?.admissionDate)}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Setor & Liderança */}
+                          <td className="py-3 px-3">
+                            <div className="min-w-0 text-xs">
+                              <p
+                                className="font-medium text-slate-700 truncate"
+                                title={p.employee?.department?.name || 'Sem setor'}
+                              >
+                                {p.employee?.department?.name || 'Sem setor'}
+                              </p>
+                              {p.employee?.manager?.name ? (
+                                <p
+                                  className="text-[11px] text-blue-800/80 font-medium truncate"
+                                  title={`Líder: ${p.employee.manager.name}`}
+                                >
+                                  Líder: {p.employee.manager.name}
+                                </p>
+                              ) : (
+                                <p className="text-[11px] text-slate-400 italic truncate">
+                                  Diretoria / Sem líder
+                                </p>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Período Aquisitivo */}
+                          <td className="py-3 px-3">
+                            <div className="text-xs font-mono">
+                              <p className="font-medium text-slate-700">
+                                {formatDate(p.vestingStartDate)}
+                              </p>
+                              <p className="text-[11px] text-slate-400">
+                                até {formatDate(p.vestingEndDate)}
+                              </p>
+                            </div>
+                          </td>
+
+                          {/* Limite Concessivo */}
+                          <td className="py-3 px-3">
+                            <div className="text-xs">
+                              <p className="font-mono font-semibold text-slate-800">
+                                {formatDate(p.deadlineDate)}
+                              </p>
+                              {!isAcquisition && p.daysRemaining > 0 ? (
+                                <p
+                                  className={`text-[11px] font-medium ${
+                                    p.daysUntilDeadline <= 0
+                                      ? 'text-rose-600'
+                                      : p.daysUntilDeadline <= 90
+                                      ? 'text-amber-600'
+                                      : 'text-slate-400'
                                   }`}
                                 >
-                                  {p.daysRemaining}d
-                                </span>
-                                <span className="text-[10px] text-slate-400">
-                                  Cedidos: {p.daysTaken}d
-                                </span>
-                              </div>
-                            )}
+                                  {p.daysUntilDeadline <= 0
+                                    ? `Vencido há ${Math.abs(p.daysUntilDeadline)}d`
+                                    : `Restam ${p.daysUntilDeadline} dias`}
+                                </p>
+                              ) : (
+                                <p className="text-[11px] text-slate-400">
+                                  {isAcquisition ? 'Ciclo em curso' : 'Ciclo quitado'}
+                                </p>
+                              )}
+                            </div>
                           </td>
 
-                          <td className="py-2.5 px-2.5 align-middle space-y-1">
-                            <div className="flex flex-wrap items-center gap-1">
-                              {!isAcquisition && p.daysRemaining > 0
-                                ? getUrgencyBadge(p.urgencyLevel, p.daysUntilDeadline, p.status)
-                                : getPeriodStatusBadge(p.status)}
-                            </div>
-                            {activeRequest ? (
-                              <div className="text-[10px] text-blue-700 font-semibold leading-tight truncate">
-                                Prog: {formatDate(activeRequest.startDate)} a{' '}
-                                {formatDate(activeRequest.endDate)} ({activeRequest.daysCount}d)
+                          {/* Saldo */}
+                          <td className="py-3 px-3">
+                            {isAcquisition ? (
+                              <div>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200/70 font-bold text-xs">
+                                  {p.accruedDays}d prop.
+                                </span>
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                  {p.monthsWorked}/12 avos
+                                </p>
                               </div>
                             ) : (
-                              <div className="text-[10px] font-medium text-slate-400 leading-tight">
-                                Não programadas
+                              <div>
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded font-bold text-xs border ${
+                                    p.daysRemaining > 0
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70'
+                                      : 'bg-slate-100 text-slate-500 border-slate-200'
+                                  }`}
+                                >
+                                  {p.daysRemaining} dias
+                                </span>
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                  Cedidos: {p.daysTaken}d
+                                </p>
                               </div>
                             )}
                           </td>
 
-                          <td className="py-2.5 px-3 text-right align-middle">
-                            <div className="inline-flex items-center justify-end gap-1">
-                              {p.daysRemaining > 0 && (
-                                <button
-                                  type="button"
-                                  title="Programar Férias deste Período"
-                                  onClick={() => handleOpenSchedule(p)}
-                                  className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-[11px] transition-colors cursor-pointer"
+                          {/* Status & Situação */}
+                          <td className="py-3 px-3">
+                            <div className="space-y-1">
+                              <div>
+                                {!isAcquisition && p.daysRemaining > 0
+                                  ? getUrgencyBadge(p.urgencyLevel, p.daysUntilDeadline, p.status)
+                                  : getPeriodStatusBadge(p.status)}
+                              </div>
+                              {activeRequest ? (
+                                <p
+                                  className="text-[11px] text-blue-700 font-medium truncate"
+                                  title={`Programadas: ${formatDate(activeRequest.startDate)} a ${formatDate(activeRequest.endDate)}`}
                                 >
-                                  <CalendarPlus className="w-3.5 h-3.5 text-atrio-teal shrink-0" />
-                                  <span>Programar</span>
-                                </button>
+                                  {formatDate(activeRequest.startDate)} ({activeRequest.daysCount}d)
+                                </p>
+                              ) : (
+                                <p className="text-[11px] text-slate-400 truncate">
+                                  Não programadas
+                                </p>
                               )}
-                              <button
-                                type="button"
-                                title="Ajustar Saldo ou Datas do Período"
+                            </div>
+                          </td>
+
+                          {/* Ações (Alinhadas como no Quadro de Colaboradores) */}
+                          <td className="py-3 px-4 text-right whitespace-nowrap">
+                            <div className="inline-flex items-center justify-end gap-0.5">
+                              {p.daysRemaining > 0 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Programar Férias"
+                                  onClick={() => handleOpenSchedule(p)}
+                                >
+                                  <CalendarPlus className="w-4 h-4 text-atrio-teal-dark" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Ajustar Saldo ou Datas"
                                 onClick={() => handleOpenEditPeriod(p)}
-                                className="inline-flex items-center justify-center p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors cursor-pointer"
                               >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
+                                <Edit2 className="w-4 h-4 text-slate-500" />
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -824,23 +875,26 @@ export const RhVacationsPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 text-xs text-slate-500">
               <div className="flex items-center gap-4">
                 <p>
-                  Exibindo <strong className="text-slate-700">{periods.length}</strong> de{' '}
-                  <strong className="text-slate-700">{meta.total}</strong> períodos aquisitivos
+                  Mostrando <span className="font-semibold text-slate-700">{periods.length}</span> de{' '}
+                  <span className="font-semibold text-slate-700">{meta.total}</span> períodos aquisitivos
                 </p>
-                <select
-                  value={meta.pageSize}
-                  onChange={(e) => {
-                    const newSize = Number(e.target.value);
-                    setMeta((prev) => ({ ...prev, pageSize: newSize }));
-                    fetchPeriods(1, newSize);
-                  }}
-                  className="bg-white border border-slate-200 rounded px-2 py-1 text-xs font-medium text-slate-700"
-                >
-                  <option value={25}>25 por página</option>
-                  <option value={50}>50 por página</option>
-                  <option value={100}>100 por página</option>
-                  <option value={250}>250 por página</option>
-                </select>
+                <div className="flex items-center gap-1.5 border-l border-slate-200 pl-4">
+                  <span>Exibir</span>
+                  <select
+                    value={meta.pageSize}
+                    onChange={(e) => {
+                      const newSize = Number(e.target.value);
+                      setMeta((prev) => ({ ...prev, pageSize: newSize }));
+                      fetchPeriods(1, newSize);
+                    }}
+                    className="bg-white border border-atrio-border rounded px-2 py-1 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-atrio-teal cursor-pointer"
+                  >
+                    <option value={25}>25 por página</option>
+                    <option value={50}>50 por página</option>
+                    <option value={100}>100 por página</option>
+                    <option value={250}>250 por página</option>
+                  </select>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -867,12 +921,12 @@ export const RhVacationsPage: React.FC = () => {
                 </Button>
               </div>
             </div>
-          </Card>
+          </div>
         )}
 
         {/* ABA 2: ALERTAS DE VENCIMENTO CONCESSIVO */}
         {activeTab === 'ALERTS' && (
-          <Card padding="md" className="space-y-4 border-l-4 border-l-rose-500">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-atrio-text-primary flex items-center gap-2">
@@ -886,64 +940,82 @@ export const RhVacationsPage: React.FC = () => {
             </div>
 
             {alerts.length > 0 ? (
-              <div className="w-full overflow-hidden rounded-lg border border-slate-200">
-                <table className="w-full table-fixed text-left text-xs border-collapse">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+              <div className="w-full overflow-hidden rounded-lg border border-atrio-border">
+                <table className="w-full table-fixed text-left text-sm text-atrio-text-primary">
+                  <thead className="bg-slate-50 text-xs font-semibold text-slate-600 border-b border-atrio-border">
                     <tr>
-                      <th className="py-2.5 px-3 w-[24%]">Colaborador</th>
-                      <th className="py-2.5 px-2.5 w-[20%]">Setor / Líder</th>
-                      <th className="py-2.5 px-2.5 w-[15%]">Período Aquisitivo</th>
-                      <th className="py-2.5 px-2.5 w-[11%]">Limite Gozo</th>
-                      <th className="py-2.5 px-2.5 w-[9%] text-center">Saldo</th>
-                      <th className="py-2.5 px-2.5 w-[11%]">Urgência</th>
-                      <th className="py-2.5 px-3 w-[10%] text-right">Ação</th>
+                      <th className="py-3 px-4 w-[28%]">Colaborador</th>
+                      <th className="py-3 px-3 w-[20%]">Setor & Liderança</th>
+                      <th className="py-3 px-3 w-[15%]">Período Aquisitivo</th>
+                      <th className="py-3 px-3 w-[13%]">Limite Concessivo</th>
+                      <th className="py-3 px-3 w-[10%]">Saldo</th>
+                      <th className="py-3 px-3 w-[8%]">Urgência</th>
+                      <th className="py-3 px-4 w-[6%] text-right">Ação</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-atrio-border">
                     {alerts.map((alt: any) => (
-                      <tr key={alt.id} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="py-2.5 px-3 align-middle">
-                          <strong
-                            className="text-slate-800 font-bold block truncate"
-                            title={alt.employee?.name}
-                          >
-                            {alt.employee?.name}
-                          </strong>
-                          <span className="block text-[10px] text-slate-400 font-mono truncate">
-                            Contrato: {alt.employee?.code || alt.employee?.registrationNumber}
-                          </span>
+                      <tr key={alt.id} className="hover:bg-slate-50/60 transition-colors group">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center font-bold text-rose-700 text-[11px] shrink-0">
+                              {getInitials(alt.employee?.name)}
+                            </div>
+                            <div className="min-w-0">
+                              <p
+                                className="font-semibold text-xs text-atrio-navy truncate"
+                                title={alt.employee?.name}
+                              >
+                                {alt.employee?.name}
+                              </p>
+                              <p className="text-[11px] text-slate-400 font-mono truncate">
+                                Mat: {alt.employee?.code || alt.employee?.registrationNumber}
+                              </p>
+                            </div>
+                          </div>
                         </td>
-                        <td className="py-2.5 px-2.5 align-middle">
-                          <span className="text-slate-700 font-semibold block truncate">
+                        <td className="py-3 px-3 text-xs">
+                          <p className="font-medium text-slate-700 truncate">
                             {alt.employee?.department?.name || 'Geral'}
-                          </span>
-                          <span className="text-[10px] text-slate-500 block truncate">
+                          </p>
+                          <p className="text-[11px] text-blue-800/80 font-medium truncate">
                             Líder: {alt.employee?.manager?.name || 'Diretoria'}
-                          </span>
+                          </p>
                         </td>
-                        <td className="py-2.5 px-2.5 font-mono text-[11px] text-slate-600 align-middle leading-tight">
-                          <span className="block">{formatDate(alt.vestingStartDate)}</span>
-                          <span className="block text-[10px] text-slate-400">
+                        <td className="py-3 px-3 font-mono text-xs">
+                          <p className="font-medium text-slate-700">
+                            {formatDate(alt.vestingStartDate)}
+                          </p>
+                          <p className="text-[11px] text-slate-400">
                             até {formatDate(alt.vestingEndDate)}
+                          </p>
+                        </td>
+                        <td className="py-3 px-3 text-xs">
+                          <p className="font-mono font-semibold text-slate-800">
+                            {formatDate(alt.deadlineDate)}
+                          </p>
+                          <p className="text-[11px] text-rose-600 font-medium">
+                            {alt.daysUntilDeadline <= 0
+                              ? `Vencido há ${Math.abs(alt.daysUntilDeadline)}d`
+                              : `Restam ${alt.daysUntilDeadline} dias`}
+                          </p>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200/70 font-bold text-xs">
+                            {alt.daysRemaining} dias
                           </span>
                         </td>
-                        <td className="py-2.5 px-2.5 font-mono font-bold text-[11px] text-slate-800 align-middle">
-                          {formatDate(alt.deadlineDate)}
-                        </td>
-                        <td className="py-2.5 px-2.5 text-center font-bold text-rose-600 align-middle">
-                          {alt.daysRemaining}d
-                        </td>
-                        <td className="py-2.5 px-2.5 align-middle">
+                        <td className="py-3 px-3">
                           {getUrgencyBadge(alt.urgencyLevel, alt.daysUntilDeadline, alt.status)}
                         </td>
-                        <td className="py-2.5 px-3 text-right align-middle">
+                        <td className="py-3 px-4 text-right">
                           <Button
-                            variant="primary"
+                            variant="ghost"
                             size="sm"
-                            icon={<CalendarPlus className="w-3.5 h-3.5" />}
+                            title="Programar Férias"
                             onClick={() => handleOpenSchedule(alt)}
                           >
-                            Programar
+                            <CalendarPlus className="w-4 h-4 text-atrio-teal-dark" />
                           </Button>
                         </td>
                       </tr>
@@ -952,16 +1024,16 @@ export const RhVacationsPage: React.FC = () => {
                 </table>
               </div>
             ) : (
-              <div className="py-6 text-center text-slate-400 text-xs">
+              <div className="py-8 text-center text-slate-400 text-xs">
                 Excelente! Nenhum colaborador com férias próximas do vencimento concessivo.
               </div>
             )}
-          </Card>
+          </div>
         )}
 
         {/* ABA 3: FILA CENTRAL DE HOMOLOGAÇÃO */}
         {activeTab === 'PENDING' && (
-          <Card padding="md" className="space-y-4">
+          <div className="space-y-4">
             <div>
               <h3 className="text-sm font-bold text-atrio-text-primary flex items-center gap-2">
                 <Clock className="w-4 h-4 text-atrio-teal" />
@@ -1045,8 +1117,9 @@ export const RhVacationsPage: React.FC = () => {
                 Nenhuma solicitação de férias aguardando homologação no momento.
               </div>
             )}
-          </Card>
+          </div>
         )}
+      </Card>
 
         {/* MODAL 1: Programar Férias diretamente pelo RH */}
         <Modal
@@ -1469,7 +1542,6 @@ export const RhVacationsPage: React.FC = () => {
             </form>
           )}
         </Modal>
-      </div>
     </AppLayout>
   );
 };
