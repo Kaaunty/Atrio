@@ -136,10 +136,25 @@ export class VacationService {
   static async ensurePeriodsForEmployee(employeeId: string) {
     const employee = await prisma.employee.findUnique({
       where: { id: employeeId },
-      select: { id: true, admissionDate: true, status: true, deletedAt: true },
+      select: {
+        id: true,
+        registrationNumber: true,
+        contractType: true,
+        admissionDate: true,
+        status: true,
+        deletedAt: true,
+      },
     });
 
-    if (!employee || !employee.admissionDate || employee.deletedAt) return [];
+    if (
+      !employee ||
+      !employee.admissionDate ||
+      employee.deletedAt ||
+      employee.contractType === 'PJ' ||
+      String(employee.registrationNumber || '').startsWith('LID-')
+    ) {
+      return [];
+    }
 
     const admission = new Date(employee.admissionDate);
     const now = new Date();
@@ -315,6 +330,10 @@ export class VacationService {
     const whereEmp: any = {
       deletedAt: null,
       status: { not: 'DESLIGADO' },
+      contractType: { not: 'PJ' },
+      NOT: {
+        registrationNumber: { startsWith: 'LID-' },
+      },
     };
     if (companyId) whereEmp.companyId = companyId;
 
@@ -391,6 +410,10 @@ export class VacationService {
     const employeeWhere: any = {
       deletedAt: null,
       status: { not: 'DESLIGADO' },
+      contractType: { not: 'PJ' },
+      NOT: {
+        registrationNumber: { startsWith: 'LID-' },
+      },
     };
 
     if (companyId) employeeWhere.companyId = companyId;
@@ -1204,6 +1227,10 @@ export class VacationService {
       employee: {
         deletedAt: null,
         status: { not: 'DESLIGADO' },
+        contractType: { not: 'PJ' },
+        NOT: {
+          registrationNumber: { startsWith: 'LID-' },
+        },
         ...(companyId ? { companyId } : {}),
       },
     };

@@ -371,7 +371,7 @@ export class VacationImportService {
             email,
             registrationNumber: reg,
             admissionDate: new Date(Date.UTC(2020, 0, 1)),
-            contractType: 'CLT',
+            contractType: 'PJ',
             status: 'ATIVO',
           },
         });

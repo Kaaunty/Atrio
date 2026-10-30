@@ -563,7 +563,7 @@ export const RhVacationsPage: React.FC = () => {
         </div>
 
         {/* Abas de Navegação */}
-        <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200">
           <button
             type="button"
             onClick={() => setActiveTab('PERIODS')}
@@ -671,34 +671,30 @@ export const RhVacationsPage: React.FC = () => {
               />
             </div>
 
-            {/* Tabela Centralizada de Períodos Aquisitivos e Concessivos */}
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="w-full text-left text-xs border-collapse">
+            {/* Tabela Centralizada de Períodos Aquisitivos e Concessivos (Sem overflow-x) */}
+            <div className="w-full overflow-hidden rounded-lg border border-slate-200">
+              <table className="w-full table-fixed text-left text-xs border-collapse">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
                   <tr>
-                    <th className="py-3 px-3">Contrato</th>
-                    <th className="py-3 px-3">Colaborador</th>
-                    <th className="py-3 px-3">Setor</th>
-                    <th className="py-3 px-3">Líder / Gestor</th>
-                    <th className="py-3 px-3">Período Aquisitivo</th>
-                    <th className="py-3 px-3">Data Limite Gozo</th>
-                    <th className="py-3 px-3 text-center">Dias Cedidos</th>
-                    <th className="py-3 px-3 text-center">Saldo (Dias)</th>
-                    <th className="py-3 px-3">Situação / Programação</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Ações</th>
+                    <th className="py-3 px-3 w-[22%]">Colaborador</th>
+                    <th className="py-3 px-2.5 w-[18%]">Setor / Líder</th>
+                    <th className="py-3 px-2.5 w-[13%]">Período Aquisitivo</th>
+                    <th className="py-3 px-2.5 w-[10%]">Limite Gozo</th>
+                    <th className="py-3 px-2.5 w-[12%] text-center">Saldo / Cedidos</th>
+                    <th className="py-3 px-2.5 w-[14%]">Status & Situação</th>
+                    <th className="py-3 px-3 w-[11%] text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
-                      <td colSpan={11} className="py-12 text-center text-slate-400">
+                      <td colSpan={7} className="py-12 text-center text-slate-400">
                         Carregando controle de férias...
                       </td>
                     </tr>
                   ) : periods.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="py-12 text-center text-slate-400">
+                      <td colSpan={7} className="py-12 text-center text-slate-400">
                         Nenhum período aquisitivo encontrado para os filtros selecionados.
                       </td>
                     </tr>
@@ -706,101 +702,115 @@ export const RhVacationsPage: React.FC = () => {
                     periods.map((p: any) => {
                       const activeRequest = p.requests?.[0];
                       const isAcquisition = p.status === 'EM_AQUISICAO';
+                      const contractCode = p.employee?.code || p.employee?.registrationNumber || '-';
 
                       return (
                         <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="py-2.5 px-3 font-mono font-semibold text-slate-600">
-                            {p.employee?.code || p.employee?.registrationNumber || '-'}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <strong className="text-slate-800 font-bold block">
+                          <td className="py-2.5 px-3 align-middle">
+                            <strong
+                              className="text-slate-800 font-bold block truncate"
+                              title={p.employee?.name}
+                            >
                               {p.employee?.name}
                             </strong>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              Admissão: {formatDate(p.employee?.admissionDate)}
+                            <span className="text-[10px] text-slate-400 font-mono block truncate">
+                              Contrato: <strong className="text-slate-600">{contractCode}</strong> • Adm:{' '}
+                              {formatDate(p.employee?.admissionDate)}
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 text-slate-600 font-medium">
-                            {p.employee?.department?.name || 'NÃO IDENTIFICADO'}
+
+                          <td className="py-2.5 px-2.5 align-middle">
+                            <span
+                              className="text-slate-700 font-semibold block truncate"
+                              title={p.employee?.department?.name || 'NÃO IDENTIFICADO'}
+                            >
+                              {p.employee?.department?.name || 'NÃO IDENTIFICADO'}
+                            </span>
+                            <span
+                              className="text-[10px] text-slate-500 block truncate"
+                              title={p.employee?.manager?.name || 'Diretoria / Sem líder'}
+                            >
+                              Líder: {p.employee?.manager?.name || 'Diretoria / Sem líder'}
+                            </span>
                           </td>
-                          <td className="py-2.5 px-3 text-slate-600">
-                            {p.employee?.manager?.name || 'Diretoria / Sem líder'}
+
+                          <td className="py-2.5 px-2.5 font-mono text-[11px] text-slate-700 align-middle leading-tight">
+                            <span className="block">{formatDate(p.vestingStartDate)}</span>
+                            <span className="block text-[10px] text-slate-400">
+                              até {formatDate(p.vestingEndDate)}
+                            </span>
                           </td>
-                          <td className="py-2.5 px-3 font-mono text-slate-700 whitespace-nowrap">
-                            {formatDate(p.vestingStartDate)} a {formatDate(p.vestingEndDate)}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono font-bold text-slate-800 whitespace-nowrap">
+
+                          <td className="py-2.5 px-2.5 font-mono font-bold text-[11px] text-slate-800 align-middle">
                             {formatDate(p.deadlineDate)}
                           </td>
-                          <td className="py-2.5 px-3 text-center font-semibold text-slate-600">
-                            {p.daysTaken}
-                          </td>
-                          <td className="py-2.5 px-3 text-center">
+
+                          <td className="py-2.5 px-2.5 text-center align-middle">
                             {isAcquisition ? (
-                              <div className="flex flex-col items-center">
+                              <div className="flex flex-col items-center leading-tight">
                                 <span className="font-bold text-teal-700">
                                   {p.accruedDays}d prop.
                                 </span>
                                 <span className="text-[10px] text-slate-400">
-                                  ({p.monthsWorked}/12 avos • {p.daysRemaining}d ciclo)
+                                  {p.monthsWorked}/12 avos • Ced: {p.daysTaken}d
                                 </span>
                               </div>
                             ) : (
-                              <span
-                                className={`font-black text-sm ${
-                                  p.daysRemaining > 0 ? 'text-emerald-600' : 'text-slate-400'
-                                }`}
-                              >
-                                {p.daysRemaining}
-                              </span>
+                              <div className="flex flex-col items-center leading-tight">
+                                <span
+                                  className={`font-black text-sm ${
+                                    p.daysRemaining > 0 ? 'text-emerald-600' : 'text-slate-400'
+                                  }`}
+                                >
+                                  {p.daysRemaining}d
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  Cedidos: {p.daysTaken}d
+                                </span>
+                              </div>
                             )}
                           </td>
-                          <td className="py-2.5 px-3">
+
+                          <td className="py-2.5 px-2.5 align-middle space-y-1">
+                            <div className="flex flex-wrap items-center gap-1">
+                              {!isAcquisition && p.daysRemaining > 0
+                                ? getUrgencyBadge(p.urgencyLevel, p.daysUntilDeadline, p.status)
+                                : getPeriodStatusBadge(p.status)}
+                            </div>
                             {activeRequest ? (
-                              <div className="space-y-0.5">
-                                <Badge variant="info" size="sm">
-                                  Programadas: {formatDate(activeRequest.startDate)} a{' '}
-                                  {formatDate(activeRequest.endDate)}
-                                </Badge>
-                                <span className="block text-[10px] text-slate-500">
-                                  {activeRequest.daysCount} dias gozo
-                                  {activeRequest.sellDaysCount > 0
-                                    ? ` + ${activeRequest.sellDaysCount} abono`
-                                    : ''}
-                                </span>
+                              <div className="text-[10px] text-blue-700 font-semibold leading-tight truncate">
+                                Prog: {formatDate(activeRequest.startDate)} a{' '}
+                                {formatDate(activeRequest.endDate)} ({activeRequest.daysCount}d)
                               </div>
                             ) : (
-                              <span className="text-[11px] font-semibold text-slate-400">
-                                NÃO PROGRAMADAS
-                              </span>
+                              <div className="text-[10px] font-medium text-slate-400 leading-tight">
+                                Não programadas
+                              </div>
                             )}
                           </td>
-                          <td className="py-2.5 px-3 space-y-1">
-                            <div>{getPeriodStatusBadge(p.status)}</div>
-                            {!isAcquisition && p.daysRemaining > 0 && (
-                              <div>{getUrgencyBadge(p.urgencyLevel, p.daysUntilDeadline, p.status)}</div>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3 text-right whitespace-nowrap space-x-1">
-                            {p.daysRemaining > 0 && (
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                title="Programar Férias deste Período"
-                                icon={<CalendarPlus className="w-3.5 h-3.5 text-atrio-teal" />}
-                                onClick={() => handleOpenSchedule(p)}
+
+                          <td className="py-2.5 px-3 text-right align-middle">
+                            <div className="inline-flex items-center justify-end gap-1">
+                              {p.daysRemaining > 0 && (
+                                <button
+                                  type="button"
+                                  title="Programar Férias deste Período"
+                                  onClick={() => handleOpenSchedule(p)}
+                                  className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-[11px] transition-colors cursor-pointer"
+                                >
+                                  <CalendarPlus className="w-3.5 h-3.5 text-atrio-teal shrink-0" />
+                                  <span>Programar</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                title="Ajustar Saldo ou Datas do Período"
+                                onClick={() => handleOpenEditPeriod(p)}
+                                className="inline-flex items-center justify-center p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors cursor-pointer"
                               >
-                                Programar
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Ajustar Saldo ou Datas do Período"
-                              onClick={() => handleOpenEditPeriod(p)}
-                            >
-                              <Edit2 className="w-3.5 h-3.5 text-slate-500" />
-                            </Button>
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -876,48 +886,57 @@ export const RhVacationsPage: React.FC = () => {
             </div>
 
             {alerts.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                      <th className="py-2.5 px-3">Colaborador</th>
-                      <th className="py-2.5 px-3">Setor</th>
-                      <th className="py-2.5 px-3">Líder / Gestor</th>
-                      <th className="py-2.5 px-3">Período Aquisitivo</th>
-                      <th className="py-2.5 px-3">Data Limite Gozo</th>
-                      <th className="py-2.5 px-3 text-center">Saldo Restante</th>
-                      <th className="py-2.5 px-3">Urgência</th>
-                      <th className="py-2.5 px-3 text-right">Ação</th>
+              <div className="w-full overflow-hidden rounded-lg border border-slate-200">
+                <table className="w-full table-fixed text-left text-xs border-collapse">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                    <tr>
+                      <th className="py-2.5 px-3 w-[24%]">Colaborador</th>
+                      <th className="py-2.5 px-2.5 w-[20%]">Setor / Líder</th>
+                      <th className="py-2.5 px-2.5 w-[15%]">Período Aquisitivo</th>
+                      <th className="py-2.5 px-2.5 w-[11%]">Limite Gozo</th>
+                      <th className="py-2.5 px-2.5 w-[9%] text-center">Saldo</th>
+                      <th className="py-2.5 px-2.5 w-[11%]">Urgência</th>
+                      <th className="py-2.5 px-3 w-[10%] text-right">Ação</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {alerts.map((alt: any) => (
                       <tr key={alt.id} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="py-2.5 px-3">
-                          <strong className="text-slate-800 font-bold">{alt.employee?.name}</strong>
-                          <span className="block text-[10px] text-slate-400 font-mono">
+                        <td className="py-2.5 px-3 align-middle">
+                          <strong
+                            className="text-slate-800 font-bold block truncate"
+                            title={alt.employee?.name}
+                          >
+                            {alt.employee?.name}
+                          </strong>
+                          <span className="block text-[10px] text-slate-400 font-mono truncate">
                             Contrato: {alt.employee?.code || alt.employee?.registrationNumber}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-slate-600">
-                          {alt.employee?.department?.name || 'Geral'}
+                        <td className="py-2.5 px-2.5 align-middle">
+                          <span className="text-slate-700 font-semibold block truncate">
+                            {alt.employee?.department?.name || 'Geral'}
+                          </span>
+                          <span className="text-[10px] text-slate-500 block truncate">
+                            Líder: {alt.employee?.manager?.name || 'Diretoria'}
+                          </span>
                         </td>
-                        <td className="py-2.5 px-3 text-slate-600">
-                          {alt.employee?.manager?.name || 'Diretoria'}
+                        <td className="py-2.5 px-2.5 font-mono text-[11px] text-slate-600 align-middle leading-tight">
+                          <span className="block">{formatDate(alt.vestingStartDate)}</span>
+                          <span className="block text-[10px] text-slate-400">
+                            até {formatDate(alt.vestingEndDate)}
+                          </span>
                         </td>
-                        <td className="py-2.5 px-3 font-mono text-slate-600">
-                          {formatDate(alt.vestingStartDate)} a {formatDate(alt.vestingEndDate)}
-                        </td>
-                        <td className="py-2.5 px-3 font-mono font-bold text-slate-800">
+                        <td className="py-2.5 px-2.5 font-mono font-bold text-[11px] text-slate-800 align-middle">
                           {formatDate(alt.deadlineDate)}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-bold text-rose-600">
-                          {alt.daysRemaining} dias
+                        <td className="py-2.5 px-2.5 text-center font-bold text-rose-600 align-middle">
+                          {alt.daysRemaining}d
                         </td>
-                        <td className="py-2.5 px-3">
+                        <td className="py-2.5 px-2.5 align-middle">
                           {getUrgencyBadge(alt.urgencyLevel, alt.daysUntilDeadline, alt.status)}
                         </td>
-                        <td className="py-2.5 px-3 text-right">
+                        <td className="py-2.5 px-3 text-right align-middle">
                           <Button
                             variant="primary"
                             size="sm"
