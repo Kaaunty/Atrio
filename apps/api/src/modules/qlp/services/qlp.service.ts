@@ -87,6 +87,7 @@ export class QlpService {
     const now = new Date();
     const parameterWhere: any = {
       active: true,
+      department: { deletedAt: null, active: true },
       effectiveFrom: { lte: now },
       OR: [{ effectiveTo: null }, { effectiveTo: { gte: now } }],
     };
@@ -101,8 +102,17 @@ export class QlpService {
         department: { select: { id: true, name: true } },
         position: { select: { id: true, title: true } },
       },
-      orderBy: [{ department: { name: 'asc' } }],
+      orderBy: [{ department: { name: 'asc' } }, { shiftType: 'asc' }],
     });
+
+    const specificPositionsByDept = new Map<string, string[]>();
+    for (const p of parameters) {
+      if (p.positionId) {
+        const list = specificPositionsByDept.get(p.departmentId) || [];
+        if (!list.includes(p.positionId)) list.push(p.positionId);
+        specificPositionsByDept.set(p.departmentId, list);
+      }
+    }
 
     const comparison = await Promise.all(
       parameters.map(async (param) => {
@@ -112,7 +122,17 @@ export class QlpService {
           departmentId: param.departmentId,
           laborClassification: param.laborClassification,
         };
-        if (param.positionId) matchWhere.positionId = param.positionId;
+        if (param.positionId) {
+          matchWhere.positionId = param.positionId;
+        } else {
+          const excludedPositions = specificPositionsByDept.get(param.departmentId);
+          if (excludedPositions && excludedPositions.length > 0 && !filters.positionId) {
+            matchWhere.OR = [
+              { positionId: null },
+              { positionId: { notIn: excludedPositions } },
+            ];
+          }
+        }
         if (param.shiftType) matchWhere.shiftType = param.shiftType;
         if (filters.contractType) matchWhere.contractType = filters.contractType;
 
@@ -218,7 +238,9 @@ export class QlpService {
   // ==========================================
 
   static async listParameters(filters: QueryParametersInput) {
-    const where: any = {};
+    const where: any = {
+      department: { deletedAt: null },
+    };
     if (filters.departmentId) where.departmentId = filters.departmentId;
     if (filters.positionId) where.positionId = filters.positionId;
     if (filters.shiftType) where.shiftType = filters.shiftType;
@@ -227,7 +249,7 @@ export class QlpService {
 
     return prisma.workforceParameter.findMany({
       where,
-      orderBy: [{ department: { name: 'asc' } }, { createdAt: 'desc' }],
+      orderBy: [{ department: { name: 'asc' } }, { shiftType: 'asc' }, { createdAt: 'desc' }],
       include: {
         department: { select: { id: true, name: true } },
         position: { select: { id: true, title: true } },
