@@ -738,4 +738,137 @@ export class EmployeeImportService {
       employees: finalEmployeesResult,
     };
   }
+
+  /**
+   * Gera a planilha modelo (.xlsx) de importação de colaboradores com cabeçalhos
+   * oficiais, linha de exemplo válida e aba de instruções.
+   */
+  static async generateTemplateBuffer(): Promise<{
+    buffer: Buffer;
+    filename: string;
+    contentType: string;
+  }> {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Átrio RH';
+    workbook.created = new Date();
+
+    const sheet = workbook.addWorksheet('Colaboradores', {
+      views: [{ state: 'frozen', ySplit: 1 }],
+    });
+
+    const columns = [
+      { header: 'CÓDIGO', key: 'code', width: 14 },
+      { header: 'NOME DO COLABORADOR *', key: 'name', width: 34 },
+      { header: 'DATA DE NASCIMENTO', key: 'birthDate', width: 20 },
+      { header: 'CPF *', key: 'cpf', width: 18 },
+      { header: 'DATA DE ADMISSÃO *', key: 'admissionDate', width: 20 },
+      { header: 'MATRÍCULA ESOCIAL *', key: 'registrationNumber', width: 22 },
+      { header: 'FUNÇÃO', key: 'position', width: 26 },
+      { header: 'SETOR *', key: 'department', width: 24 },
+      { header: 'GESTOR IMEDIATO', key: 'manager', width: 28 },
+      { header: 'SALÁRIO', key: 'salary', width: 16 },
+      { header: 'CEP', key: 'zipCode', width: 14 },
+      { header: 'RUA / ENDEREÇO', key: 'street', width: 30 },
+      { header: 'NÚMERO', key: 'number', width: 12 },
+      { header: 'BAIRRO', key: 'neighborhood', width: 22 },
+      { header: 'CIDADE', key: 'city', width: 20 },
+      { header: 'CELULAR / TELEFONE', key: 'phone', width: 20 },
+    ];
+
+    sheet.columns = columns;
+
+    // Estiliza cabeçalho (Linha 1)
+    const headerRow = sheet.getRow(1);
+    headerRow.height = 26;
+    headerRow.eachCell((cell, colNumber) => {
+      const isRequired = [2, 4, 5, 6, 8].includes(colNumber);
+      cell.font = {
+        bold: true,
+        size: 10,
+        color: { argb: 'FFFFFFFF' },
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: isRequired ? 'FF0D9488' : 'FF0F172A' },
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      };
+    });
+
+    // Linha 2: Exemplo preenchido com CPF matematicamente válido
+    const exampleRow = sheet.addRow({
+      code: '00101',
+      name: 'JOÃO DA SILVA EXEMPLO',
+      birthDate: '15/05/1990',
+      cpf: '529.982.247-25',
+      admissionDate: '01/02/2026',
+      registrationNumber: 'MAT-1001',
+      position: 'OPERADOR DE PRODUÇÃO',
+      department: 'INJETORAS',
+      manager: '',
+      salary: '2850,00',
+      zipCode: '13250-000',
+      street: 'AV. INDUSTRIAL',
+      number: '500',
+      neighborhood: 'DISTRITO INDUSTRIAL',
+      city: 'ITATIBA',
+      phone: '(11) 99999-8888',
+    });
+
+    exampleRow.height = 22;
+    exampleRow.eachCell((cell) => {
+      cell.font = { size: 10, color: { argb: 'FF334155' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'left' };
+    });
+
+    // Segunda aba: Instruções de Preenchimento
+    const instructionsSheet = workbook.addWorksheet('Instruções de Preenchimento');
+    instructionsSheet.columns = [
+      { header: 'COLUNA', key: 'col', width: 12 },
+      { header: 'CAMPO', key: 'field', width: 28 },
+      { header: 'OBRIGATÓRIO?', key: 'req', width: 16 },
+      { header: 'FORMATO / ORIENTAÇÕES', key: 'desc', width: 65 },
+    ];
+
+    const instHeader = instructionsSheet.getRow(1);
+    instHeader.height = 24;
+    instHeader.eachCell((cell) => {
+      cell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'left' };
+    });
+
+    const instructionsData = [
+      ['A', 'CÓDIGO', 'Opcional', 'Código interno ou número do crachá do colaborador.'],
+      ['B', 'NOME DO COLABORADOR *', 'SIM', 'Nome completo do colaborador (mínimo 2 caracteres).'],
+      ['C', 'DATA DE NASCIMENTO', 'Opcional', 'Data no formato DD/MM/AAAA (ex: 15/05/1990).'],
+      ['D', 'CPF *', 'SIM', 'CPF válido com 11 dígitos (com ou sem pontuação).'],
+      ['E', 'DATA DE ADMISSÃO *', 'SIM', 'Data de admissão no formato DD/MM/AAAA (ex: 01/02/2026).'],
+      ['F', 'MATRÍCULA ESOCIAL *', 'SIM', 'Matrícula única do colaborador na empresa (ex: MAT-1001 ou número eSocial).'],
+      ['G', 'FUNÇÃO', 'Opcional', 'Informativo na planilha (o cargo pode ser vinculado/ajustado no sistema).'],
+      ['H', 'SETOR *', 'SIM', 'Nome do setor/departamento. Se ainda não existir, o Átrio criará automaticamente.'],
+      ['I', 'GESTOR IMEDIATO', 'Opcional', 'Nome do gestor/líder direto. O Átrio fará o vínculo automático na etapa de validação.'],
+      ['J', 'SALÁRIO', 'Opcional', 'Valor numérico ou moeda (ex: 2850,00).'],
+      ['K a O', 'ENDEREÇO (CEP, RUA, Nº, BAIRRO, CIDADE)', 'Opcional', 'Dados de endereço residencial do colaborador.'],
+      ['P', 'CELULAR / TELEFONE', 'Opcional', 'Telefone ou WhatsApp com DDD (ex: (11) 99999-8888).'],
+    ];
+
+    instructionsData.forEach((rowVals) => {
+      const r = instructionsSheet.addRow(rowVals);
+      r.height = 20;
+    });
+
+    const uint8array = await workbook.xlsx.writeBuffer();
+    return {
+      buffer: Buffer.from(uint8array),
+      filename: 'modelo_importacao_colaboradores_atrio.xlsx',
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    };
+  }
 }

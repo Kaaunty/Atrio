@@ -12,7 +12,8 @@ router.get('/employees', EmployeeController.list);
 router.get('/employees/stats', EmployeeController.getStats);
 router.post('/employees', EmployeeController.create);
 
-// Importação em lote via Excel (Preview & Confirm)
+// Importação em lote via Excel (Template, Preview & Confirm)
+router.get('/employees/import/template', EmployeeController.downloadImportTemplate);
 router.post('/employees/import/preview', uploadMemory.single('file'), EmployeeController.importPreview);
 router.post('/employees/import/confirm', EmployeeController.importConfirm);
 

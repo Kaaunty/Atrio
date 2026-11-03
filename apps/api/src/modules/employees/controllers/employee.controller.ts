@@ -151,6 +151,21 @@ export class EmployeeController {
   }
 
   /**
+   * Download da planilha modelo (.xlsx) de importação de colaboradores
+   */
+  static async downloadImportTemplate(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const { buffer, filename, contentType } = await EmployeeImportService.generateTemplateBuffer();
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.status(200).send(buffer);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Preview (Dry-Run) da importação da planilha Excel
    */
   static async importPreview(req: Request, res: Response, next: NextFunction) {

@@ -2,6 +2,7 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { prisma } from '../../../database/prisma.js';
 import { EmployeeService } from '../services/employee.service.js';
+import { EmployeeImportService } from '../services/employee-import.service.js';
 
 describe('Employee & Timeline Module Integration Flow', () => {
   let testCompanyId: string;
@@ -219,5 +220,28 @@ describe('Employee & Timeline Module Integration Flow', () => {
     assert.equal(statsResult.active, 1);
     assert.equal(statsResult.vacation, 0);
     assert.equal(statsResult.leave, 0);
+  });
+
+  it('deve gerar a planilha modelo (.xlsx) de importação e validar sua linha de exemplo no preview sem erros', async () => {
+    const template = await EmployeeImportService.generateTemplateBuffer();
+    assert.ok(template.buffer.length > 0);
+    assert.equal(template.filename, 'modelo_importacao_colaboradores_atrio.xlsx');
+    assert.equal(
+      template.contentType,
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+
+    const preview = await EmployeeImportService.preview(
+      template.buffer,
+      testCompanyId,
+      'teste.com.br',
+      true
+    );
+
+    assert.equal(preview.summary.totalRows, 1);
+    assert.equal(preview.summary.validRows, 1);
+    assert.equal(preview.summary.errorRows, 0);
+    assert.equal(preview.employees[0].name, 'JOÃO DA SILVA EXEMPLO');
+    assert.equal(preview.employees[0].departmentName, 'INJETORAS');
   });
 });

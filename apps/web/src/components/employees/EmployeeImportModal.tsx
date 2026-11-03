@@ -14,6 +14,7 @@ import {
   X,
   FolderPlus,
   Info,
+  Download,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -57,8 +58,22 @@ export const EmployeeImportModal: React.FC<EmployeeImportModalProps> = ({
   const [updateExisting, setUpdateExisting] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDownloadTemplate = async () => {
+    try {
+      setDownloadingTemplate(true);
+      setUploadError(null);
+      await employeeImportService.downloadTemplate();
+    } catch (err: any) {
+      console.error('Erro ao baixar planilha modelo:', err);
+      setUploadError('Não foi possível baixar a planilha modelo. Tente novamente.');
+    } finally {
+      setDownloadingTemplate(false);
+    }
+  };
 
   // Step 2: Preview state
   const [previewData, setPreviewData] = useState<ImportPreviewResponse | null>(null);
@@ -573,17 +588,37 @@ export const EmployeeImportModal: React.FC<EmployeeImportModalProps> = ({
             )}
           </div>
 
-          {/* Formato de Colunas Esperado / Dicas */}
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3.5 text-xs text-slate-600 space-y-2">
-            <div className="flex items-center gap-2 font-semibold text-slate-700">
-              <Info className="w-4 h-4 text-atrio-navy" />
-              <span>Colunas reconhecidas na planilha:</span>
+          {/* Formato de Colunas Esperado / Dicas & Download do Modelo */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-600 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 font-semibold text-slate-800">
+                <Info className="w-4 h-4 text-atrio-teal shrink-0" />
+                <span>Padrão oficial da planilha de importação (.xlsx):</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-slate-600">
+                <strong>Obrigatórias:</strong> Nome do Colaborador, CPF, Data de Admissão, Matrícula eSocial e Setor.<br />
+                <strong>Opcionais:</strong> Código, Data de Nascimento, Função, Gestor Imediato, Salário, Endereço (CEP, Rua, Nº, Bairro, Cidade) e Celular.
+              </p>
             </div>
-            <p className="text-[11px] leading-relaxed">
-              <strong>Obrigatórias:</strong> Nome Completo, CPF, E-mail.<br />
-              <strong>Recomendadas:</strong> Matrícula / Código, Setor / Departamento, Gestor / Supervisor, Salário, Telefone.<br />
-              <em>Obs:</em> Cabeçalhos com acentos e variações comuns são identificados automaticamente.
-            </p>
+
+            <div className="shrink-0">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleDownloadTemplate}
+                disabled={downloadingTemplate}
+                icon={
+                  downloadingTemplate ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4 text-atrio-teal" />
+                  )
+                }
+              >
+                {downloadingTemplate ? 'Gerando...' : 'Baixar Planilha Modelo (.xlsx)'}
+              </Button>
+            </div>
           </div>
         </div>
       )}
