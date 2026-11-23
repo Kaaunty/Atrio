@@ -95,7 +95,7 @@ export const EmployeesPage: React.FC = () => {
         const [comps, depts, pos] = await Promise.all([
           organizationService.getCompanies(),
           organizationService.getDepartments(),
-          organizationService.getPositions(),
+          organizationService.getPositions({ pageSize: 1000 }),
         ]);
         setCompanies(comps.data || []);
         setDepartments(depts || []);

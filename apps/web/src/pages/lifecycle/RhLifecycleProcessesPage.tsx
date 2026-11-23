@@ -5,6 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { EmployeeSelect } from '../../components/ui/EmployeeSelect';
 import { Badge } from '../../components/ui/Badge';
 import {
   UserPlus,
@@ -47,7 +48,6 @@ export const RhLifecycleProcessesPage: React.FC = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [processType, setProcessType] = useState<'ONBOARDING' | 'OFFBOARDING'>('ONBOARDING');
   const [targetDate, setTargetDate] = useState(new Date().toISOString().split('T')[0]);
-  const [employees, setEmployees] = useState<{ id: string; name: string; registrationNumber: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchProcesses = async () => {
@@ -70,18 +70,6 @@ export const RhLifecycleProcessesPage: React.FC = () => {
   useEffect(() => {
     fetchProcesses();
   }, [activeTab]);
-
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const res = await api.get('/employees', { params: { pageSize: 100 } });
-        setEmployees(res.data.data || []);
-      } catch (err) {
-        console.error('Erro ao carregar colaboradores:', err);
-      }
-    };
-    fetchEmployees();
-  }, []);
 
   const handleCreateProcess = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,16 +160,10 @@ export const RhLifecycleProcessesPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-atrio-text-secondary mb-1">
                     Colaborador *
                   </label>
-                  <Select
+                  <EmployeeSelect
                     value={selectedEmployeeId}
-                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                    options={[
-                      { value: '', label: 'Selecione um Colaborador...' },
-                      ...employees.map((e) => ({
-                        value: e.id,
-                        label: `${e.name} (${e.registrationNumber})`,
-                      })),
-                    ]}
+                    onChange={setSelectedEmployeeId}
+                    placeholder="Selecione um Colaborador..."
                   />
                 </div>
 

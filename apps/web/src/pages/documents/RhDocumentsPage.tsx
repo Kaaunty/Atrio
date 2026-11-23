@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { EmployeeSelect } from '../../components/ui/EmployeeSelect';
 import { api } from '../../services/api';
 
 export interface DocumentTypeItem {
@@ -34,7 +35,6 @@ export const RhDocumentsPage: React.FC = () => {
   const currentYear = String(currentDate.getFullYear());
   const [activeTab, setActiveTab] = useState<'SINGLE' | 'BATCH' | 'REPORTS'>('SINGLE');
   const [docTypes, setDocTypes] = useState<DocumentTypeItem[]>([]);
-  const [employees, setEmployees] = useState<EmployeeSimple[]>([]);
 
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -69,23 +69,12 @@ export const RhDocumentsPage: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [typesRes, empRes] = await Promise.all([
-          api.get('/documents/types'),
-          api.get('/employees?limit=100'),
-        ]);
+        const typesRes = await api.get('/documents/types');
 
         const fetchedTypes = typesRes.data.data || [];
         setDocTypes(fetchedTypes);
         if (fetchedTypes.length > 0) setSingleType(fetchedTypes[0].id);
 
-        const fetchedEmps = empRes.data.data?.employees || empRes.data.data || [];
-        setEmployees(
-          fetchedEmps.map((e: any) => ({
-            id: e.id,
-            name: e.name,
-            registrationNumber: e.registrationNumber,
-          }))
-        );
       } catch (err: any) {
         console.error('Erro ao carregar dados iniciais:', err);
       }
@@ -312,17 +301,11 @@ export const RhDocumentsPage: React.FC = () => {
               </div>
 
               {singleVisibility === 'PRIVATE_EMPLOYEE_RH' && (
-                <Select
+                <EmployeeSelect
                   label="Colaborador Destinatário *"
                   value={singleEmployeeId}
-                  onChange={(e) => setSingleEmployeeId(e.target.value)}
-                  options={[
-                    { value: '', label: 'Selecione o colaborador...' },
-                    ...employees.map((emp) => ({
-                      value: emp.id,
-                      label: `${emp.name} (Matrícula: ${emp.registrationNumber})`,
-                    })),
-                  ]}
+                  onChange={setSingleEmployeeId}
+                  placeholder="Selecione o colaborador..."
                 />
               )}
 

@@ -30,7 +30,7 @@ export const OrganizationPage: React.FC = () => {
         organizationService.getCompanies(),
         organizationService.getUnits(),
         organizationService.getDepartments(),
-        organizationService.getPositions(),
+        organizationService.getPositions({ pageSize: 1000 }),
       ]);
 
       setStats({

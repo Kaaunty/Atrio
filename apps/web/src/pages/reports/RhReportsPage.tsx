@@ -4,6 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { EmployeeSelect } from '../../components/ui/EmployeeSelect';
 import {
   FileCheck2,
   Users,
@@ -29,19 +30,14 @@ export const RhReportsPage: React.FC = () => {
   // Espelho em PDF Individual
   const [mirrorEmployeeId, setMirrorEmployeeId] = useState<string>('');
   const [mirrorYearMonth, setMirrorYearMonth] = useState<string>('2026-08');
-  const [employees, setEmployees] = useState<{ id: string; name: string; registrationNumber: string }[]>([]);
 
   const [downloadingReport, setDownloadingReport] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [deptsRes, empsRes] = await Promise.all([
-          api.get('/departments'),
-          api.get('/employees', { params: { pageSize: 100 } }),
-        ]);
+        const deptsRes = await api.get('/departments');
         setDepartments(deptsRes.data.data || []);
-        setEmployees(empsRes.data.data || []);
       } catch (err) {
         console.error('Erro ao carregar dados para os filtros:', err);
       }
@@ -314,16 +310,10 @@ export const RhReportsPage: React.FC = () => {
               <label className="block text-xs font-semibold text-atrio-text-secondary mb-1">
                 Selecione o Colaborador
               </label>
-              <Select
+              <EmployeeSelect
                 value={mirrorEmployeeId}
-                onChange={(e) => setMirrorEmployeeId(e.target.value)}
-                options={[
-                  { value: '', label: 'Selecione um Colaborador...' },
-                  ...employees.map((e) => ({
-                    value: e.id,
-                    label: `${e.name} (${e.registrationNumber})`,
-                  })),
-                ]}
+                onChange={setMirrorEmployeeId}
+                placeholder="Selecione um Colaborador..."
               />
             </div>
 

@@ -31,6 +31,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
+import { SearchableSelect } from '../ui/SearchableSelect';
 import { Button } from '../ui/Button';
 import { Tabs } from '../ui/Tabs';
 
@@ -155,7 +156,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         const [comps, depts, pos, emps] = await Promise.all([
           organizationService.getCompanies(),
           organizationService.getDepartments(),
-          organizationService.getPositions(),
+          organizationService.getPositions({ pageSize: 1000 }),
           employeeService.getEmployees({ pageSize: 100, status: 'ATIVO' }),
         ]);
 
@@ -549,30 +550,31 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
               ]}
             />
 
-            <Select
+            <SearchableSelect
               label="Setor / Departamento"
+              placeholder="Selecione o setor..."
+              searchPlaceholder="Pesquisar setor..."
+              emptyMessage="Nenhum setor encontrado"
               value={form.departmentId}
-              onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
-              options={[
-                { value: '', label: 'Selecione o setor...' },
-                ...departments.map((d) => ({
-                  value: d.id,
-                  label: `${d.name}${d.code ? ` (${d.code})` : ''}`,
-                })),
-              ]}
+              onChange={(value) => setForm({ ...form, departmentId: value })}
+              options={departments.map((d) => ({
+                value: d.id,
+                label: d.name,
+              }))}
             />
 
-            <Select
+            <SearchableSelect
               label="Cargo & Nível"
+              placeholder="Selecione o cargo..."
+              searchPlaceholder="Pesquisar cargo ou nível..."
+              emptyMessage="Nenhum cargo encontrado"
               value={form.positionId}
-              onChange={(e) => setForm({ ...form, positionId: e.target.value })}
-              options={[
-                { value: '', label: 'Selecione o cargo...' },
-                ...positions.map((p) => ({
-                  value: p.id,
-                  label: `${p.title} (${p.level})`,
-                })),
-              ]}
+              onChange={(value) => setForm({ ...form, positionId: value })}
+              options={positions.map((p) => ({
+                value: p.id,
+                label: p.title,
+                subLabel: p.level,
+              }))}
             />
 
             <div className="sm:col-span-2 relative">

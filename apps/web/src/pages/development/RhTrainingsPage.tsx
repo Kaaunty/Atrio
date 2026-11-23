@@ -75,7 +75,7 @@ export const RhTrainingsPage: React.FC = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const res = await api.get('/employees', { params: { pageSize: 100 } });
+        const res = await api.get('/employees', { params: { pageSize: 1000, status: 'ATIVO' } });
         setEmployees(res.data.data || []);
       } catch (err) {
         console.error('Erro ao carregar colaboradores:', err);

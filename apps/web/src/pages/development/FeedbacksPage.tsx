@@ -4,6 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { EmployeeSelect } from '../../components/ui/EmployeeSelect';
 import { Badge } from '../../components/ui/Badge';
 import {
   MessageSquare,
@@ -46,7 +47,6 @@ export const FeedbacksPage: React.FC = () => {
   const [content, setContent] = useState('');
   const [actionTask, setActionTask] = useState('');
   const [actionItems, setActionItems] = useState<{ task: string; deadline?: string; completed?: boolean }[]>([]);
-  const [employees, setEmployees] = useState<{ id: string; name: string; registrationNumber: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchMyFeedbacks = async () => {
@@ -64,20 +64,6 @@ export const FeedbacksPage: React.FC = () => {
   useEffect(() => {
     fetchMyFeedbacks();
   }, []);
-
-  useEffect(() => {
-    if (isManagerOrRh) {
-      const fetchEmployees = async () => {
-        try {
-          const res = await api.get('/employees', { params: { pageSize: 100 } });
-          setEmployees(res.data.data || []);
-        } catch (err) {
-          console.error('Erro ao carregar colaboradores:', err);
-        }
-      };
-      fetchEmployees();
-    }
-  }, [isManagerOrRh]);
 
   const handleAddActionItem = () => {
     if (!actionTask.trim()) return;
@@ -164,16 +150,10 @@ export const FeedbacksPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-atrio-text-secondary mb-1">
                     Colaborador Destinatário *
                   </label>
-                  <Select
+                  <EmployeeSelect
                     value={selectedEmployeeId}
-                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                    options={[
-                      { value: '', label: 'Selecione um Colaborador...' },
-                      ...employees.map((e) => ({
-                        value: e.id,
-                        label: `${e.name} (${e.registrationNumber})`,
-                      })),
-                    ]}
+                    onChange={setSelectedEmployeeId}
+                    placeholder="Selecione um Colaborador..."
                   />
                 </div>
 
