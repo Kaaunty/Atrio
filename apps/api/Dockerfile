@@ -22,6 +22,10 @@ RUN npx prisma generate
 
 EXPOSE 3333
 
+# Healthcheck usado pelo Coolify (rolling update espera o container ficar saudavel)
+HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=5 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3333)+'/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
 ENV NODE_ENV=production
 
 # Aplica as migrations; o bootstrap da API provisiona o administrador configurado
