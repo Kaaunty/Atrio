@@ -360,15 +360,21 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
           : undefined;
 
       if (isEditing && employee) {
+        // Campos de identidade só são enviados se mudaram: cadastros legados com
+        // CPF/e-mail/avatar fora do padrão não devem bloquear outras alterações (ex.: cargo).
+        const cpfChanged = form.cpf !== (employee.cpf || '');
+        const emailChanged = form.email !== (employee.email || '');
+        const regChanged = form.registrationNumber !== (employee.registrationNumber || '');
+        const avatarChanged = form.avatarUrl !== (employee.avatarUrl || '');
         await employeeService.updateEmployee(employee.id, {
           name: form.name,
-          cpf: form.cpf,
-          email: form.email,
-          registrationNumber: form.registrationNumber,
+          ...(cpfChanged ? { cpf: form.cpf } : {}),
+          ...(emailChanged ? { email: form.email } : {}),
+          ...(regChanged ? { registrationNumber: form.registrationNumber } : {}),
           code: form.code || null,
           phone: form.phone || null,
           birthDate: form.birthDate || null,
-          avatarUrl: form.avatarUrl || null,
+          ...(avatarChanged ? { avatarUrl: form.avatarUrl || null } : {}),
           salary: form.salary ? Number(form.salary) : null,
           companyId: form.companyId,
           unitId: form.unitId || null,
@@ -410,8 +416,16 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       onSuccess();
       onClose();
     } catch (err: any) {
+      const data = err?.response?.data;
+      const fieldErrors = data?.errors && typeof data.errors === 'object' && !Array.isArray(data.errors)
+        ? Object.entries(data.errors as Record<string, string[]>)
+            .map(([field, msgs]) => `${field}: ${(msgs || []).join(', ')}`)
+            .join(' | ')
+        : '';
       setError(
-        err?.response?.data?.message ||
+        (data?.message
+          ? fieldErrors ? `${data.message} — ${fieldErrors}` : data.message
+          : '') ||
           'Ocorreu um erro ao salvar o colaborador. Verifique os dados e tente novamente.'
       );
     } finally {
